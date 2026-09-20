@@ -40,6 +40,7 @@ export default function InscripcionModal({
   onSuccess,
 }: InscripcionModalProps) {
   const [nombreCompleto, setNombreCompleto] = useState("");
+  const [lugar, setLugar] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
   const [areaInteres, setAreaInteres] = useState("Registro");
@@ -88,6 +89,11 @@ export default function InscripcionModal({
       errors.nombreCompleto = "Ingresa tu nombre completo (mínimo 3 caracteres).";
     }
 
+    if (!lugar.trim() || lugar.trim().length < 5) {
+      errors.lugar =
+        "Ingresa tu lugar de residencia (mínimo 5 caracteres).";
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!correo.trim()) {
       errors.correo = "El correo electrónico es requerido.";
@@ -130,6 +136,7 @@ export default function InscripcionModal({
           profesion: profesion.trim() || null,
           comentarios: comentarios.trim() || null,
           estado: "pendiente",
+          lugar: lugar
         });
 
       if (insertError) {
@@ -215,10 +222,34 @@ export default function InscripcionModal({
               <h2 className={styles.title} id="modal-title">
                 {brigada.nombre}
               </h2>
-              <p className={styles.subtitle} style={{ display: "flex", alignItems: "center", gap: "1.2rem", flexWrap: "wrap" }}>
+              <p
+                className={styles.subtitle}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1.2rem",
+                  flexWrap: "wrap",
+                }}
+              >
                 {brigada.lugar && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                    }}
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
                       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                       <circle cx="12" cy="10" r="3" />
                     </svg>
@@ -226,8 +257,24 @@ export default function InscripcionModal({
                   </span>
                 )}
                 {brigada.fecha_brigada && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                    }}
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
                       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                       <line x1="16" y1="2" x2="16" y2="6" />
                       <line x1="8" y1="2" x2="8" y2="6" />
@@ -281,6 +328,27 @@ export default function InscripcionModal({
                     {formErrors.nombreCompleto && (
                       <span className={styles.errorText}>
                         {formErrors.nombreCompleto}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className={styles.fieldFull}>
+                    <label className={styles.label} htmlFor="modal_lugar">
+                      Lugar de Residencia *
+                    </label>
+                    <input
+                      id="modal_nombre"
+                      type="text"
+                      className={styles.input}
+                      placeholder="Ej. San Pedro Sula, Cortés"
+                      value={lugar}
+                      onChange={(e) => setLugar(e.target.value)}
+                      disabled={loading}
+                      required
+                    />
+                    {formErrors.lugar && (
+                      <span className={styles.errorText}>
+                        {formErrors.lugar}
                       </span>
                     )}
                   </div>
@@ -445,11 +513,14 @@ export default function InscripcionModal({
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h2 className={styles.successTitle}>¡Solicitud Enviada con Éxito!</h2>
+            <h2 className={styles.successTitle}>
+              ¡Solicitud Enviada con Éxito!
+            </h2>
             <p className={styles.successDesc}>
-              Hemos recibido tu postulación para <strong>{brigada.nombre}</strong>.
-              El equipo coordinador de Dibujando Sonrisas revisará tus datos y se
-              pondrá en contacto contigo vía WhatsApp o correo electrónico.
+              Hemos recibido tu postulación para{" "}
+              <strong>{brigada.nombre}</strong>. El equipo coordinador de
+              Dibujando Sonrisas revisará tus datos y se pondrá en contacto
+              contigo vía WhatsApp o correo electrónico.
             </p>
 
             <div className={styles.accountPromptBox}>
@@ -470,7 +541,10 @@ export default function InscripcionModal({
                 <span>¿Deseas dar seguimiento a tus voluntariados?</span>
               </div>
               <p className={styles.accountPromptText}>
-                Te invitamos a <strong>iniciar sesión</strong> o <strong>crear una cuenta</strong> en nuestra plataforma para gestionar tu perfil de voluntario, consultar tus asignaciones en brigadas y descargar tus constancias de participación.
+                Te invitamos a <strong>iniciar sesión</strong> o{" "}
+                <strong>crear una cuenta</strong> en nuestra plataforma para
+                gestionar tu perfil de voluntario, consultar tus asignaciones en
+                brigadas y descargar tus constancias de participación.
               </p>
               <div className={styles.accountButtons}>
                 <Link

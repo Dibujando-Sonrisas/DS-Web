@@ -44,3 +44,7 @@ next-env.d.ts
 
 #ides
 .idea
+
+#supabase temp files and branches
+/supabase/.temp
+/supabase/.branches
