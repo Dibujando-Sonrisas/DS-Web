@@ -333,6 +333,16 @@ ul {
   padding-block: clamp(5rem, 9vw, 8rem);
 }
 
+/* ícono girando (p. ej. LoaderCircle mientras se envía) */
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ── FORMULARIOS ── */
 .form-grid {
   display: grid;

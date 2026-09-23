@@ -155,11 +155,14 @@ export default function BrigadaBanner({ brigada, cuposInfo }: BrigadaBannerProps
         </div>
       </section>
 
-      <InscripcionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        brigada={brigada}
-      />
+      {/* se monta solo al abrir, así cada apertura empieza limpia */}
+      {isModalOpen && (
+        <InscripcionModal
+          isOpen
+          onClose={() => setIsModalOpen(false)}
+          brigada={brigada}
+        />
+      )}
     </>
   );
 }

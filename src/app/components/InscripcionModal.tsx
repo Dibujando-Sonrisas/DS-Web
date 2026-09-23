@@ -1,10 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import styles from "@/styles/components/inscripcion-modal.module.css";
-import { Calendar, Check, CircleAlert, Heart, Loader, LoaderCircle, LogIn, MapPin, UserPlus, X } from "lucide-react";
+import {
+  Calendar,
+  Check,
+  CircleAlert,
+  ClipboardCheck,
+  Heart,
+  LoaderCircle,
+  LogIn,
+  MapPin,
+  Send,
+  UserPlus,
+  X,
+} from "lucide-react";
 
 export const AREAS_INTERES_LIST = [
   "Registro",
@@ -71,15 +83,6 @@ export default function InscripcionModal({
     };
   }, [isOpen, onClose]);
 
-  // Reset form when modal opens with new brigade
-  useEffect(() => {
-    if (isOpen) {
-      setSubmittedSuccess(false);
-      setGeneralError("");
-      setFormErrors({});
-    }
-  }, [isOpen, brigada?.id]);
-
   if (!isOpen || !brigada) return null;
 
   const validate = () => {
@@ -111,7 +114,7 @@ export default function InscripcionModal({
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setGeneralError("");
 
@@ -161,6 +164,14 @@ export default function InscripcionModal({
     });
   };
 
+  // Mensaje de error bajo el campo, enlazado por aria-describedby
+  const fieldError = (key: string, id: string) =>
+    formErrors[key] && (
+      <span id={id} className={`form-error ${styles.fieldError}`}>
+        {formErrors[key]}
+      </span>
+    );
+
   return (
     <div
       className={styles.overlay}
@@ -171,129 +182,120 @@ export default function InscripcionModal({
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className={styles.modal}>
+      <div className={`${styles.modal} card-soft`}>
         <button
+          type="button"
           className={styles.closeBtn}
           onClick={onClose}
-          aria-label="Cerrar modal"
+          aria-label="Cerrar"
         >
-          <X size={18} strokeWidth={2.5} aria-hidden="true" />
+          <X aria-hidden="true" />
         </button>
 
         {!submittedSuccess ? (
           <>
-            <div className={styles.header}>
+            <header className={styles.header}>
               <span className={styles.badge}>
-                <Heart size={14} style={{ verticalAlign: "middle", marginRight: "6px" }} aria-hidden="true" />
-                Inscripción a Brigada Médica
+                <Heart aria-hidden="true" />
+                Inscripción a brigada médica
               </span>
               <h2 className={styles.title} id="modal-title">
                 {brigada.nombre}
               </h2>
-              <p className={styles.subtitle} style={{ display: "flex", alignItems: "center", gap: "1.2rem", flexWrap: "wrap" }}>
+              <div className="crayons" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+              <ul className={styles.meta}>
                 {brigada.lugar && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                    <MapPin size={15} aria-hidden="true" />
+                  <li>
+                    <MapPin aria-hidden="true" />
                     {brigada.lugar}
-                  </span>
+                  </li>
                 )}
                 {brigada.fecha_brigada && (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                    <Calendar size={15} aria-hidden="true" />
+                  <li>
+                    <Calendar aria-hidden="true" />
                     {formatDate(brigada.fecha_brigada)}
-                  </span>
+                  </li>
                 )}
-              </p>
-            </div>
+              </ul>
+            </header>
 
             <div className={styles.body}>
               {generalError && (
-                <div className={styles.alertError} role="alert">
-                  <CircleAlert size={20} />
-                  <span>{generalError}</span>
-                </div>
+                <p className={`form-error ${styles.alertError}`} role="alert">
+                  <CircleAlert aria-hidden="true" />
+                  {generalError}
+                </p>
               )}
 
               <form onSubmit={handleSubmit} noValidate>
-                <div className={styles.formGrid}>
-                  {/* Nombre Completo */}
-                  <div className={styles.fieldFull}>
-                    <label className={styles.label} htmlFor="modal_nombre">
-                      Nombre Completo *
-                    </label>
+                <div className="form-grid">
+                  <div className="form-field form-field-full">
+                    <label htmlFor="modal_nombre">Nombre Completo *</label>
                     <input
                       id="modal_nombre"
                       type="text"
-                      className={styles.input}
+                      className="form-input"
                       placeholder="Ej. María García Rodríguez"
                       value={nombreCompleto}
                       onChange={(e) => setNombreCompleto(e.target.value)}
                       disabled={loading}
                       required
+                      autoFocus
+                      aria-invalid={!!formErrors.nombreCompleto}
+                      aria-describedby={formErrors.nombreCompleto ? "err_nombre" : undefined}
                     />
-                    {formErrors.nombreCompleto && (
-                      <span className={styles.errorText}>
-                        {formErrors.nombreCompleto}
-                      </span>
-                    )}
+                    {fieldError("nombreCompleto", "err_nombre")}
                   </div>
 
-                  {/* Correo Electrónico */}
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="modal_correo">
-                      Correo Electrónico *
-                    </label>
+                  <div className="form-field">
+                    <label htmlFor="modal_correo">Correo Electrónico *</label>
                     <input
                       id="modal_correo"
                       type="email"
-                      className={styles.input}
+                      className="form-input"
                       placeholder="maria@ejemplo.com"
                       value={correo}
                       onChange={(e) => setCorreo(e.target.value)}
                       disabled={loading}
                       required
+                      aria-invalid={!!formErrors.correo}
+                      aria-describedby={formErrors.correo ? "err_correo" : undefined}
                     />
-                    {formErrors.correo && (
-                      <span className={styles.errorText}>
-                        {formErrors.correo}
-                      </span>
-                    )}
+                    {fieldError("correo", "err_correo")}
                   </div>
 
-                  {/* Teléfono */}
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="modal_telefono">
-                      Número de Teléfono / WhatsApp *
-                    </label>
+                  <div className="form-field">
+                    <label htmlFor="modal_telefono">Teléfono / WhatsApp *</label>
                     <input
                       id="modal_telefono"
                       type="tel"
-                      className={styles.input}
+                      className="form-input"
                       placeholder="+504 9999-9999"
                       value={telefono}
                       onChange={(e) => setTelefono(e.target.value)}
                       disabled={loading}
                       required
+                      aria-invalid={!!formErrors.telefono}
+                      aria-describedby={formErrors.telefono ? "err_telefono" : undefined}
                     />
-                    {formErrors.telefono && (
-                      <span className={styles.errorText}>
-                        {formErrors.telefono}
-                      </span>
-                    )}
+                    {fieldError("telefono", "err_telefono")}
                   </div>
 
-                  {/* Área de Interés */}
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="modal_area">
-                      Área de Interés *
-                    </label>
+                  <div className="form-field">
+                    <label htmlFor="modal_area">Área de Interés *</label>
                     <select
                       id="modal_area"
-                      className={styles.select}
+                      className="form-input"
                       value={areaInteres}
                       onChange={(e) => setAreaInteres(e.target.value)}
                       disabled={loading}
                       required
+                      aria-invalid={!!formErrors.areaInteres}
+                      aria-describedby={formErrors.areaInteres ? "err_area" : undefined}
                     >
                       {AREAS_INTERES_LIST.map((area) => (
                         <option key={area} value={area}>
@@ -301,37 +303,29 @@ export default function InscripcionModal({
                         </option>
                       ))}
                     </select>
-                    {formErrors.areaInteres && (
-                      <span className={styles.errorText}>
-                        {formErrors.areaInteres}
-                      </span>
-                    )}
+                    {fieldError("areaInteres", "err_area")}
                   </div>
 
-                  {/* Profesión / Oficio */}
-                  <div className={styles.field}>
-                    <label className={styles.label} htmlFor="modal_profesion">
-                      Profesión / Oficio (Opcional)
-                    </label>
+                  <div className="form-field">
+                    <label htmlFor="modal_profesion">Profesión / Oficio (Opcional)</label>
                     <input
                       id="modal_profesion"
                       type="text"
-                      className={styles.input}
-                      placeholder="Ej. Médico General, Estudiante, Enfermero..."
+                      className="form-input"
+                      placeholder="Ej. Médico, Estudiante, Enfermero..."
                       value={profesion}
                       onChange={(e) => setProfesion(e.target.value)}
                       disabled={loading}
                     />
                   </div>
 
-                  {/* Comentarios o Disponibilidad */}
-                  <div className={styles.fieldFull}>
-                    <label className={styles.label} htmlFor="modal_comentarios">
+                  <div className="form-field form-field-full">
+                    <label htmlFor="modal_comentarios">
                       Comentarios o Disponibilidad (Opcional)
                     </label>
                     <textarea
                       id="modal_comentarios"
-                      className={styles.textarea}
+                      className={`form-input ${styles.textarea}`}
                       rows={3}
                       placeholder="¿Tienes alguna experiencia previa o disponibilidad especial?"
                       value={comentarios}
@@ -341,27 +335,26 @@ export default function InscripcionModal({
                   </div>
                 </div>
 
-                <div className={styles.actions}>
+                <div className={`form-actions ${styles.actions}`}>
                   <button
                     type="button"
-                    className={styles.btnCancel}
+                    className="btn-outline-blue"
                     onClick={onClose}
                     disabled={loading}
                   >
                     Cancelar
                   </button>
-                  <button
-                    type="submit"
-                    className={styles.btnSubmit}
-                    disabled={loading}
-                  >
+                  <button type="submit" className="btn-primary" disabled={loading}>
                     {loading ? (
                       <>
-                        <LoaderCircle size={16} style={{ animation: "spin 1s linear infinite" }} />
+                        <LoaderCircle className="spin" aria-hidden="true" />
                         Enviando solicitud...
                       </>
                     ) : (
-                      "Enviar Solicitud de Inscripción"
+                      <>
+                        Enviar Solicitud
+                        <Send aria-hidden="true" />
+                      </>
                     )}
                   </button>
                 </div>
@@ -370,46 +363,42 @@ export default function InscripcionModal({
           </>
         ) : (
           /* ── PANTALLA DE ÉXITO Y REGISTRO / LOGIN ── */
-          <div className={styles.successContainer}>
-            <div className={styles.successIconCircle}>
-              <Check size={36} strokeWidth={2.5} aria-hidden="true" />
+          <div className={styles.success} role="status">
+            <div className={`${styles.successIcon} icon-circle tone-primary`} aria-hidden="true">
+              <Check strokeWidth={2.5} />
             </div>
-            <h2 className={styles.successTitle}>¡Solicitud Enviada con Éxito!</h2>
+            <h2 className={styles.successTitle} id="modal-title">
+              ¡Solicitud enviada con éxito!
+            </h2>
             <p className={styles.successDesc}>
               Hemos recibido tu postulación para <strong>{brigada.nombre}</strong>.
               El equipo coordinador de Dibujando Sonrisas revisará tus datos y se
               pondrá en contacto contigo vía WhatsApp o correo electrónico.
             </p>
 
-            <div className={styles.accountPromptBox}>
-              <div className={styles.accountPromptHeading}>
-                <Loader size={18} aria-hidden="true" />
-                <span>¿Deseas dar seguimiento a tus voluntariados?</span>
-              </div>
-              <p className={styles.accountPromptText}>
-                Te invitamos a <strong>iniciar sesión</strong> o <strong>crear una cuenta</strong> en nuestra plataforma para gestionar tu perfil de voluntario, consultar tus asignaciones en brigadas y descargar tus constancias de participación.
+            <div className={`${styles.accountPrompt} card-drawn tone-secondary`}>
+              <p className={styles.accountHeading}>
+                <ClipboardCheck aria-hidden="true" />
+                ¿Deseas dar seguimiento a tus voluntariados?
+              </p>
+              <p className={styles.accountText}>
+                <strong>Inicia sesión</strong> o <strong>crea una cuenta</strong>{" "}
+                para gestionar tu perfil de voluntario, consultar tus asignaciones
+                y descargar tus constancias de participación.
               </p>
               <div className={styles.accountButtons}>
-                <Link
-                  href="/auth/registro"
-                  className={styles.btnPromptPrimary}
-                  onClick={onClose}
-                >
-                  <UserPlus size={16} />
+                <Link href="/auth/registro" className="btn-primary" onClick={onClose}>
+                  <UserPlus aria-hidden="true" />
                   Crear mi Cuenta
                 </Link>
-                <Link
-                  href="/auth/login"
-                  className={styles.btnPromptSecondary}
-                  onClick={onClose}
-                >
-                  <LogIn size={16} />
+                <Link href="/auth/login" className="btn-outline-blue" onClick={onClose}>
+                  <LogIn aria-hidden="true" />
                   Iniciar Sesión
                 </Link>
               </div>
             </div>
 
-            <button className={styles.btnCloseModal} onClick={onClose}>
+            <button type="button" className={styles.btnDismiss} onClick={onClose}>
               Entendido, cerrar esta ventana
             </button>
           </div>
