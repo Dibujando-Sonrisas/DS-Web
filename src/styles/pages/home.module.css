@@ -37,18 +37,8 @@
 .heroHeading {
   font-family: var(--fontHeading), sans-serif;
   color: var(--white);
-  font-size: 6rem;
+  font-size: clamp(4.4rem, 11vw, 6rem);
   margin-bottom: 1.5rem;
-}
-
-.heroHeading span:nth-child(1) {
-  color: var(--primaryColor);
-}
-.heroHeading span:nth-child(2) {
-  color: var(--secondaryColor);
-}
-.heroHeading span:nth-child(3) {
-  color: var(--tertiaryColor);
 }
 
 @media (min-width: 768px) {
@@ -129,13 +119,17 @@
     border-color 500ms ease;
 }
 
-.impactCard:hover {
-  background: var(--primaryColor);
-  border-color: var(--primaryColor);
-  color: var(--white);
-}
-.impactCard:hover p {
-  color: var(--white);
+@media (hover: hover) {
+  .impactCard:hover {
+    background: var(--primaryColor);
+    border-color: var(--primaryColor);
+    color: var(--white);
+  }
+  /* el rojo sobre el verde no alcanza contraste */
+  .impactCard:hover h3,
+  .impactCard:hover p {
+    color: var(--white);
+  }
 }
 
 .impactCardBody {
@@ -193,19 +187,18 @@
     box-shadow 0.3s ease;
 }
 
-.testimonialCard:nth-child(1) {
-  margin-bottom: 18rem;
-}
-.testimonialCard:nth-child(2) {
-  margin-top: 9rem;
-  margin-bottom: 9rem;
-}
-.testimonialCard:nth-child(3) {
-  margin-top: 18rem;
-}
-
-.testimonialCard:hover {
-
+/* escalonado solo en 3 columnas; apiladas en móvil dejaría huecos enormes */
+@media (min-width: 768px) {
+  .testimonialCard:nth-child(1) {
+    margin-bottom: 18rem;
+  }
+  .testimonialCard:nth-child(2) {
+    margin-top: 9rem;
+    margin-bottom: 9rem;
+  }
+  .testimonialCard:nth-child(3) {
+    margin-top: 18rem;
+  }
 }
 
 .testimonialImgPlaceholder {
@@ -241,7 +234,7 @@
 }
 
 .support h2 {
-  color: var(--secondaryColor);
+  color: var(--secondaryDark);
   font-size: 4rem;
   margin-bottom: 1rem;
 }

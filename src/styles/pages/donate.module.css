@@ -1,170 +1,187 @@
 /* =====================================================
    DONATE — donate.module.css
    Estilos exclusivos para la página /donar
+   El hero vive en components/PageHero.
 ===================================================== */
 
-/* ── HERO ── */
-.hero {
-  background-image: url(/new-Donar-hero.png);
-  background-color: rgba(26, 35, 50, 0.65);
-  background-blend-mode: multiply;
-  background-size: cover;
-  background-position: center;
-  height: 40rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.main {
+  padding: clamp(5rem, 9vw, 8rem) 0;
+}
+
+/* ── INTRO ── */
+.intro {
   text-align: center;
-}
-
-.heroHeading {
-  color: var(--white);
-  font-size: 5.5rem;
-  margin: 0;
-  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-}
-
-.comingSoon {
-  min-height: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, var(--bg-section) 0%, var(--white) 100%);
-  padding: 6rem 2rem;
-  text-align: center;
-}
-
-.content {
   max-width: 72rem;
-  width: 100%;
+  margin: 0 auto clamp(3rem, 6vw, 5rem);
 }
 
-.icon {
-  font-size: 7rem;
-  margin-bottom: 2rem;
-  line-height: 1;
-  animation: pulse 2.5s ease-in-out infinite;
+.intro h2 {
+  color: var(--tertiaryColor);
+  text-wrap: balance;
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.08);
-  }
+.intro p {
+  font-size: 1.7rem;
 }
 
-.contentHeading,
-.content h1 {
-  font-size: 3.6rem;
-  margin-bottom: 1.5rem;
-  color: var(--primaryColor);
-}
-
-.content > p {
-  font-size: 1.8rem;
-  margin-bottom: 4rem;
-  color: var(--gray);
-}
-
+/* ── FORMAS DE AYUDAR ── */
 .altGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2rem;
-  margin: 0 auto 4rem;
+  gap: 2.4rem;
 }
 
-@media (min-width: 600px) {
+@media (min-width: 640px) {
   .altGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
+@media (min-width: 1100px) {
+  .altGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .altCard {
-  background: var(--white);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 2.8rem 2.2rem;
+  border: 3px dashed var(--primaryColor);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2.4rem;
   text-align: center;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
-}
-
-.altCard:hover {
-  border-color: var(--primaryColor);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+  gap: 1.2rem;
+  transition: transform 0.3s ease;
 }
 
 .altIcon {
-  font-size: 3.5rem;
-  line-height: 1;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: var(--primaryColor);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 0.6rem;
 }
 
-.altCard h4 {
-  font-size: 2rem;
+.altIcon svg {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.altCard h3 {
+  font-size: 2.2rem;
+  color: var(--primaryColor);
   margin: 0;
 }
 
 .altCard p {
-  font-size: 1.4rem;
-  color: var(--gray);
-  margin: 0;
+  font-size: 1.5rem;
+  margin: 0 0 1rem;
   flex: 1;
 }
 
-.btnGofundme {
-  display: inline-block;
-  background: #02a95c;
-  color: var(--white);
-  font-size: 1.6rem;
-  font-weight: 700;
-  font-family: var(--fontBody);
-  padding: 1.2rem 2.8rem;
-  border-radius: var(--radius-sm);
-  transition: all 0.3s ease;
+/* el botón queda siempre al pie de la tarjeta */
+.altCard > a {
   margin-top: auto;
 }
 
-.btnGofundme:hover {
-  background: #028f4e;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+/* Cada tarjeta toma un color de marca, como en "Son·ri·sas" */
+.altCard:nth-child(4n + 2) {
+  border-color: var(--secondaryColor);
+}
+.altCard:nth-child(4n + 2) .altIcon {
+  background: var(--secondaryColor);
+  color: var(--dark);
+}
+.altCard:nth-child(4n + 2) h3 {
+  color: var(--secondaryDark);
+}
+.altCard:nth-child(4n + 3) {
+  border-color: var(--tertiaryColor);
+}
+.altCard:nth-child(4n + 3) .altIcon {
+  background: var(--tertiaryColor);
+}
+.altCard:nth-child(4n + 3) h3 {
+  color: var(--tertiaryColor);
 }
 
-.btnOutline {
-  display: inline-block;
-  border: 2px solid var(--primaryColor);
+@media (hover: hover) {
+  .altCard:hover {
+    transform: translateY(-4px);
+  }
+}
+
+/* ── IMPACTO ── */
+.impact {
+  margin-top: clamp(6rem, 10vw, 9rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem 4rem;
+}
+
+.impact h2 {
   color: var(--primaryColor);
+  text-align: center;
+  margin: 0;
+}
+
+.impactList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.2rem;
+}
+
+.impactItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 0.8rem 2rem;
   font-size: 1.5rem;
-  font-weight: 600;
-  font-family: var(--fontBody);
-  padding: 1rem 2.2rem;
-  border-radius: var(--radius-sm);
-  transition: all 0.3s ease;
-  margin-top: auto;
+  color: var(--primaryColor);
 }
 
-.btnOutline:hover {
-  background: var(--primaryColor);
-  color: var(--white);
-  transform: translateY(-2px);
+.impactItem svg {
+  flex-shrink: 0;
 }
 
+/* texto en amarillo oscuro (contraste); el ícono conserva el amarillo de marca */
+.impactItem:nth-child(2) {
+  color: var(--secondaryDark);
+}
+.impactItem:nth-child(2) svg {
+  color: var(--secondaryColor);
+}
+.impactItem:nth-child(3) {
+  color: var(--tertiaryColor);
+}
+
+/* ── PRÓXIMAMENTE ── */
 .note {
+  max-width: 64rem;
+  margin: clamp(4rem, 7vw, 6rem) auto 0;
+  text-align: center;
   font-size: 1.5rem;
-  color: var(--gray);
-  margin-top: 1rem;
 }
 
-.note small {
-  display: block;
-  margin-top: 0.4rem;
-  font-size: 1.3rem;
+.noteBadge {
+  display: inline-block;
+  font-family: var(--fontHeading);
+  font-size: 1.6rem;
+  color: var(--dark);
+  background: var(--secondaryColor);
+  border-radius: 99rem;
+  padding: 0.2rem 1.4rem;
+  margin-right: 0.8rem;
+  transform: rotate(-2deg);
 }

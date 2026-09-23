@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import PageHero from "../components/PageHero";
 import { getBrigadas } from "../../lib/db/brigadas";
 import styles from "../../styles/pages/about.module.css";
 import { BookOpenText, Check, PillBottle, Stethoscope } from "lucide-react";
@@ -21,22 +22,29 @@ export default async function SobreNosotros() {
     <>
       <Header />
 
-      {/* ── HERO ── */}
-      <div className={styles.hero} role="banner">
-        <div className={`container`}>
-          <h1 className={styles.heroTitle}>
+      <PageHero
+        image="/new-AboutUs-hero.png"
+        title={
+          <span className="wordmark">
             Dibujando
             <span> Son</span>
             <span>ri</span>
             <span>sas</span>
-          </h1>
-          <h2 className={styles.heroHeading}>¿Quienes somos?</h2>
-        </div>
-      </div>
+          </span>
+        }
+        subtitle="¿Quiénes somos? Una fundación cristiana que lleva salud, amor y esperanza a las comunidades de Honduras."
+      />
 
       <section className={`${styles.history} container`}>
         <h2 className={styles.historyHeader}>Nuestra Historia</h2>
-        <div className={styles.historyImage}></div>
+        <Image
+          className={styles.historyImage}
+          src="/new-AboutUs-hero.png"
+          alt="Equipo de Dibujando Sonrisas durante una brigada"
+          width={1280}
+          height={720}
+          sizes="(min-width: 768px) 50vw, 90vw"
+        />
         <div>
           <p>
             Dibujando Sonrisas nació de una idea simple pero poderosa: que cada
@@ -52,7 +60,7 @@ export default async function SobreNosotros() {
           <div className={styles.historyIcons}>
             <p className={styles.historyIcon}>
               <Stethoscope />
-              Atención medica
+              Atención médica
             </p>
 
             <p className={styles.historyIcon}>
@@ -112,38 +120,38 @@ export default async function SobreNosotros() {
 
 
       <section className={styles.ourValues}>
-        <h3 className={styles.ourValuesTitle}>Nuestros Valores</h3>
+        <h2 className={styles.ourValuesTitle}>Nuestros Valores</h2>
         <ul className={styles.valuesList}>
           <li className={styles.valuesItem}>
             <span className={styles.checkmark}>
               <Check />
             </span>
-            Fe: Todo lo que hacemos es inspirado por nuestra fe en Cristo.
+            <span><strong>Fe:</strong> Todo lo que hacemos es inspirado por nuestra fe en Cristo.</span>
           </li>
           <li className={styles.valuesItem}>
             <span className={styles.checkmark}>
               <Check />
             </span>
-            Compasión: Tratamos a cada persona con amor, dignidad y respeto.
+            <span><strong>Compasión:</strong> Tratamos a cada persona con amor, dignidad y respeto.</span>
           </li>
           <li className={styles.valuesItem}>
             <span className={styles.checkmark}>
               <Check />
             </span>
-            Integridad: Actuamos con transparencia y ética en todo momento.
+            <span><strong>Integridad:</strong> Actuamos con transparencia y ética en todo momento.</span>
           </li>
           <li className={styles.valuesItem}>
             <span className={styles.checkmark}>
               <Check />
             </span>
-            Trabajo en equipo: Creemos en la fuerza de la unión para lograr
-            más.
+            <span><strong>Trabajo en equipo:</strong> Creemos en la fuerza de la unión para lograr
+            más.</span>
           </li>
           <li className={styles.valuesItem}>
             <span className={styles.checkmark}>
               <Check />
             </span>
-            Excelencia: Nos comprometemos con la calidad en cada brigada.
+            <span><strong>Excelencia:</strong> Nos comprometemos con la calidad en cada brigada.</span>
           </li>
         </ul>
       </section>

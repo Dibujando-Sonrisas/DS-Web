@@ -1,0 +1,78 @@
+/* =====================================================
+   PAGE HERO — page-hero.module.css
+   Hero de fotografía compartido por las páginas internas
+   (sobre nosotros, brigadas, voluntariado, donar, contacto)
+===================================================== */
+
+.hero {
+  background-color: rgba(26, 35, 50, 0.6);
+  background-blend-mode: multiply;
+  background-size: cover;
+  background-position: center;
+  min-height: min(50rem, 80vh);
+  /* el padding superior libera el header fijo (y el logo que asoma en móvil) */
+  padding: 15rem 0 7rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.title {
+  color: var(--white);
+  font-size: clamp(3.6rem, 7vw, 6rem);
+  max-width: 20ch;
+  margin: 0;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+  text-wrap: balance;
+}
+
+.title em {
+  font-style: normal;
+  color: var(--secondaryColor);
+}
+
+/* Tres trazos de crayón con los colores de marca */
+.crayons {
+  display: flex;
+  gap: 0.6rem;
+  margin: 2rem 0;
+  transform: rotate(-2deg);
+}
+
+.crayons span {
+  height: 0.6rem;
+  border-radius: 99rem;
+}
+
+.crayons span:nth-child(1) {
+  width: 4.8rem;
+  background: var(--primaryColor);
+}
+.crayons span:nth-child(2) {
+  width: 3rem;
+  background: var(--secondaryColor);
+}
+.crayons span:nth-child(3) {
+  width: 1.6rem;
+  background: var(--tertiaryColor);
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: clamp(1.7rem, 2.2vw, 2rem);
+  max-width: 60rem;
+  margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.actions {
+  display: flex;
+  gap: 1.6rem;
+  flex-wrap: wrap;
+  margin-top: 3rem;
+}
+
+/* sobre la foto oscura el anillo de foco oscuro no se vería */
+.hero :focus-visible {
+  outline-color: var(--secondaryColor);
+}

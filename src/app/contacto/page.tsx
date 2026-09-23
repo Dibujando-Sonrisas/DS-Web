@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import PageHero from "../components/PageHero";
+import { Heart, Mail, MapPin, Share2 } from "lucide-react";
 import ContactForm from "./ContactForm";
 import styles from "../../styles/pages/contact.module.css";
 
@@ -15,14 +17,11 @@ export default function Contacto() {
     <>
       <Header />
 
-      {/* ── HERO ── */}
-      <div className={styles.hero}>
-        <h1>Contáctanos</h1>
-        <p className={styles.heroSub}>
-          ¿Quieres apoyar, ser voluntario o simplemente saber más de nosotros?
-          ¡Escríbenos!
-        </p>
-      </div>
+      <PageHero
+        image="/new-Contacto-hero.png"
+        title={<em>Contáctanos</em>}
+        subtitle="¿Quieres apoyar, ser voluntario o simplemente saber más de nosotros? ¡Escríbenos!"
+      />
 
       {/* ── MAIN GRID: Info + Form ── */}
       <section
@@ -41,24 +40,10 @@ export default function Contacto() {
             {/* Ubicación */}
             <div className={styles.infoItem}>
               <div className={styles.infoIcon} aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M12 11m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
-                  <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z" />
-                </svg>
+                <MapPin />
               </div>
               <div className={styles.infoText}>
-                <h4>Ubicación</h4>
+                <h3>Ubicación</h3>
                 <p>Tela, Atlántida – Honduras</p>
               </div>
             </div>
@@ -66,24 +51,10 @@ export default function Contacto() {
             {/* Correo */}
             <div className={styles.infoItem}>
               <div className={styles.infoIcon} aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-                  <polyline points="3 7 12 13 21 7" />
-                </svg>
+                <Mail />
               </div>
               <div className={styles.infoText}>
-                <h4>Correo Electrónico</h4>
+                <h3>Correo Electrónico</h3>
                 <p>
                   <a
                     href="mailto:fundacion.ds2021@gmail.com"
@@ -98,27 +69,10 @@ export default function Contacto() {
             {/* Redes sociales */}
             <div className={styles.infoItem}>
               <div className={styles.infoIcon} aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <circle cx="18" cy="5" r="3" />
-                  <circle cx="6" cy="12" r="3" />
-                  <circle cx="18" cy="19" r="3" />
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                </svg>
+                <Share2 />
               </div>
               <div className={styles.infoText}>
-                <h4>Redes Sociales</h4>
+                <h3>Redes Sociales</h3>
                 <p>
                   Encuéntranos como <strong>@dibujando.sonrisas21</strong> en
                   Instagram y Facebook.
@@ -129,23 +83,10 @@ export default function Contacto() {
             {/* Fe */}
             <div className={styles.infoItem}>
               <div className={styles.infoIcon} aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.566" />
-                </svg>
+                <Heart />
               </div>
               <div className={styles.infoText}>
-                <h4>Nuestra Fe</h4>
+                <h3>Nuestra Fe</h3>
                 <p>
                   Somos una fundación cristiana. Creemos que servir al prójimo
                   es servir a Dios.
@@ -155,7 +96,7 @@ export default function Contacto() {
 
             {/* Social icon buttons */}
             <div className={styles.contactSocial}>
-              <h4>Síguenos en Redes</h4>
+              <h3>Síguenos en Redes</h3>
               <div className={styles.socialLinks}>
                 <a
                   href="https://www.facebook.com/share/18fJDbV3QB/?mibextid=wwXIfr"
@@ -247,8 +188,14 @@ export default function Contacto() {
           Mantente al día con nuestras próximas brigadas, proyectos y formas de
           apoyar.
         </p>
-        <a href="https://chat.whatsapp.com/DKeiRi1iRXS7koprGs7ZDm" className={styles.btnWhatsapp}>
+        <a
+          href="https://chat.whatsapp.com/DKeiRi1iRXS7koprGs7ZDm"
+          className={styles.btnWhatsapp}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <svg
+            className={styles.whatsappIcon}
             fill="currentColor"
             viewBox="0 0 24 24"
             width="24"

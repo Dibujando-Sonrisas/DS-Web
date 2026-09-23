@@ -2,7 +2,7 @@
 
 :root {
   --fontHeading: "Sriracha", sans-serif;
-  --fontBody: "Valley Sans", sans-serif;
+  --fontBody: "Valley Sans", "Inter", sans-serif;
   --fontMain: "Inter", sans-serif;
 
   --white: #ffffff;
@@ -12,6 +12,9 @@
   --primaryLight: #2ab2ad;
   --secondaryColor: #f7cb70ff;
   --tertiaryColor: #cd463aff;
+  /* Variante oscura del amarillo para TEXTO: el amarillo de marca no llega a
+     contraste legible sobre fondos claros, úsalo solo en bordes y rellenos. */
+  --secondaryDark: #9a6200;
   --accentColor: #1abc9c;
   --gray: #6b7280;
   --grayLight: #9ca3af;
@@ -178,4 +181,33 @@ ul {
   background-color: var(--primaryColor);
   color: var(--white);
   transform: translateY(-2px);
+}
+
+/* ── MARCA ── */
+/* "Dibujando Son·ri·sas": cada sílaba en un color de marca */
+.wordmark span:nth-child(1) {
+  color: var(--primaryColor);
+}
+.wordmark span:nth-child(2) {
+  color: var(--secondaryColor);
+}
+.wordmark span:nth-child(3) {
+  color: var(--tertiaryColor);
+}
+
+/* ── ACCESIBILIDAD ── */
+:focus-visible {
+  outline: 3px solid var(--primaryDark);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

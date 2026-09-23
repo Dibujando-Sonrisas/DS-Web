@@ -45,11 +45,11 @@ export default function PublicBrigadaBanner({
     <>
       <div
         style={{
-          background: "linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)",
+          background: "linear-gradient(135deg, var(--primaryDark) 0%, var(--primaryColor) 100%)",
           borderRadius: "16px",
           padding: "3.2rem 2.4rem",
           color: "#fff",
-          boxShadow: "0 10px 30px rgba(30, 64, 175, 0.25)",
+          boxShadow: "0 10px 30px rgba(7, 92, 88, 0.25)",
           marginBottom: "4rem",
           textAlign: "center",
           display: "flex",
@@ -235,7 +235,7 @@ export default function PublicBrigadaBanner({
               onClick={() => setIsModalOpen(true)}
               style={{
                 background: "#fff",
-                color: "#1e40af",
+                color: "var(--primaryDark)",
                 padding: "1.2rem 2.8rem",
                 borderRadius: "50px",
                 fontSize: "1.5rem",

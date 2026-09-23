@@ -100,7 +100,7 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
   }
 
   return (
-    <form className={styles.form} id="formulario" onSubmit={handleSubmit}>
+    <form className={styles.form} onSubmit={handleSubmit}>
       <fieldset style={{ border: "none", padding: 0 }}>
         <div className={styles.formGrid}>
           {/* Nombre Completo */}

@@ -1,175 +1,150 @@
-.hero {
-  background-image: url(/new-Voluntariado-hero.png);
-  background-color: rgba(26, 35, 50, 0.65);
-  background-blend-mode: multiply;
-  background-size: cover;
-  background-position: center;
-  color: var(--white);
-  text-align: center;
-  padding: 10rem 2rem 8rem;
+/* =====================================================
+   VOLUNTEER — volunteer.module.css
+   Estilos exclusivos para la página /voluntariado
+   El hero vive en components/PageHero.
+===================================================== */
+
+.btnDisabled {
+  opacity: 0.85;
+  cursor: not-allowed;
+  background-color: #64748b;
+  border-color: #64748b;
 }
 
-.hero h1 {
-  color: var(--white);
-  font-size: 4.8rem;
-  margin-bottom: 1.5rem;
-}
-
-.heroSub {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.9rem;
-  font-weight: 400;
-  max-width: 60rem;
-  margin: 0 auto 3rem;
-}
-
-.heroButtons {
-  display: flex;
-  gap: 1.6rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.btnPrimary {
-  display: inline-block;
-  background-color: var(--primaryColor);
-  color: var(--white);
-  font-size: 1.5rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  padding: 0.9rem 2rem;
-  border: 2px solid var(--primaryColor);
+.btnDisabled:hover {
+  background-color: #64748b;
+  border-color: #64748b;
+  transform: none;
   box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.btnPrimary:hover {
-  background-color: var(--primaryDark);
-  border-color: var(--primaryDark);
-  transform: translateY(-2px);
-}
-
-.btnOutlined {
-  display: inline-block;
-  background: transparent;
-  border: 2px solid var(--white);
-  color: var(--white);
-  font-size: 1.5rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  padding: 0.9rem 2rem;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.btnOutlined:hover {
-  background: var(--white);
-  color: var(--primaryColor);
-  transform: translateY(-2px);
 }
 
 .volunteerMain {
   padding-bottom: 6rem;
-  background: var(--bg-light);
 }
 
-.innerContainer {
-  width: min(90%, 110rem);
-  margin: 0 auto;
+.bannerWrap {
+  margin-top: 4rem;
+  display: flex;
+  justify-content: center;
 }
 
-.whySection {
-  padding: 7rem 0;
-}
-
-.whySection h2 {
+/* ── ENCABEZADOS DE SECCIÓN: rotan por los colores de marca ── */
+.whySection,
+.rolesSection,
+.stepsSection,
+.formSection {
+  padding: clamp(5rem, 9vw, 8rem) 0 0;
   text-align: center;
+}
+
+.whySection h2,
+.formSection h2 {
+  color: var(--primaryColor);
+  margin-bottom: 1rem;
+  text-wrap: balance;
+}
+
+.rolesSection h2 {
+  color: var(--tertiaryColor);
   margin-bottom: 1rem;
 }
 
-.whySubtitle {
-  text-align: center;
-  color: var(--gray);
-  font-weight: 400;
-  font-size: 1.7rem;
-  margin-bottom: 4rem;
+.stepsSection h2 {
+  color: var(--secondaryDark);
+  margin-bottom: clamp(3rem, 6vw, 4.4rem);
 }
 
+.whySubtitle,
+.rolesSubtitle,
+.formIntro {
+  font-size: 1.7rem;
+  max-width: 64rem;
+  margin: 0 auto clamp(3rem, 6vw, 4.4rem);
+}
+
+/* ── ¿POR QUÉ SER VOLUNTARIO? ── */
 .whyCards {
   display: grid;
   grid-template-columns: 1fr;
   gap: 2.5rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 900px) {
   .whyCards {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 .whyCard {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 3rem 2.5rem;
-  text-align: center;
-  box-shadow: var(--shadow-sm);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
-.whyCard:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-md);
+  border: 3px dashed var(--primaryColor);
+  border-radius: var(--radius-lg);
+  padding: 3rem clamp(1.8rem, 3vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  transition: transform 0.3s ease;
 }
 
 .circle {
-  background: var(--primaryLight);
-  width: 56px;
-  height: 56px;
+  width: 6rem;
+  height: 6rem;
   border-radius: 50%;
+  background: var(--primaryColor);
+  color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 2rem;
+  margin-bottom: 0.6rem;
 }
 
-.circleIcon {
-  color: var(--primaryColor);
-  font-size: 2.8rem;
-  display: flex;
-  align-items: center;
+.circle svg {
+  width: 2.6rem;
+  height: 2.6rem;
 }
 
-.whyCard h4 {
+.whyCard h3 {
   font-size: 2rem;
-  margin-bottom: 0.8rem;
+  color: var(--primaryColor);
+  margin: 0;
 }
 
 .whyCard p {
   font-size: 1.5rem;
 }
 
-.rolesSection {
-  padding: 7rem 0;
+.whyCard:nth-child(2) {
+  border-color: var(--secondaryColor);
+}
+.whyCard:nth-child(2) .circle {
+  background: var(--secondaryColor);
+  color: var(--dark);
+}
+.whyCard:nth-child(2) h3 {
+  color: var(--secondaryDark);
+}
+.whyCard:nth-child(3) {
+  border-color: var(--tertiaryColor);
+}
+.whyCard:nth-child(3) .circle {
+  background: var(--tertiaryColor);
+}
+.whyCard:nth-child(3) h3 {
+  color: var(--tertiaryColor);
 }
 
-.rolesSection h2 {
-  text-align: center;
-  margin-bottom: 1rem;
+@media (hover: hover) {
+  .whyCard:hover {
+    transform: translateY(-4px);
+  }
 }
 
-.rolesSection > div > p {
-  text-align: center;
-  font-size: 1.6rem;
-  margin-bottom: 4rem;
-}
-
+/* ── ROLES DISPONIBLES ── */
 .rolesGrid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 3rem;
+  text-align: left;
 }
 
 @media (min-width: 768px) {
@@ -180,62 +155,77 @@
 
 .roleCard {
   background: var(--white);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.3s ease;
 }
 
-.roleCard:hover {
-  transform: translateY(-4px);
+.roleImg1,
+.roleImg2 {
+  background-size: cover;
+  background-position: center;
+  height: 22rem;
+  margin: 1.5rem 1.5rem 0;
+  border-radius: var(--radius-md);
 }
 
 .roleImg1 {
   background-image: url(/Profesion.jpg);
-  background-size: cover;
-  background-position: center;
-  height: 20rem;
 }
 
 .roleImg2 {
   background-image: url(/ApoyoYLogistica.jpg);
-  background-size: cover;
-  background-position: center;
-  height: 20rem;
 }
 
 .roleName {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 2rem 2.5rem 1rem;
+  gap: 1.4rem;
+  padding: 2.4rem 2.5rem 1rem;
 }
 
 .roleIcon {
-  color: var(--primaryColor);
-  font-size: 2.8rem;
+  width: 4.8rem;
+  height: 4.8rem;
+  border-radius: 50%;
+  background: var(--primaryColor);
+  color: var(--white);
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.roleIcon svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+.roleCard:nth-child(2) .roleIcon {
+  background: var(--tertiaryColor);
 }
 
 .roleName h3 {
-  font-size: 2rem;
+  font-size: 2.2rem;
+  color: var(--primaryColor);
   margin: 0;
+}
+
+.roleCard:nth-child(2) .roleName h3 {
+  color: var(--tertiaryColor);
 }
 
 .roleCard ul {
   padding: 0 2.5rem 2.5rem;
-  list-style: none;
 }
 
 .roleItem {
   font-size: 1.5rem;
   color: var(--gray);
-  padding: 0.8rem 0;
-  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 0;
+  border-bottom: 2px dashed var(--border-color);
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 1rem;
 }
 
 .roleItem::before {
@@ -249,19 +239,12 @@
   border-bottom: none;
 }
 
-.stepsSection {
-  padding: 7rem 0;
-  text-align: center;
-}
-
-.stepsSection h2 {
-  margin-bottom: 5rem;
-}
-
+/* ── CÓMO UNIRTE ── */
 .stepsGrid {
+  list-style: none;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 3rem;
+  gap: 2.4rem;
 }
 
 @media (min-width: 600px) {
@@ -278,23 +261,31 @@
 
 .step {
   background: var(--white);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   padding: 3rem 2rem;
-  box-shadow: var(--shadow-sm);
 }
 
 .stepNumber {
-  width: 5rem;
-  height: 5rem;
+  width: 5.6rem;
+  height: 5.6rem;
   border-radius: 50%;
   background: var(--primaryColor);
   color: var(--white);
-  font-size: 2rem;
-  font-weight: 700;
+  font-family: var(--fontHeading);
+  font-size: 2.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 2rem;
+  margin: 0 auto 1.8rem;
+  transform: rotate(-4deg);
+}
+
+.step:nth-child(4n + 2) .stepNumber {
+  background: var(--secondaryColor);
+  color: var(--dark);
+}
+.step:nth-child(4n + 3) .stepNumber {
+  background: var(--tertiaryColor);
 }
 
 .step h3 {
@@ -306,8 +297,9 @@
   font-size: 1.5rem;
 }
 
+/* ── CITA VOLUNTARIO ── */
 .quoteSection {
-  padding: 7rem 0;
+  padding: clamp(5rem, 9vw, 8rem) 0 0;
   display: grid;
   grid-template-columns: 1fr;
   gap: 4rem;
@@ -324,55 +316,51 @@
   background-image: url(/volunteer-quote.jpeg);
   background-size: cover;
   background-position: top;
-  height: 35rem;
+  height: 36rem;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  /* marco "dibujado" desplazado */
+  box-shadow: 1.2rem 1.2rem 0 -0.3rem var(--bg-light),
+    1.2rem 1.2rem 0 0 var(--secondaryColor);
 }
 
 .quoteIcon {
-  color: var(--primaryColor);
-  font-size: 5rem;
-  margin-bottom: 1rem;
-  line-height: 1;
+  width: 4.8rem;
+  height: 4.8rem;
+  color: var(--secondaryColor);
+  margin-bottom: 1.4rem;
 }
 
-.quoteWords h3 {
-  font-size: 2.2rem;
-  font-style: italic;
-  font-weight: 400;
+.quoteWords blockquote {
+  font-family: var(--fontHeading);
+  font-size: clamp(2.2rem, 3vw, 2.8rem);
+  line-height: 1.4;
+  color: var(--dark);
   margin-bottom: 2rem;
-  line-height: 1.5;
 }
 
-.quoteWords h4 {
-  font-size: 1.8rem;
-  color: var(--primaryColor);
-  margin-bottom: 0.3rem;
+.quoteWords figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
-.quoteWords p {
+.quoteWords figcaption strong {
+  font-family: var(--fontHeading);
+  font-size: 2rem;
+  color: var(--tertiaryColor);
+}
+
+.quoteWords figcaption span {
   font-size: 1.4rem;
+  color: var(--primaryDark);
 }
 
-.formSection {
-  padding: 7rem 0;
-  text-align: center;
-}
-
-.formSection h2 {
-  margin-bottom: 1rem;
-}
-
-.formSection > div > p {
-  margin-bottom: 4rem;
-  font-size: 1.6rem;
-}
-
+/* ── FORMULARIO ── */
 .form {
   background: var(--white);
+  border: 3px dashed var(--primaryColor);
   border-radius: var(--radius-lg);
-  padding: 4rem 3rem;
-  box-shadow: var(--shadow-md);
+  padding: clamp(2.4rem, 4vw, 4rem);
   max-width: 80rem;
   margin: 0 auto;
   text-align: left;
@@ -390,8 +378,7 @@
   }
 }
 
-.campo label,
-.campoFull label {
+.campo label {
   display: block;
   font-size: 1.4rem;
   font-weight: 600;
@@ -399,30 +386,28 @@
   margin-bottom: 0.6rem;
 }
 
-.campoFull {
-  grid-column: 1 / -1;
-}
-
 .input {
   width: 100%;
   padding: 1.2rem 1.6rem;
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  font-size: 1.5rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 1.6rem;
   font-family: var(--fontBody);
   color: var(--dark);
-  transition: border-color 0.2s ease;
-  background: var(--white);
+  background: var(--bg-light);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.input::placeholder {
+  color: var(--text-light);
 }
 
 .input:focus {
   outline: none;
   border-color: var(--primaryColor);
-}
-
-.textarea {
-  min-height: 12rem;
-  resize: vertical;
+  background: var(--white);
 }
 
 .submitRow {
@@ -435,11 +420,11 @@
   display: inline-block;
   background-color: var(--primaryColor);
   color: var(--white);
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 600;
   font-family: var(--fontBody);
   border-radius: var(--radius-sm);
-  padding: 0.9rem 2.4rem;
+  padding: 1.2rem 2.8rem;
   border: 2px solid var(--primaryColor);
   box-shadow: var(--shadow-sm);
   transition: all 0.3s ease;
@@ -450,6 +435,7 @@
   background-color: var(--primaryDark);
   border-color: var(--primaryDark);
   transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .submitBtn:disabled {
@@ -461,6 +447,42 @@
   text-align: center;
   padding: 3rem;
   font-size: 1.8rem;
-  color: var(--primaryColor);
+  color: var(--primaryDark);
   font-weight: 600;
+}
+
+/* ── CUPO LLENO ── */
+.fullCard {
+  border: 3px dashed var(--tertiaryColor);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2rem;
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+.fullIcon {
+  width: 6.4rem;
+  height: 6.4rem;
+  border-radius: 50%;
+  background: var(--tertiaryColor);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.6rem;
+}
+
+.fullCard h3 {
+  color: var(--tertiaryColor);
+}
+
+.fullCard p {
+  margin-bottom: 2rem;
+}
+
+.fullActions {
+  display: flex;
+  gap: 1.2rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }

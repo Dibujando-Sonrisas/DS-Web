@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Brigada } from "../../lib/db/brigadas";
 import { supabase } from "../../lib/supabase";
+import { CalendarDays, Camera, MapPin } from "lucide-react";
 import styles from "../../styles/pages/brigadas.module.css";
 
 function CameraIcon() {
@@ -229,6 +230,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                     key={b.id}
                     data-carousel-item="true"
                     className={`${styles.brigadaBtn}${activeId === b.id ? " " + styles.active : ""}`}
+                    aria-pressed={activeId === b.id}
                     onClick={() => handleBrigadaClick(b.id)}
                   >
                     <span className={styles.brigadaNum}>{b.codigo}</span>
@@ -279,17 +281,22 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                         {b.codigo} — {b.nombre}
                       </h3>
                       {b.descripcion && <p>{b.descripcion}</p>}
-                      <div className={styles.brigadaMeta}>
+                      <ul className={styles.brigadaMeta}>
                         {b.fecha_brigada && (
-                          <p className={styles.brigadaMetaItem}>
-                            Fecha: {new Date(b.fecha_brigada).toLocaleDateString("es-HN")}
-                          </p>
+                          <li className={styles.brigadaMetaItem}>
+                            <CalendarDays aria-hidden="true" />
+                            {new Date(b.fecha_brigada).toLocaleDateString("es-HN")}
+                          </li>
                         )}
                         {b.lugar && (
-                          <p className={styles.brigadaMetaItem}>{b.lugar}</p>
+                          <li className={styles.brigadaMetaItem}>
+                            <MapPin aria-hidden="true" />
+                            {b.lugar}
+                          </li>
                         )}
                         {bStatus && (
-                          <p className={styles.brigadaMetaItem}>
+                          <li className={styles.brigadaMetaItem}>
+                            <Camera aria-hidden="true" />
                             {bStatus === "loading"
                               ? "Cargando fotos…"
                               : bStatus === "error"
@@ -297,9 +304,9 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                                 : bStatus === "empty"
                                   ? "Fotos próximamente"
                                   : bStatus}
-                          </p>
+                          </li>
                         )}
-                      </div>
+                      </ul>
                     </div>
                   </div>
 
@@ -317,9 +324,11 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                         </div>
                       ) : (
                         bPhotos.map((url, i) => (
-                          <picture
+                          <button
+                            type="button"
                             key={url}
                             className={styles.galleryItem}
+                            aria-label={`Ampliar foto ${i + 1} de ${b.nombre}`}
                             onClick={() =>
                               setLightbox({ urls: bPhotos, index: i })
                             }
@@ -332,7 +341,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                               width={400}
                               height={400}
                             />
-                          </picture>
+                          </button>
                         ))
                       )}
                     </div>

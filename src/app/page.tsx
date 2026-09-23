@@ -72,7 +72,7 @@ export default async function Home() {
         <div className={styles.heroOverlay} aria-hidden="true" />
 
         <div className={`${styles.heroContent} container`}>
-          <h1 className={styles.heroHeading}>
+          <h1 className={`${styles.heroHeading} wordmark`}>
             Dibujando
             <span> Son</span>
             <span>ri</span>
