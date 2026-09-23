@@ -42,6 +42,10 @@
   margin-bottom: 1.6rem;
 }
 
+.tags:empty {
+  display: none;
+}
+
 .tag {
   display: inline-flex;
   align-items: center;
@@ -87,10 +91,14 @@
 
 /* ── TÍTULO Y DATOS ── */
 .title {
-  color: var(--primaryColor);
+  color: var(--dark);
   font-size: clamp(2.8rem, 4.5vw, 3.8rem);
   margin: 0;
   text-wrap: balance;
+}
+
+.title span {
+  color: var(--primaryColor);
 }
 
 .meta {

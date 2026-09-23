@@ -10,7 +10,7 @@ export default async function SinAccesoPage() {
   } = await supabase.auth.getUser();
 
   let userName = "";
-  let userEmail = user?.email || "";
+  const userEmail = user?.email || "";
 
   if (user) {
     const { data: profile } = await supabase

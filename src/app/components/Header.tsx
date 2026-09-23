@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -16,11 +16,9 @@ const NAV_LINKS = [
 
 export default function Header() {
   const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+  // El menú guarda la ruta donde se abrió: al navegar deja de coincidir y se cierra solo
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const mobileMenuOpen = menuPath === pathname;
 
   return (
     <header className={styles.header}>
@@ -59,29 +57,35 @@ export default function Header() {
         </div>
 
         <div className={styles.headerActions}>
-          <Link href="/auth/login" className={styles.headerButtonOutline}>
-            <UserRoundArrowLeft width={20} height={20} />
+          <Link
+            href="/auth/login"
+            className="btn-outline-blue btn-sm"
+            aria-label="Iniciar sesión"
+            title="Iniciar sesión"
+          >
+            <UserRoundArrowLeft aria-hidden="true" />
           </Link>
-          <Link href="/contacto" className={styles.headerButton}>
-            <Headset width={20} height={20} />
+          <Link
+            href="/contacto"
+            className="btn-primary btn-sm"
+            aria-label="Contacto"
+            title="Contacto"
+          >
+            <Headset aria-hidden="true" />
           </Link>
-          <Link href="/donar" className={styles.headerButton}>
-            <HeartHandshake width={20} height={20} />
+          <Link href="/donar" className="btn-primary btn-sm">
+            <HeartHandshake aria-hidden="true" />
             Donar
           </Link>
 
           <button
             type="button"
             className={styles.mobileMenuToggle}
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            onClick={() => setMenuPath(mobileMenuOpen ? null : pathname)}
             aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? (
-              <X />
-            ) : (
-              <Menu />
-            )}
+            {mobileMenuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -110,24 +114,24 @@ export default function Header() {
             <div className={styles.mobileNavButtons}>
               <Link
                 href="/auth/login"
-                className={styles.headerButtonOutline}
+                className="btn-outline-blue btn-sm"
                 aria-label="Iniciar sesión"
               >
-                <UserRoundArrowLeft />
+                <UserRoundArrowLeft aria-hidden="true" />
               </Link>
               <Link
                 href="/contacto"
-                className={styles.headerButton}
+                className="btn-primary btn-sm"
                 aria-label="Contacto"
               >
-                <Headset />
+                <Headset aria-hidden="true" />
               </Link>
               <Link
                 href="/donar"
-                className={styles.headerButton}
+                className="btn-primary btn-sm"
                 aria-label="Donar"
               >
-                <HeartHandshake />
+                <HeartHandshake aria-hidden="true" />
               </Link>
             </div>
           </nav>

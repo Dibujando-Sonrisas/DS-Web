@@ -9,7 +9,6 @@ import {
   Check,
   CircleAlert,
   ClipboardCheck,
-  Heart,
   LoaderCircle,
   LogIn,
   MapPin,
@@ -195,12 +194,8 @@ export default function InscripcionModal({
         {!submittedSuccess ? (
           <>
             <header className={styles.header}>
-              <span className={styles.badge}>
-                <Heart aria-hidden="true" />
-                Inscripción a brigada médica
-              </span>
               <h2 className={styles.title} id="modal-title">
-                {brigada.nombre}
+                Inscríbete a la brigada <span>{brigada.nombre}</span>
               </h2>
               <div className="crayons" aria-hidden="true">
                 <span />
@@ -225,7 +220,7 @@ export default function InscripcionModal({
 
             <div className={styles.body}>
               {generalError && (
-                <p className={`form-error ${styles.alertError}`} role="alert">
+                <p className="form-error form-alert" role="alert">
                   <CircleAlert aria-hidden="true" />
                   {generalError}
                 </p>

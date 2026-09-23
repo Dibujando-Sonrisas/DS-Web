@@ -138,9 +138,6 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
     });
   }
 
-  const visible = brigadas.length > 0 ? getVisibleCount() : 4;
-  const maxIdx = Math.max(0, brigadas.length - visible);
-
   function handleBrigadaClick(id: string) {
     setActiveId(id);
     setTimeout(() => {

@@ -89,28 +89,15 @@
   padding-right: 6.4rem;
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--dark);
-  background: var(--secondaryColor);
-  border-radius: 99rem;
-  padding: 0.4rem 1.2rem;
-}
-
-.badge svg {
-  width: 1.4rem;
-  height: 1.4rem;
-}
-
 .title {
   color: var(--white);
-  font-size: clamp(2.6rem, 4vw, 3.2rem);
-  margin: 1.4rem 0 0;
+  font-size: clamp(2.4rem, 4vw, 3rem);
+  margin: 0;
   text-wrap: balance;
+}
+
+.title span {
+  color: var(--secondaryColor);
 }
 
 .header :global(.crayons) {
@@ -140,13 +127,6 @@
 /* ── FORMULARIO ── */
 .body {
   padding: clamp(2rem, 4vw, 3.2rem);
-}
-
-.alertError {
-  background: #fdecea;
-  border-radius: var(--radius-sm);
-  padding: 1.2rem 1.6rem;
-  margin: 0 0 2rem;
 }
 
 .fieldError {

@@ -115,36 +115,38 @@
   margin-bottom: 2.4rem;
 }
 
-/* ── COMUNIDAD DE WHATSAPP ── */
+/* ── COMUNIDAD DE WHATSAPP ──
+   banda blanca: el footer ya es verde oscuro y se fundirían */
 .whatsappSection {
-  background: var(--primaryDark);
+  background: var(--white);
   padding: clamp(5rem, 8vw, 7rem) 2rem;
   text-align: center;
 }
 
 .whatsappSection h2 {
-  color: var(--secondaryColor);
+  color: var(--primaryColor);
   margin-bottom: 1rem;
   text-wrap: balance;
 }
 
 .whatsappSection p {
-  color: rgba(255, 255, 255, 0.9);
   font-size: 1.8rem;
   max-width: 60rem;
   margin: 0 auto 3rem;
 }
 
+/* verde oscuro de WhatsApp: 7.6:1 con blanco */
 .btnWhatsapp {
   display: inline-flex;
   align-items: center;
   gap: 1rem;
-  background: var(--white);
-  color: #075e54;
+  background: #075e54;
+  color: var(--white);
   font-size: 1.7rem;
   font-weight: 700;
   padding: 1.4rem 3.2rem;
   border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -156,9 +158,5 @@
 
 .btnWhatsapp:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-}
-
-.whatsappSection :focus-visible {
-  outline-color: var(--secondaryColor);
+  box-shadow: var(--shadow-md);
 }

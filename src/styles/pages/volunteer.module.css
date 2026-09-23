@@ -203,15 +203,24 @@
 }
 
 .quoteImage {
+  position: relative;
+  isolation: isolate;
   background-image: url(/volunteer-quote.jpeg);
   background-size: cover;
   background-position: top;
   height: 36rem;
   border-radius: var(--radius-lg);
-  /* marco "dibujado" desplazado */
-  box-shadow:
-    1.2rem 1.2rem 0 -0.3rem var(--bg-light),
-    1.2rem 1.2rem 0 0 var(--secondaryColor);
+  box-shadow: var(--shadow-md);
+}
+
+/* marco punteado desplazado, como trazado a mano detrás de la foto */
+.quoteImage::before {
+  content: "";
+  position: absolute;
+  inset: 1.4rem -1.4rem -1.4rem 1.4rem;
+  z-index: -1;
+  border: 3px dashed var(--secondaryColor);
+  border-radius: var(--radius-lg);
 }
 
 .quoteIcon {

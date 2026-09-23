@@ -14,7 +14,6 @@ import {
   FileText,
   Lock,
   MapPin,
-  Stethoscope,
   UserPlus,
 } from "lucide-react";
 
@@ -52,15 +51,11 @@ export default function BrigadaBanner({ brigada, cuposInfo }: BrigadaBannerProps
 
   return (
     <>
-      <section className={styles.banner} aria-labelledby="proxima-brigada-heading">
+      <section className={styles.banner} aria-label="Próxima brigada médica">
         <div className={`${styles.card} card-soft`}>
           <div className={styles.info}>
+            {/* solo el estado de inscripción: el título habla por sí mismo */}
             <div className={styles.tags}>
-              <span className={`${styles.tag} tone-primary`}>
-                <Stethoscope aria-hidden="true" />
-                Próxima brigada médica
-              </span>
-
               {canRegister && (
                 <span className={`${styles.tag} tone-primary`}>
                   <span className={styles.liveDot} aria-hidden="true" />
@@ -84,8 +79,8 @@ export default function BrigadaBanner({ brigada, cuposInfo }: BrigadaBannerProps
               )}
             </div>
 
-            <h2 id="proxima-brigada-heading" className={styles.title}>
-              {brigada.nombre}
+            <h2 className={styles.title}>
+              Próxima brigada: <span>{brigada.nombre}</span>
             </h2>
             <div className="crayons" aria-hidden="true">
               <span />

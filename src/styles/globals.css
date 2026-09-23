@@ -15,8 +15,13 @@
   /* Variante oscura del amarillo para TEXTO: el amarillo de marca no llega a
      contraste legible sobre fondos claros, úsalo solo en bordes y rellenos. */
   --secondaryDark: #9a6200;
+  /* Verde y rojo con contraste AA para texto pequeño y fondos de botón
+     (el verde de marca queda en 4.1:1 con blanco). */
+  --primaryStrong: #087a76;
+  --tertiaryDark: #b03a30;
   --accentColor: #1abc9c;
-  --gray: #6b7280;
+  /* texto secundario: 5.7:1 sobre el crema (#6b7280 quedaba en 4.4:1) */
+  --gray: #596170;
   --grayLight: #9ca3af;
   --darkWhite: #dfe9f3;
   --black: #000000;
@@ -36,6 +41,9 @@
 }
 
 html {
+  accent-color: var(--primaryStrong);
+  caret-color: var(--primaryStrong);
+  scrollbar-color: var(--primaryColor) var(--bg-light);
   font-size: 62.5%;
   box-sizing: border-box;
   scroll-behavior: smooth;
@@ -73,6 +81,13 @@ p {
 a {
   text-decoration: none;
   color: inherit;
+  text-underline-offset: 0.25em;
+  text-decoration-thickness: 2px;
+}
+
+::selection {
+  background: var(--secondaryColor);
+  color: var(--dark);
 }
 
 h1,
@@ -135,11 +150,16 @@ ul {
   font-family: var(--fontBody);
   border-radius: var(--radius-sm);
   padding: 1.2rem 2.8rem;
-  border: 2px solid var(--primaryColor);
+  border: 2px solid var(--primaryStrong);
   background-color: transparent;
-  color: var(--primaryColor);
+  color: var(--primaryStrong);
   transition: all 0.3s ease;
   cursor: pointer;
+}
+
+.btn-sm {
+  font-size: 1.5rem;
+  padding: 0.7rem 2rem;
 }
 
 .btn-primary svg,
@@ -151,7 +171,7 @@ ul {
 }
 
 .btn-primary {
-  background-color: var(--primaryColor);
+  background-color: var(--primaryStrong);
   color: var(--white);
   box-shadow: var(--shadow-sm);
 }
@@ -185,12 +205,12 @@ ul {
 }
 .btn-outline:hover {
   background-color: var(--white);
-  color: var(--primaryColor);
+  color: var(--primaryStrong);
   transform: translateY(-2px);
 }
 
 .btn-outline-blue:hover {
-  background-color: var(--primaryColor);
+  background-color: var(--primaryStrong);
   color: var(--white);
   transform: translateY(-2px);
 }
@@ -208,26 +228,30 @@ ul {
 }
 
 /* ── TONOS DE MARCA ──
-   Cada componente pinta con --tone (bordes, rellenos), --tone-text (texto
-   legible sobre claro) y --tone-on (contenido sobre el relleno).
+   Cada componente pinta con --tone (bordes, rellenos), --tone-text (títulos
+   sobre claro), --tone-ink (texto pequeño, AA) y --tone-on (contenido sobre
+   el relleno).
    .tone-rotate reparte los tres colores entre sus hijos, como "Son·ri·sas". */
 :root,
 .tone-primary,
 .tone-rotate > :nth-child(3n + 1) {
   --tone: var(--primaryColor);
   --tone-text: var(--primaryColor);
+  --tone-ink: var(--primaryStrong);
   --tone-on: var(--white);
 }
 .tone-secondary,
 .tone-rotate > :nth-child(3n + 2) {
   --tone: var(--secondaryColor);
   --tone-text: var(--secondaryDark);
+  --tone-ink: var(--secondaryDark);
   --tone-on: var(--dark);
 }
 .tone-tertiary,
 .tone-rotate > :nth-child(3n) {
   --tone: var(--tertiaryColor);
   --tone-text: var(--tertiaryColor);
+  --tone-ink: var(--tertiaryDark);
   --tone-on: var(--white);
 }
 
@@ -285,7 +309,7 @@ ul {
   border-radius: var(--radius-lg);
   padding: 0.6rem 1.8rem;
   font-size: 1.5rem;
-  color: var(--tone-text);
+  color: var(--tone-ink);
 }
 .chip svg {
   width: 2rem;
@@ -380,8 +404,15 @@ ul {
     background-color 0.2s ease;
 }
 .form-input::placeholder {
-  color: var(--text-light);
+  color: var(--gray);
 }
+/* el autocompletado del navegador pinta azul por defecto: lo llevamos al crema */
+.form-input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 100rem var(--bg-light) inset;
+  -webkit-text-fill-color: var(--dark);
+  caret-color: var(--primaryStrong);
+}
+
 .form-input:focus {
   outline: none;
   border-color: var(--primaryColor);
@@ -405,6 +436,25 @@ textarea.form-input {
   color: #c53030;
   font-size: 1.4rem;
   margin-top: 1rem;
+}
+
+/* aviso de error general, arriba del formulario */
+.form-alert {
+  background: #fdecea;
+  border-radius: var(--radius-sm);
+  padding: 1.2rem 1.6rem;
+  margin: 0 0 2rem;
+}
+
+.form-alert svg {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+}
+
+/* asterisco de campo obligatorio (el input ya lleva required) */
+.form-required {
+  color: var(--tertiaryDark);
 }
 
 .form-success {
