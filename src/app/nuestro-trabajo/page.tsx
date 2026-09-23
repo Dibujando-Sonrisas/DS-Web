@@ -3,9 +3,19 @@ import Image from "next/image";
 import Link from "next/link";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import PageHero from "../components/PageHero";
 import { getBrigadas } from "../../lib/db/brigadas";
 import styles from "../../styles/pages/our-work.module.css";
-import { BriefcaseMedical, Package, ShieldPlus, Smile } from "lucide-react";
+import {
+  BriefcaseMedical,
+  HeartPulse,
+  MapPin,
+  Package,
+  Quote,
+  ShieldPlus,
+  Smile,
+  Users,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Nuestro Trabajo | Dibujando Sonrisas",
@@ -21,33 +31,25 @@ const services = [
     id: "odontologia",
     title: "Atención Odontológica",
     desc: "Extracciones, limpiezas dentales y tratamientos para restaurar la salud bucal de nuestros pacientes.",
-    icon: (
-      <Smile aria-hidden="true" />
-    ),
+    icon: <Smile />,
   },
   {
     id: "medicina",
     title: "Medicina General",
     desc: "Consultas generales, chequeos y tratamientos para enfermedades comunes en todas las edades.",
-    icon: (
-      <BriefcaseMedical aria-hidden="true" />
-    ),
+    icon: <BriefcaseMedical />,
   },
   {
     id: "prevencion",
     title: "Prevención y Educación",
     desc: "Educamos a las comunidades en higiene, nutrición y prevención de enfermedades para una salud duradera.",
-    icon: (
-      <ShieldPlus aria-hidden="true" />
-    ),
+    icon: <ShieldPlus />,
   },
   {
     id: "donaciones",
     title: "Donación de Insumos",
     desc: "Entregamos medicamentos e insumos médicos a hospitales públicos y asilos de ancianos.",
-    icon: (
-      <Package aria-hidden="true" />
-    ),
+    icon: <Package />,
   },
 ];
 
@@ -84,70 +86,83 @@ const stories = [
 export default async function NuestroTrabajo() {
   const { data: brigadas } = await getBrigadas();
 
+  const stats = [
+    { label: "Pacientes Atendidos", value: "2,000+", icon: <HeartPulse /> },
+    { label: "Voluntarios Participantes", value: "200+", icon: <Users /> },
+    {
+      label: "Comunidades Servidas",
+      value: `${brigadas?.length ?? 0}+`,
+      icon: <MapPin />,
+    },
+  ];
+
   return (
-    <div className={styles.pageWrapper}>
+    <>
       <Header />
 
-      {/* ── HERO ── */}
-      <div className={styles.hero}>
-        <div className={styles.inner}>
-          <h1>Transformando Vidas, Una Sonrisa a la Vez</h1>
-          <p className={styles.heroSub}>
-            Descubre el impacto que nuestras brigadas médico-odontológicas
-            tienen en comunidades que lo necesitan
-          </p>
-          <div className={styles.heroButtons}>
-            <Link href="/voluntariado" className={styles.btnSolid}>
-              Ser Voluntario
-            </Link>
-            <Link href="/donar" className={styles.btnOutline}>
-              Donar Ahora
-            </Link>
-          </div>
-        </div>
-      </div>
+      <PageHero
+        image="/new-OurWork-hero.png"
+        title={
+          <>
+            Transformando Vidas, <em>Una Sonrisa</em> a la Vez
+          </>
+        }
+        subtitle="Descubre el impacto que nuestras brigadas médico-odontológicas tienen en las comunidades que más lo necesitan."
+      >
+        <Link href="/voluntariado" className="btn-primary">
+          Ser Voluntario
+        </Link>
+        <Link href="/donar" className="btn-outline">
+          Donar Ahora
+        </Link>
+      </PageHero>
 
       <main>
         {/* ── NÚMEROS ── */}
         <section
-          className={styles.numbersSection}
+          className={`${styles.numbersSection} section-y`}
           aria-labelledby="numeros-heading"
         >
-          <div className={styles.inner}>
+          <div className="container">
             <h2 id="numeros-heading">Nuestro Impacto en Números</h2>
-            <div className={styles.numbersGrid}>
-              <div className={styles.statCard}>
-                <h4>Pacientes Atendidos</h4>
-                <p>2,000+</p>
-              </div>
-              <div className={styles.statCard}>
-                <h4>Voluntarios Participantes</h4>
-                <p>200+</p>
-              </div>
-              <div className={styles.statCard}>
-                <h4>Comunidades Servidas</h4>
-                <p>{brigadas?.length ?? 0}+</p>
-              </div>
-            </div>
+            <ul className={`${styles.numbersGrid} tone-rotate`}>
+              {stats.map((stat) => (
+                <li
+                  key={stat.label}
+                  className={`${styles.statCard} card-drawn lift`}
+                >
+                  <div className="icon-circle" aria-hidden="true">
+                    {stat.icon}
+                  </div>
+                  <p className={styles.statValue}>{stat.value}</p>
+                  <p className={styles.statLabel}>{stat.label}</p>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
         {/* ── SERVICIOS ── */}
         <section
-          className={styles.servicesSection}
+          className={`${styles.servicesSection} section-y`}
           aria-labelledby="servicios-heading"
         >
-          <div className={styles.inner}>
+          <div className="container">
             <h2 id="servicios-heading">Servicios Médicos que Brindamos</h2>
             <div className={`${styles.servicesGrid} tone-rotate`}>
               {services.map((s) => (
-                <div key={s.id} className={styles.serviceCard}>
-                  <div className="icon-circle icon-circle-sm">{s.icon}</div>
-                  <div className={styles.serviceText}>
-                    <h4>{s.title}</h4>
+                <article
+                  key={s.id}
+                  className={`${styles.serviceCard} card-soft lift`}
+                >
+                  <div className="icon-circle icon-circle-sm" aria-hidden="true">
+                    {s.icon}
+                  </div>
+                  <div>
+                    <h3>{s.title}</h3>
                     <p>{s.desc}</p>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </div>
@@ -155,26 +170,22 @@ export default async function NuestroTrabajo() {
 
         {/* ── GALERÍA ── */}
         <section
-          className={styles.actionSection}
+          className={`${styles.actionSection} section-y`}
           aria-labelledby="galeria-heading"
         >
-          <div className={styles.inner}>
+          <div className="container">
             <h2 id="galeria-heading">Nuestras Brigadas en Acción</h2>
             <div className={styles.actionGrid}>
               {actionPhotos.map((photo) => (
-                <div key={photo.src} className={styles.actionCard}>
+                <figure key={photo.src} className={`${styles.actionCard} card-soft`}>
                   <Image
                     src={photo.src}
                     alt={photo.alt}
                     width={600}
                     height={450}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
+                    sizes="(min-width: 768px) 33vw, 50vw"
                   />
-                </div>
+                </figure>
               ))}
             </div>
           </div>
@@ -182,35 +193,30 @@ export default async function NuestroTrabajo() {
 
         {/* ── HISTORIAS ── */}
         <section
-          className={styles.storiesSection}
+          className={`${styles.storiesSection} section-y`}
           aria-labelledby="historias-heading"
         >
-          <div className={styles.inner}>
+          <div className="container">
             <h2 id="historias-heading">Historias de Esperanza</h2>
-            <div className={styles.storiesGrid}>
+            <div className={`${styles.storiesGrid} tone-rotate`}>
               {stories.map((s) => (
-                <article key={s.id} className={styles.storyCard}>
-                  <p>{s.quote}</p>
-                  <div className={styles.storyRow}>
-                    <div className={styles.storyImg}>
-                      <Image
-                        src={s.img}
-                        alt={s.name}
-                        width={50}
-                        height={50}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    </div>
-                    <div className={styles.storyText}>
-                      <h4>{s.name}</h4>
-                      <p>{s.location}</p>
-                    </div>
-                  </div>
-                </article>
+                <figure key={s.id} className={`${styles.storyCard} card-drawn`}>
+                  <Quote className={styles.quoteIcon} aria-hidden="true" />
+                  <blockquote>{s.quote}</blockquote>
+                  <figcaption className={styles.storyRow}>
+                    <Image
+                      className={styles.storyImg}
+                      src={s.img}
+                      alt={s.name}
+                      width={112}
+                      height={112}
+                    />
+                    <span>
+                      <strong>{s.name}</strong>
+                      <span>{s.location}</span>
+                    </span>
+                  </figcaption>
+                </figure>
               ))}
             </div>
           </div>
@@ -218,6 +224,6 @@ export default async function NuestroTrabajo() {
       </main>
 
       <Footer />
-    </div>
+    </>
   );
 }
