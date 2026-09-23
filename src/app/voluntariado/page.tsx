@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import type { Brigada } from "@/lib/db/brigadas";
 import VolunteerForm from "./VolunteerForm";
-import PublicBrigadaBanner from "../administracion/brigadas/components/PublicBrigadaBanner";
+import BrigadaBanner from "../components/BrigadaBanner";
 import styles from "../../styles/pages/volunteer.module.css";
 
 export const metadata: Metadata = {
@@ -89,7 +89,7 @@ export default async function Voluntariado() {
             Ser Voluntario
           </a>
         ) : (
-          <span className={`btn-primary ${styles.btnDisabled}`}>
+          <span className="btn-primary btn-disabled">
             {isCupoLleno && <Lock size={16} aria-hidden="true" />}
             {isCupoLleno ? "Cupo Máximo Alcanzado" : "Inscripciones Cerradas"}
           </span>
@@ -101,17 +101,12 @@ export default async function Voluntariado() {
 
       {/* ── MAIN ── */}
       <main className={styles.volunteerMain}>
-        <div className="container">
-          {/* ── BANNER DINÁMICO DE PRÓXIMA BRIGADA ── */}
-          {!isClosed && activeBrigada && (
-            <div className={styles.bannerWrap}>
-              <PublicBrigadaBanner
-                brigada={activeBrigada as Brigada}
-                cuposInfo={cuposInfo}
-              />
-            </div>
-          )}
+        {/* ── BANNER DINÁMICO DE PRÓXIMA BRIGADA ── */}
+        {!isClosed && activeBrigada && (
+          <BrigadaBanner brigada={activeBrigada as Brigada} cuposInfo={cuposInfo} />
+        )}
 
+        <div className="container">
           {/* ── ¿POR QUÉ SER VOLUNTARIO? ── */}
           <section className={styles.whySection} aria-labelledby="why-heading">
             <h2 id="why-heading">¿Por Qué Ser Voluntario con Nosotros?</h2>

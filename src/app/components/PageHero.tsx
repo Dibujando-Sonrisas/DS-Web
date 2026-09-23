@@ -15,7 +15,7 @@ export default function PageHero({ image, title, subtitle, children }: PageHeroP
     <div className={styles.hero} style={{ backgroundImage: `url(${image})` }}>
       <div className="container">
         <h1 className={styles.title}>{title}</h1>
-        <div className={styles.crayons} aria-hidden="true">
+        <div className="crayons" aria-hidden="true">
           <span />
           <span />
           <span />

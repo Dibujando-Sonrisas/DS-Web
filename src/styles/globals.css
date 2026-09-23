@@ -166,6 +166,18 @@ ul {
   cursor: not-allowed;
 }
 
+/* estado no disponible (cupo lleno, inscripciones cerradas) */
+.btn-disabled,
+.btn-disabled:hover:not(:disabled) {
+  opacity: 0.85;
+  cursor: not-allowed;
+  color: var(--white);
+  background-color: #64748b;
+  border-color: #64748b;
+  transform: none;
+  box-shadow: none;
+}
+
 /* sobre fondos oscuros (hero, bandas de color) */
 .btn-outline {
   color: var(--white);
@@ -280,6 +292,32 @@ ul {
   height: 2rem;
   color: var(--tone);
   flex-shrink: 0;
+}
+
+/* Tres trazos de crayón con los colores de marca */
+.crayons {
+  display: flex;
+  gap: 0.6rem;
+  margin: 2rem 0;
+  transform: rotate(-2deg);
+}
+
+.crayons span {
+  height: 0.6rem;
+  border-radius: 99rem;
+}
+
+.crayons span:nth-child(1) {
+  width: 4.8rem;
+  background: var(--primaryColor);
+}
+.crayons span:nth-child(2) {
+  width: 3rem;
+  background: var(--secondaryColor);
+}
+.crayons span:nth-child(3) {
+  width: 1.6rem;
+  background: var(--tertiaryColor);
 }
 
 .lift {

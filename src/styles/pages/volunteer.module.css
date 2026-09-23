@@ -5,23 +5,8 @@
    de PageHero.
 ===================================================== */
 
-.btnDisabled,
-.btnDisabled:hover:not(:disabled) {
-  opacity: 0.85;
-  cursor: not-allowed;
-  background-color: #64748b;
-  border-color: #64748b;
-  transform: none;
-}
-
 .volunteerMain {
   padding-bottom: 6rem;
-}
-
-.bannerWrap {
-  margin-top: 4rem;
-  display: flex;
-  justify-content: center;
 }
 
 /* ── ENCABEZADOS DE SECCIÓN: rotan por los colores de marca ── */

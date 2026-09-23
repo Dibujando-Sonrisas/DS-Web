@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import HomeBrigadaBanner, { CuposInfo } from "./components/HomeBrigadaBanner";
+import BrigadaBanner, { CuposInfo } from "./components/BrigadaBanner";
 import type { Brigada } from "@/lib/db/brigadas";
 import styles from "../styles/pages/home.module.css";
 import { HeartHandshake } from "lucide-react";
@@ -94,7 +94,7 @@ export default async function Home() {
       </section>
 
       {activeBrigada && (
-        <HomeBrigadaBanner brigada={activeBrigada} cuposInfo={cuposInfo} />
+        <BrigadaBanner brigada={activeBrigada} cuposInfo={cuposInfo} />
       )}
 
       <main className={`${styles.main}`}>

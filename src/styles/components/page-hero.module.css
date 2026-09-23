@@ -31,32 +31,6 @@
   color: var(--secondaryColor);
 }
 
-/* Tres trazos de crayón con los colores de marca */
-.crayons {
-  display: flex;
-  gap: 0.6rem;
-  margin: 2rem 0;
-  transform: rotate(-2deg);
-}
-
-.crayons span {
-  height: 0.6rem;
-  border-radius: 99rem;
-}
-
-.crayons span:nth-child(1) {
-  width: 4.8rem;
-  background: var(--primaryColor);
-}
-.crayons span:nth-child(2) {
-  width: 3rem;
-  background: var(--secondaryColor);
-}
-.crayons span:nth-child(3) {
-  width: 1.6rem;
-  background: var(--tertiaryColor);
-}
-
 .subtitle {
   color: rgba(255, 255, 255, 0.92);
   font-size: clamp(1.7rem, 2.2vw, 2rem);
