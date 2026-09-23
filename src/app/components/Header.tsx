@@ -5,8 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import styles from "../../styles/components/header.module.css";
-
-import { HeartHandshake, UserRoundArrowLeft, Headset } from "lucide-react";
+import { Headset, HeartHandshake, Menu, UserRoundArrowLeft, X } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/sobre-nosotros", label: "Nosotros" },
@@ -79,34 +78,9 @@ export default function Header() {
             aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? (
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <X />
             ) : (
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
+              <Menu />
             )}
           </button>
         </div>

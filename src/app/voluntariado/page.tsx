@@ -6,6 +6,7 @@ import Footer from "../components/Footer";
 import PageHero from "../components/PageHero";
 import {
   BriefcaseMedical,
+  Check,
   Globe,
   Handshake,
   Heart,
@@ -118,9 +119,9 @@ export default async function Voluntariado() {
               Crece como profesional mientras impactas la salud de Honduras de
               forma tangible.
             </p>
-            <div className={styles.whyCards}>
-              <article className={styles.whyCard}>
-                <div className={styles.circle} aria-hidden="true">
+            <div className={`${styles.whyCards} tone-rotate`}>
+              <article className={`${styles.whyCard} card-drawn lift`}>
+                <div className="icon-circle" aria-hidden="true">
                   <BriefcaseMedical />
                 </div>
                 <h3>Crecimiento Profesional</h3>
@@ -130,8 +131,8 @@ export default async function Voluntariado() {
                 </p>
               </article>
 
-              <article className={styles.whyCard}>
-                <div className={styles.circle} aria-hidden="true">
+              <article className={`${styles.whyCard} card-drawn lift`}>
+                <div className="icon-circle" aria-hidden="true">
                   <Globe />
                 </div>
                 <h3>Impacto Inmediato</h3>
@@ -141,8 +142,8 @@ export default async function Voluntariado() {
                 </p>
               </article>
 
-              <article className={styles.whyCard}>
-                <div className={styles.circle} aria-hidden="true">
+              <article className={`${styles.whyCard} card-drawn lift`}>
+                <div className="icon-circle" aria-hidden="true">
                   <Heart />
                 </div>
                 <h3>Servicio con Propósito</h3>
@@ -165,45 +166,57 @@ export default async function Voluntariado() {
               apoyo para hacer exitosas nuestras misiones.
             </p>
             <div className={styles.rolesGrid}>
-              <article className={styles.roleCard}>
+              <article className={`${styles.roleCard} card-soft tone-primary`}>
                 <div className={styles.roleImg1} aria-hidden="true" />
                 <div className={styles.roleName}>
-                  <span className={styles.roleIcon} aria-hidden="true">
+                  <span className="icon-circle icon-circle-sm" aria-hidden="true">
                     <Stethoscope />
                   </span>
                   <h3>Profesionales de Salud</h3>
                 </div>
                 <ul>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Médicos Generales y Especialistas
                   </li>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Odontólogos y Asistentes Dentales
                   </li>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Enfermeros y Técnicos en Salud
                   </li>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Estudiantes de Medicina y Odontología
                   </li>
                 </ul>
               </article>
 
-              <article className={styles.roleCard}>
+              <article className={`${styles.roleCard} card-soft tone-tertiary`}>
                 <div className={styles.roleImg2} aria-hidden="true" />
                 <div className={styles.roleName}>
-                  <span className={styles.roleIcon} aria-hidden="true">
+                  <span className="icon-circle icon-circle-sm" aria-hidden="true">
                     <Handshake />
                   </span>
                   <h3>Apoyo y Logística</h3>
                 </div>
                 <ul>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Coordinadores de Logística
                   </li>
-                  <li className={styles.roleItem}>Personal de Apoyo General</li>
-                  <li className={styles.roleItem}>Evangelistas y Oración</li>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
+                    Personal de Apoyo General
+                  </li>
+                  <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
+                    Evangelistas y Oración
+                  </li>
+                  <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Documentación y Fotografía
                   </li>
                 </ul>
@@ -217,9 +230,9 @@ export default async function Voluntariado() {
             aria-labelledby="steps-heading"
           >
             <h2 id="steps-heading">¿Cómo Unirte?</h2>
-            <ol className={styles.stepsGrid}>
-              <li className={styles.step}>
-                <div className={styles.stepNumber} aria-hidden="true">
+            <ol className={`${styles.stepsGrid} tone-rotate`}>
+              <li className={`${styles.step} card-soft`}>
+                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
                   1
                 </div>
                 <h3>Aplica en Línea</h3>
@@ -227,22 +240,22 @@ export default async function Voluntariado() {
                   Llena el formulario de abajo con tus datos y área de interés.
                 </p>
               </li>
-              <li className={styles.step}>
-                <div className={styles.stepNumber} aria-hidden="true">
+              <li className={`${styles.step} card-soft`}>
+                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
                   2
                 </div>
                 <h3>Entrevista</h3>
                 <p>Una breve llamada para conocerte y alinear expectativas.</p>
               </li>
-              <li className={styles.step}>
-                <div className={styles.stepNumber} aria-hidden="true">
+              <li className={`${styles.step} card-soft`}>
+                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
                   3
                 </div>
                 <h3>Preparación</h3>
                 <p>Te informamos sobre la próxima brigada y qué llevar.</p>
               </li>
-              <li className={styles.step}>
-                <div className={styles.stepNumber} aria-hidden="true">
+              <li className={`${styles.step} card-soft`}>
+                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
                   4
                 </div>
                 <h3>¡A Servir!</h3>
@@ -305,11 +318,11 @@ export default async function Voluntariado() {
               <VolunteerForm activeBrigadaId={activeBrigada.id} />
             )}
             {isCupoLleno && (
-              <div className={styles.fullCard}>
-                <div className={styles.fullIcon} aria-hidden="true">
+              <div className={`${styles.fullCard} card-drawn tone-tertiary`}>
+                <div className={`${styles.fullIcon} icon-circle`} aria-hidden="true">
                   <Lock />
                 </div>
-                <h3>Cupo de Voluntarios Completo</h3>
+                <h3 className="tone-text">Cupo de Voluntarios Completo</h3>
                 <p>
                   Esta brigada médica ha alcanzado el número máximo de
                   participantes. Puedes seguir apoyando nuestra labor donando

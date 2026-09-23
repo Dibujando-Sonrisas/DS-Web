@@ -1,12 +1,8 @@
 /* =====================================================
    DONATE — donate.module.css
-   Estilos exclusivos para la página /donar
-   El hero vive en components/PageHero.
+   Solo el layout propio de /donar. Tarjetas, íconos, chips
+   y tonos vienen de globals.css; el hero de PageHero.
 ===================================================== */
-
-.main {
-  padding: clamp(5rem, 9vw, 8rem) 0;
-}
 
 /* ── INTRO ── */
 .intro {
@@ -44,39 +40,17 @@
 }
 
 .altCard {
-  border: 3px dashed var(--primaryColor);
-  border-radius: var(--radius-lg);
-  padding: 3rem 2.4rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.2rem;
-  transition: transform 0.3s ease;
-}
-
-.altIcon {
-  width: 6rem;
-  height: 6rem;
-  border-radius: 50%;
-  background: var(--primaryColor);
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-bottom: 0.6rem;
-}
-
-.altIcon svg {
-  width: 2.6rem;
-  height: 2.6rem;
 }
 
 .altCard h3 {
   font-size: 2.2rem;
-  color: var(--primaryColor);
-  margin: 0;
+  color: var(--tone-text);
+  margin: 0.6rem 0 0;
 }
 
 .altCard p {
@@ -88,33 +62,6 @@
 /* el botón queda siempre al pie de la tarjeta */
 .altCard > a {
   margin-top: auto;
-}
-
-/* Cada tarjeta toma un color de marca, como en "Son·ri·sas" */
-.altCard:nth-child(4n + 2) {
-  border-color: var(--secondaryColor);
-}
-.altCard:nth-child(4n + 2) .altIcon {
-  background: var(--secondaryColor);
-  color: var(--dark);
-}
-.altCard:nth-child(4n + 2) h3 {
-  color: var(--secondaryDark);
-}
-.altCard:nth-child(4n + 3) {
-  border-color: var(--tertiaryColor);
-}
-.altCard:nth-child(4n + 3) .altIcon {
-  background: var(--tertiaryColor);
-}
-.altCard:nth-child(4n + 3) h3 {
-  color: var(--tertiaryColor);
-}
-
-@media (hover: hover) {
-  .altCard:hover {
-    transform: translateY(-4px);
-  }
 }
 
 /* ── IMPACTO ── */
@@ -138,32 +85,6 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 1.2rem;
-}
-
-.impactItem {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  padding: 0.8rem 2rem;
-  font-size: 1.5rem;
-  color: var(--primaryColor);
-}
-
-.impactItem svg {
-  flex-shrink: 0;
-}
-
-/* texto en amarillo oscuro (contraste); el ícono conserva el amarillo de marca */
-.impactItem:nth-child(2) {
-  color: var(--secondaryDark);
-}
-.impactItem:nth-child(2) svg {
-  color: var(--secondaryColor);
-}
-.impactItem:nth-child(3) {
-  color: var(--tertiaryColor);
 }
 
 /* ── PRÓXIMAMENTE ── */

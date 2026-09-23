@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import styles from "@/styles/components/inscripcion-modal.module.css";
+import { Calendar, Check, CircleAlert, Heart, Loader, LoaderCircle, LogIn, MapPin, UserPlus, X } from "lucide-react";
 
 export const AREAS_INTERES_LIST = [
   "Registro",
@@ -176,40 +177,14 @@ export default function InscripcionModal({
           onClick={onClose}
           aria-label="Cerrar modal"
         >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <X size={18} strokeWidth={2.5} aria-hidden="true" />
         </button>
 
         {!submittedSuccess ? (
           <>
             <div className={styles.header}>
               <span className={styles.badge}>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ verticalAlign: "middle", marginRight: "6px" }}
-                  aria-hidden="true"
-                >
-                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-                </svg>
+                <Heart size={14} style={{ verticalAlign: "middle", marginRight: "6px" }} aria-hidden="true" />
                 Inscripción a Brigada Médica
               </span>
               <h2 className={styles.title} id="modal-title">
@@ -218,21 +193,13 @@ export default function InscripcionModal({
               <p className={styles.subtitle} style={{ display: "flex", alignItems: "center", gap: "1.2rem", flexWrap: "wrap" }}>
                 {brigada.lugar && (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
+                    <MapPin size={15} aria-hidden="true" />
                     {brigada.lugar}
                   </span>
                 )}
                 {brigada.fecha_brigada && (
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
+                    <Calendar size={15} aria-hidden="true" />
                     {formatDate(brigada.fecha_brigada)}
                   </span>
                 )}
@@ -242,21 +209,7 @@ export default function InscripcionModal({
             <div className={styles.body}>
               {generalError && (
                 <div className={styles.alertError} role="alert">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
+                  <CircleAlert size={20} />
                   <span>{generalError}</span>
                 </div>
               )}
@@ -404,19 +357,7 @@ export default function InscripcionModal({
                   >
                     {loading ? (
                       <>
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          style={{ animation: "spin 1s linear infinite" }}
-                        >
-                          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                        </svg>
+                        <LoaderCircle size={16} style={{ animation: "spin 1s linear infinite" }} />
                         Enviando solicitud...
                       </>
                     ) : (
@@ -431,19 +372,7 @@ export default function InscripcionModal({
           /* ── PANTALLA DE ÉXITO Y REGISTRO / LOGIN ── */
           <div className={styles.successContainer}>
             <div className={styles.successIconCircle}>
-              <svg
-                width="36"
-                height="36"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <Check size={36} strokeWidth={2.5} aria-hidden="true" />
             </div>
             <h2 className={styles.successTitle}>¡Solicitud Enviada con Éxito!</h2>
             <p className={styles.successDesc}>
@@ -454,19 +383,7 @@ export default function InscripcionModal({
 
             <div className={styles.accountPromptBox}>
               <div className={styles.accountPromptHeading}>
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                </svg>
+                <Loader size={18} aria-hidden="true" />
                 <span>¿Deseas dar seguimiento a tus voluntariados?</span>
               </div>
               <p className={styles.accountPromptText}>
@@ -478,22 +395,7 @@ export default function InscripcionModal({
                   className={styles.btnPromptPrimary}
                   onClick={onClose}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="8.5" cy="7" r="4" />
-                    <line x1="20" y1="8" x2="20" y2="14" />
-                    <line x1="23" y1="11" x2="17" y2="11" />
-                  </svg>
+                  <UserPlus size={16} />
                   Crear mi Cuenta
                 </Link>
                 <Link
@@ -501,21 +403,7 @@ export default function InscripcionModal({
                   className={styles.btnPromptSecondary}
                   onClick={onClose}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                    <polyline points="10 17 15 12 10 7" />
-                    <line x1="15" y1="12" x2="3" y2="12" />
-                  </svg>
+                  <LogIn size={16} />
                   Iniciar Sesión
                 </Link>
               </div>

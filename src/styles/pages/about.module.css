@@ -44,36 +44,6 @@
   gap: 1.5rem;
 }
 
-.historyIcon {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background-color: var(--white);
-  padding: 0.5rem 2rem;
-  width: fit-content;
-  max-width: 100%;
-  border-radius: var(--radius-lg);
-  font-size: 1.5rem;
-}
-
-.historyIcon svg {
-  flex-shrink: 0;
-}
-
-.historyIcon:nth-child(1) {
-  color: var(--primaryColor);
-}
-/* texto en amarillo oscuro (contraste); el ícono conserva el amarillo de marca */
-.historyIcon:nth-child(2) {
-  color: var(--secondaryDark);
-}
-.historyIcon:nth-child(2) svg {
-  color: var(--secondaryColor);
-}
-.historyIcon:nth-child(3) {
-  color: var(--tertiaryColor);
-}
-
 /* ── MISIÓN Y VISIÓN ── */
 .missionAndVisionContainer {
   display: flex;
@@ -82,30 +52,19 @@
   margin-top: clamp(6rem, 10vw, 10rem);
 }
 
+/* borde y color vienen de .card-drawn + .tone-* (globals) */
 .missionAndVision {
   /* se apilan solas cuando ya no caben dos tarjetas por fila */
   flex: 1 1 46rem;
-  border: 3px dashed var(--secondaryColor);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2rem;
 }
 
-.missionAndVision:nth-child(2) {
-  border-color: var(--primaryColor);
-}
-
 .missionAndVision h3 {
-  color: var(--secondaryDark);
   font-size: clamp(2.2rem, 3vw, 2.8rem);
   margin-bottom: 1rem;
-}
-
-.missionAndVision:nth-child(2) h3 {
-  color: var(--primaryColor);
 }
 
 .missionAndVision p {
@@ -168,7 +127,6 @@
   gap: 1rem;
   align-items: flex-start;
   line-height: 1.5;
-  background-color: var(--white);
   margin-top: 1rem;
   transition: transform 0.3s ease;
 }
@@ -224,71 +182,24 @@
   gap: 2.5rem;
 }
 
+/* borde, ícono y colores vienen de .card-drawn / .icon-circle / .tone-rotate */
 .achievementCard {
-  border-radius: var(--radius-lg);
-  border: 3px dashed var(--secondaryColor);
-  padding: 3rem clamp(1.8rem, 3vw, 2.5rem);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 1.8rem;
-  transition: transform 0.3s ease;
-}
-
-.iconWrap {
-  background: var(--primaryColor);
-  color: var(--white);
-  width: 6rem;
-  height: 6rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.iconWrap svg {
-  width: 2.6rem;
-  height: 2.6rem;
 }
 
 .achievementText h3 {
   font-size: 1.9rem;
   margin-bottom: 0.6rem;
-  color: var(--primaryColor);
+  color: var(--tone-text);
   text-wrap: balance;
-}
-
-/* Cada tarjeta toma un color de marca, como en "Son·ri·sas" */
-.achievementCard:nth-child(1) {
-  border-color: var(--primaryColor);
-}
-.achievementCard:nth-child(2) .iconWrap {
-  background: var(--secondaryColor);
-  color: var(--dark);
-}
-.achievementCard:nth-child(2) h3 {
-  color: var(--secondaryDark);
-}
-.achievementCard:nth-child(3) {
-  border-color: var(--tertiaryColor);
-}
-.achievementCard:nth-child(3) .iconWrap {
-  background: var(--tertiaryColor);
-}
-.achievementCard:nth-child(3) h3 {
-  color: var(--tertiaryColor);
 }
 
 .achievementText p {
   font-size: 1.4rem;
-}
-
-@media (hover: hover) {
-  .achievementCard:hover {
-    transform: translateY(-4px);
-  }
 }
 
 /* Tres columnas solo cuando cada tarjeta tiene ancho suficiente;
@@ -331,15 +242,8 @@
   border-radius: 50%;
   background-size: cover;
   background-position: center;
-  border: 5px solid var(--tertiaryColor);
+  border: 5px solid var(--tone);
   box-shadow: var(--shadow-sm);
-}
-
-.teamPerson:nth-child(1) .teamImage {
-  border-color: var(--primaryColor);
-}
-.teamPerson:nth-child(2) .teamImage {
-  border-color: var(--secondaryColor);
 }
 
 /* TODO: reemplazar por la foto real de cada integrante */

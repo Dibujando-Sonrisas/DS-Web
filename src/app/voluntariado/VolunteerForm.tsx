@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import styles from "../../styles/pages/volunteer.module.css";
+import { Check, CircleAlert } from "lucide-react";
 
 type VolunteerFormProps = {
   activeBrigadaId: string;
@@ -71,43 +72,24 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
 
   if (success) {
     return (
-      <div className={styles.form}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "1.2rem", padding: "2rem 1rem" }}>
-          <div
-            style={{
-              width: "5.6rem",
-              height: "5.6rem",
-              borderRadius: "50%",
-              background: "#dcfce7",
-              color: "#16a34a",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </div>
-          <p className={styles.successMsg} style={{ margin: 0, padding: 0 }}>
-            ¡Tu solicitud de inscripción ha sido enviada correctamente! Un
-            coordinador de Dibujando Sonrisas revisará tus datos y se pondrá en
-            contacto contigo pronto.
-          </p>
-        </div>
+      <div className={`${styles.form} form-success`} role="status">
+        <Check size={24} strokeWidth={2.5} aria-hidden="true" />
+        ¡Tu solicitud de inscripción ha sido enviada correctamente! Un
+        coordinador de Dibujando Sonrisas revisará tus datos y se pondrá en
+        contacto contigo pronto.
       </div>
     );
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
-      <fieldset style={{ border: "none", padding: 0 }}>
-        <div className={styles.formGrid}>
+    <form className={`${styles.form} card-soft card-drawn`} onSubmit={handleSubmit}>
+      <fieldset className={styles.fieldset}>
+        <div className="form-grid">
           {/* Nombre Completo */}
-          <div className={styles.campo}>
+          <div className="form-field">
             <label htmlFor="nombre_completo">Nombre Completo *</label>
             <input
-              className={styles.input}
+              className="form-input"
               id="nombre_completo"
               name="nombre_completo"
               type="text"
@@ -120,10 +102,10 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
           </div>
 
           {/* Correo Electrónico */}
-          <div className={styles.campo}>
+          <div className="form-field">
             <label htmlFor="correo">Correo Electrónico *</label>
             <input
-              className={styles.input}
+              className="form-input"
               id="correo"
               name="correo"
               type="email"
@@ -136,10 +118,10 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
           </div>
 
           {/* Número de Teléfono */}
-          <div className={styles.campo}>
+          <div className="form-field">
             <label htmlFor="telefono">Número de Teléfono *</label>
             <input
-              className={styles.input}
+              className="form-input"
               id="telefono"
               name="telefono"
               type="tel"
@@ -152,17 +134,16 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
           </div>
 
           {/* Área de Interés */}
-          <div className={styles.campo}>
+          <div className="form-field">
             <label htmlFor="area_interes">Área de Interés *</label>
             <select
-              className={styles.input}
+              className="form-input"
               id="area_interes"
               name="area_interes"
               value={areaInteres}
               onChange={(e) => setAreaInteres(e.target.value)}
               required
               disabled={loading}
-              style={{ height: "4.8rem", width: "100%", padding: "0 1.2rem" }}
             >
               {AREAS_INTERES.map((area) => (
                 <option key={area} value={area}>
@@ -174,29 +155,15 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
         </div>
 
         {error && (
-          <p
-            style={{
-              color: "#dc2626",
-              fontSize: "1.4rem",
-              marginTop: "1rem",
-              textAlign: "left",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.6rem",
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+          <p className="form-error" role="alert">
+            <CircleAlert size={16} strokeWidth={2.5} aria-hidden="true" />
             {error}
           </p>
         )}
 
-        <div className={styles.submitRow}>
+        <div className="form-actions">
           <button
-            className={styles.submitBtn}
+            className="btn-primary"
             type="submit"
             id="btnVoluntario"
             disabled={loading}

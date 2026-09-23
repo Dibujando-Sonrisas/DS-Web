@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { insertContacto } from "../../lib/db/contacto";
-import styles from "../../styles/pages/contact.module.css";
+import { Check, CircleAlert, Send } from "lucide-react";
 
 export default function ContactForm() {
   const [loading, setLoading] = useState(false);
@@ -53,24 +53,20 @@ export default function ContactForm() {
 
   if (success) {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem", background: "#dcfce7", color: "#166534", padding: "1.6rem 2rem", borderRadius: "var(--radius-sm)", border: "1px solid #bbf7d0" }}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-        <span style={{ fontSize: "1.5rem", fontWeight: 600 }}>
-          ¡Mensaje enviado correctamente! Te responderemos pronto.
-        </span>
+      <div className="form-success" role="status">
+        <Check size={24} strokeWidth={2.5} aria-hidden="true" />
+        ¡Mensaje enviado correctamente! Te responderemos pronto.
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className={styles.formGrid}>
-        <div className={styles.campo}>
+      <div className="form-grid">
+        <div className="form-field">
           <label htmlFor="nombre">Nombre</label>
           <input
-            className={styles.input}
+            className="form-input"
             id="nombre"
             name="nombre"
             type="text"
@@ -79,10 +75,10 @@ export default function ContactForm() {
           />
         </div>
 
-        <div className={styles.campo}>
+        <div className="form-field">
           <label htmlFor="apellido">Apellido</label>
           <input
-            className={styles.input}
+            className="form-input"
             id="apellido"
             name="apellido"
             type="text"
@@ -91,10 +87,10 @@ export default function ContactForm() {
           />
         </div>
 
-        <div className={styles.campo}>
+        <div className="form-field">
           <label htmlFor="email">Correo Electrónico</label>
           <input
-            className={styles.input}
+            className="form-input"
             id="email"
             name="email"
             type="email"
@@ -103,10 +99,10 @@ export default function ContactForm() {
           />
         </div>
 
-        <div className={styles.campo}>
+        <div className="form-field">
           <label htmlFor="telefono">Teléfono (Opcional)</label>
           <input
-            className={styles.input}
+            className="form-input"
             id="telefono"
             name="telefono"
             type="tel"
@@ -114,10 +110,10 @@ export default function ContactForm() {
           />
         </div>
 
-        <div className={styles.campoFull}>
+        <div className="form-field form-field-full">
           <label htmlFor="asunto">Asunto</label>
           <input
-            className={styles.input}
+            className="form-input"
             id="asunto"
             name="asunto"
             type="text"
@@ -126,10 +122,10 @@ export default function ContactForm() {
           />
         </div>
 
-        <div className={styles.campoFull}>
+        <div className="form-field form-field-full">
           <label htmlFor="mensaje">Mensaje</label>
           <textarea
-            className={`${styles.input} ${styles.textarea}`}
+            className="form-input"
             id="mensaje"
             name="mensaje"
             placeholder="Escribe tu mensaje aquí..."
@@ -139,16 +135,28 @@ export default function ContactForm() {
         </div>
       </div>
 
-      {error && <p className={styles.errorMsg}>{error}</p>}
+      {error && (
+        <p className="form-error" role="alert">
+          <CircleAlert size={16} aria-hidden="true" />
+          {error}
+        </p>
+      )}
 
-      <div className={styles.submitRow}>
+      <div className="form-actions">
         <button
-          className={styles.submitBtn}
+          className="btn-primary"
           type="submit"
           id="btnContacto"
           disabled={loading}
         >
-          {loading ? "Enviando..." : "Enviar Mensaje →"}
+          {loading ? (
+            "Enviando..."
+          ) : (
+            <>
+              Enviar Mensaje
+              <Send aria-hidden="true" />
+            </>
+          )}
         </button>
       </div>
     </form>

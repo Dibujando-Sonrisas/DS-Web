@@ -5,7 +5,7 @@ import Footer from "../components/Footer";
 import PageHero from "../components/PageHero";
 import { getBrigadas } from "../../lib/db/brigadas";
 import styles from "../../styles/pages/about.module.css";
-import { BookOpenText, Check, PillBottle, Stethoscope } from "lucide-react";
+import { BookOpenText, Briefcase, Check, Lightbulb, PillBottle, Stethoscope, Users } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Sobre Nosotros | Dibujando Sonrisas",
@@ -57,18 +57,18 @@ export default async function SobreNosotros() {
             evangelio.
           </p>
 
-          <div className={styles.historyIcons}>
-            <p className={styles.historyIcon}>
+          <div className={`${styles.historyIcons} tone-rotate`}>
+            <p className="chip">
               <Stethoscope />
               Atención médica
             </p>
 
-            <p className={styles.historyIcon}>
+            <p className="chip">
               <PillBottle />
               Provisión de medicamentos
             </p>
 
-            <p className={styles.historyIcon}>
+            <p className="chip">
               <BookOpenText />
               Predicación del evangelio
             </p>
@@ -77,9 +77,9 @@ export default async function SobreNosotros() {
       </section>
 
       <section className={`${styles.missionAndVisionContainer} container`}>
-        <div className={styles.missionAndVision}>
+        <div className={`${styles.missionAndVision} card-drawn tone-secondary`}>
           <div className={styles.missionAndVisionText}>
-            <h3>Nuestra Misión</h3>
+            <h3 className="tone-text">Nuestra Misión</h3>
             <p>
               Brindar servicios médico-odontológicos esenciales, educación en
               salud y apoyo comunitario a poblaciones vulnerables de Honduras,
@@ -97,9 +97,9 @@ export default async function SobreNosotros() {
           />
         </div>
 
-        <div className={styles.missionAndVision}>
+        <div className={`${styles.missionAndVision} card-drawn tone-primary`}>
           <div className={styles.missionAndVisionText}>
-            <h3>Nuestra Visión</h3>
+            <h3 className="tone-text">Nuestra Visión</h3>
             <p>
               Ser una fundación reconocida a nivel nacional que logre
               transformar la salud de las comunidades más necesitadas, creando
@@ -122,32 +122,32 @@ export default async function SobreNosotros() {
       <section className={styles.ourValues}>
         <h2 className={styles.ourValuesTitle}>Nuestros Valores</h2>
         <ul className={styles.valuesList}>
-          <li className={styles.valuesItem}>
+          <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>
               <Check />
             </span>
             <span><strong>Fe:</strong> Todo lo que hacemos es inspirado por nuestra fe en Cristo.</span>
           </li>
-          <li className={styles.valuesItem}>
+          <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>
               <Check />
             </span>
             <span><strong>Compasión:</strong> Tratamos a cada persona con amor, dignidad y respeto.</span>
           </li>
-          <li className={styles.valuesItem}>
+          <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>
               <Check />
             </span>
             <span><strong>Integridad:</strong> Actuamos con transparencia y ética en todo momento.</span>
           </li>
-          <li className={styles.valuesItem}>
+          <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>
               <Check />
             </span>
             <span><strong>Trabajo en equipo:</strong> Creemos en la fuerza de la unión para lograr
             más.</span>
           </li>
-          <li className={styles.valuesItem}>
+          <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>
               <Check />
             </span>
@@ -160,27 +160,11 @@ export default async function SobreNosotros() {
       <section className={styles.achievements} aria-labelledby="logros-heading">
         <div className={`${styles.achievementsInner} container`}>
           <h2 id="logros-heading">Nuestros Logros</h2>
-          <div className={styles.achievementsRow}>
+          <div className={`${styles.achievementsRow} tone-rotate`}>
             {/* Pacientes */}
-            <div className={styles.achievementCard}>
-              <div className={styles.iconWrap} aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
-                  <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
-                </svg>
+            <div className={`${styles.achievementCard} card-drawn lift`}>
+              <div className="icon-circle" aria-hidden="true">
+                <Users size={22} />
               </div>
               <div className={styles.achievementText}>
                 <h3>+2,000 Pacientes Atendidos</h3>
@@ -192,25 +176,9 @@ export default async function SobreNosotros() {
             </div>
 
             {/* Brigadas */}
-            <div className={styles.achievementCard}>
-              <div className={styles.iconWrap} aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" />
-                  <path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" />
-                  <path d="M12 12l0 .01" />
-                  <path d="M3 13a20 20 0 0 0 18 0" />
-                </svg>
+            <div className={`${styles.achievementCard} card-drawn lift`}>
+              <div className="icon-circle" aria-hidden="true">
+                <Briefcase size={22} />
               </div>
               <div className={styles.achievementText}>
                 <h3>{brigadas?.length ?? 0}+ Brigadas Realizadas</h3>
@@ -222,24 +190,9 @@ export default async function SobreNosotros() {
             </div>
 
             {/* Donaciones */}
-            <div className={styles.achievementCard}>
-              <div className={styles.iconWrap} aria-hidden="true">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M3 12h1M12 3v1M20 12h1M5.6 5.6l.7.7M18.4 5.6l-.7.7" />
-                  <path d="M9 16a5 5 0 1 1 6 0a3.5 3.5 0 0 0 -1 3a2 2 0 0 1 -4 0a3.5 3.5 0 0 0 -1 -3" />
-                  <path d="M9.7 17h4.6" />
-                </svg>
+            <div className={`${styles.achievementCard} card-drawn lift`}>
+              <div className="icon-circle" aria-hidden="true">
+                <Lightbulb size={22} />
               </div>
               <div className={styles.achievementText}>
                 <h3>Donaciones a Hospitales y Asilos</h3>
@@ -256,7 +209,7 @@ export default async function SobreNosotros() {
       {/* ── EQUIPO ── */}
       <section className={styles.team} aria-labelledby="equipo-heading">
         <h2 id="equipo-heading">Conoce Nuestro Equipo</h2>
-        <div className={styles.teamGrid}>
+        <div className={`${styles.teamGrid} tone-rotate`}>
           <div className={styles.teamPerson}>
             <div
               className={`${styles.teamImage} ${styles.teamImage1}`}

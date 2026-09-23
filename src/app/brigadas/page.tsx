@@ -32,7 +32,7 @@ export default async function Brigadas() {
       />
 
       <section
-        className={`${styles.section} container`}
+        className={`${styles.section} section-y container`}
         aria-labelledby="brigadas-heading"
       >
         <h2 id="brigadas-heading">Elige una Brigada</h2>

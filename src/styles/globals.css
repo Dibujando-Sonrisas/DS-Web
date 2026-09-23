@@ -121,42 +121,55 @@ ul {
   margin: 0 auto;
 }
 
-.btn-primary {
-  display: flex;
-  gap: 1rem;
+/* ── BOTONES ── */
+.btn-primary,
+.btn-outline,
+.btn-outline-blue {
+  display: inline-flex;
   align-items: center;
-  background-color: var(--primaryColor);
-  color: var(--white);
+  justify-content: center;
+  gap: 1rem;
+  width: fit-content;
   font-size: 1.6rem;
   font-weight: 600;
   font-family: var(--fontBody);
   border-radius: var(--radius-sm);
   padding: 1.2rem 2.8rem;
   border: 2px solid var(--primaryColor);
-  box-shadow: var(--shadow-sm);
+  background-color: transparent;
+  color: var(--primaryColor);
   transition: all 0.3s ease;
   cursor: pointer;
-  width: fit-content;
 }
-.btn-primary:hover {
+
+.btn-primary svg,
+.btn-outline svg,
+.btn-outline-blue svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex-shrink: 0;
+}
+
+.btn-primary {
+  background-color: var(--primaryColor);
+  color: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover:not(:disabled) {
   background-color: var(--primaryDark);
   border-color: var(--primaryDark);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
+/* sobre fondos oscuros (hero, bandas de color) */
 .btn-outline {
-  display: inline-block;
-  background-color: transparent;
   color: var(--white);
-  font-size: 1.6rem;
-  font-weight: 600;
-  font-family: var(--fontBody);
-  border-radius: var(--radius-sm);
-  padding: 1.2rem 2.8rem;
-  border: 2px solid var(--white);
-  transition: all 0.3s ease;
-  cursor: pointer;
+  border-color: var(--white);
 }
 .btn-outline:hover {
   background-color: var(--white);
@@ -164,19 +177,6 @@ ul {
   transform: translateY(-2px);
 }
 
-.btn-outline-blue {
-  display: inline-block;
-  background-color: transparent;
-  color: var(--primaryColor);
-  font-size: 1.6rem;
-  font-weight: 600;
-  font-family: var(--fontBody);
-  border-radius: var(--radius-sm);
-  padding: 1.2rem 2.8rem;
-  border: 2px solid var(--primaryColor);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
 .btn-outline-blue:hover {
   background-color: var(--primaryColor);
   color: var(--white);
@@ -193,6 +193,183 @@ ul {
 }
 .wordmark span:nth-child(3) {
   color: var(--tertiaryColor);
+}
+
+/* ── TONOS DE MARCA ──
+   Cada componente pinta con --tone (bordes, rellenos), --tone-text (texto
+   legible sobre claro) y --tone-on (contenido sobre el relleno).
+   .tone-rotate reparte los tres colores entre sus hijos, como "Son·ri·sas". */
+:root,
+.tone-primary,
+.tone-rotate > :nth-child(3n + 1) {
+  --tone: var(--primaryColor);
+  --tone-text: var(--primaryColor);
+  --tone-on: var(--white);
+}
+.tone-secondary,
+.tone-rotate > :nth-child(3n + 2) {
+  --tone: var(--secondaryColor);
+  --tone-text: var(--secondaryDark);
+  --tone-on: var(--dark);
+}
+.tone-tertiary,
+.tone-rotate > :nth-child(3n) {
+  --tone: var(--tertiaryColor);
+  --tone-text: var(--tertiaryColor);
+  --tone-on: var(--white);
+}
+
+.tone-text {
+  color: var(--tone-text);
+}
+
+/* ── COMPONENTES DE MARCA ── */
+/* Tarjeta de borde punteado, como dibujada a mano */
+.card-drawn {
+  border: 3px dashed var(--tone);
+  border-radius: var(--radius-lg);
+  padding: clamp(2.4rem, 4vw, 3.2rem) clamp(1.8rem, 3vw, 2.5rem);
+}
+
+/* Tarjeta blanca lisa sobre el fondo crema */
+.card-soft {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+}
+
+/* Ícono lucide dentro de un círculo de color */
+.icon-circle {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: var(--tone);
+  color: var(--tone-on);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.icon-circle svg {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+.icon-circle-sm {
+  width: 4.8rem;
+  height: 4.8rem;
+}
+.icon-circle-sm svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+/* Etiqueta blanca con ícono de color */
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: fit-content;
+  max-width: 100%;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 0.6rem 1.8rem;
+  font-size: 1.5rem;
+  color: var(--tone-text);
+}
+.chip svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--tone);
+  flex-shrink: 0;
+}
+
+.lift {
+  transition: transform 0.3s ease;
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-4px);
+  }
+}
+
+.section-y {
+  padding-block: clamp(5rem, 9vw, 8rem);
+}
+
+/* ── FORMULARIOS ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+@media (min-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.form-field label {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: 0.6rem;
+}
+.form-field-full {
+  grid-column: 1 / -1;
+}
+
+.form-input {
+  width: 100%;
+  padding: 1.2rem 1.6rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 1.6rem;
+  font-family: var(--fontBody);
+  color: var(--dark);
+  background: var(--bg-light);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.form-input::placeholder {
+  color: var(--text-light);
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--primaryColor);
+  background: var(--white);
+}
+textarea.form-input {
+  min-height: 14rem;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.form-error {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #c53030;
+  font-size: 1.4rem;
+  margin-top: 1rem;
+}
+
+.form-success {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #dcfce7;
+  color: #166534;
+  padding: 1.6rem 2rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #bbf7d0;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 /* ── ACCESIBILIDAD ── */

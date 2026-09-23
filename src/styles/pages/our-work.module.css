@@ -166,17 +166,7 @@
   box-shadow: var(--shadow-md);
 }
 
-.serviceIcon {
-  color: var(--primaryColor);
-  background: var(--primaryLight);
-  width: 5rem;
-  height: 5rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
+/* el ícono usa .icon-circle + .tone-rotate (globals) */
 
 .serviceText h4 {
   font-size: 1.8rem;

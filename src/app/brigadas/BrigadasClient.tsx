@@ -3,17 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Brigada } from "../../lib/db/brigadas";
 import { supabase } from "../../lib/supabase";
-import { CalendarDays, Camera, MapPin } from "lucide-react";
+import { CalendarDays, Camera, ChevronLeft, ChevronRight, MapPin, X } from "lucide-react";
 import styles from "../../styles/pages/brigadas.module.css";
-
-function CameraIcon() {
-  return (
-    <svg className={styles.emptyGalleryIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-      <circle cx="12" cy="13" r="4" />
-    </svg>
-  );
-}
 
 interface LightboxState {
   urls: string[];
@@ -203,18 +194,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
               aria-label="Anterior brigada"
               onClick={() => applyCarousel(carIdxRef.current - 1)}
             >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
+              <ChevronLeft />
             </button>
 
             <div
@@ -246,18 +226,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
               aria-label="Siguiente brigada"
               onClick={() => applyCarousel(carIdxRef.current + 1)}
             >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M9 18l6-6-6-6" />
-              </svg>
+              <ChevronRight />
             </button>
           </div>
 
@@ -281,21 +250,21 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                         {b.codigo} — {b.nombre}
                       </h3>
                       {b.descripcion && <p>{b.descripcion}</p>}
-                      <ul className={styles.brigadaMeta}>
+                      <ul className={`${styles.brigadaMeta} tone-rotate`}>
                         {b.fecha_brigada && (
-                          <li className={styles.brigadaMetaItem}>
+                          <li className="chip">
                             <CalendarDays aria-hidden="true" />
                             {new Date(b.fecha_brigada).toLocaleDateString("es-HN")}
                           </li>
                         )}
                         {b.lugar && (
-                          <li className={styles.brigadaMetaItem}>
+                          <li className="chip">
                             <MapPin aria-hidden="true" />
                             {b.lugar}
                           </li>
                         )}
                         {bStatus && (
-                          <li className={styles.brigadaMetaItem}>
+                          <li className="chip">
                             <Camera aria-hidden="true" />
                             {bStatus === "loading"
                               ? "Cargando fotos…"
@@ -315,8 +284,8 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                     <h3 className={styles.galleryHeading}>Galería de Fotos</h3>
                     <div className={styles.galleryGrid}>
                       {bPhotos.length === 0 ? (
-                        <div className={styles.emptyGalleryContainer}>
-                          <CameraIcon />
+                        <div className={`${styles.emptyGalleryContainer} card-soft card-drawn tone-secondary`}>
+                          <Camera className={styles.emptyGalleryIcon} strokeWidth={1.5} aria-hidden="true" />
                           <h4 className={styles.emptyGalleryTitle}>Galería en Actualización</h4>
                           <p className={styles.emptyGalleryText}>
                             Las fotografías de esta brigada están siendo procesadas y estarán disponibles próximamente en la plataforma.
@@ -366,7 +335,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
             aria-label="Cerrar"
             onClick={() => setLightbox(null)}
           >
-            ✕
+            <X aria-hidden="true" />
           </button>
 
           {lightbox.index > 0 && (
@@ -378,7 +347,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                 navigate(-1);
               }}
             >
-              ←
+              <ChevronLeft aria-hidden="true" />
             </button>
           )}
 
@@ -398,7 +367,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                 navigate(1);
               }}
             >
-              →
+              <ChevronRight aria-hidden="true" />
             </button>
           )}
         </div>

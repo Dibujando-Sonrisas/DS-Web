@@ -4,6 +4,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import PageHero from "../components/PageHero";
 import {
+  ArrowRight,
   BookOpenText,
   HandHeart,
   MessageCircle,
@@ -44,7 +45,8 @@ const alternatives = [
     desc: "¿Estás en Honduras? Contáctanos directamente para coordinar una donación en insumos médicos o medicamentos.",
     cta: (
       <Link href="/contacto" className="btn-outline-blue">
-        Contáctanos →
+        Contáctanos
+        <ArrowRight aria-hidden="true" />
       </Link>
     ),
   },
@@ -55,7 +57,8 @@ const alternatives = [
     desc: "Medicamentos, equipos médicos, material odontológico o cualquier insumo que pueda servir en nuestras brigadas.",
     cta: (
       <Link href="/contacto" className="btn-outline-blue">
-        Saber más →
+        Saber más
+        <ArrowRight aria-hidden="true" />
       </Link>
     ),
   },
@@ -66,7 +69,8 @@ const alternatives = [
     desc: "Tu tiempo y habilidades también son una forma poderosa de apoyar. ¡Únete a nuestro equipo de voluntarios!",
     cta: (
       <Link href="/voluntariado" className="btn-outline-blue">
-        Ser Voluntario →
+        Ser Voluntario
+        <ArrowRight aria-hidden="true" />
       </Link>
     ),
   },
@@ -87,7 +91,7 @@ export default function Donar() {
         subtitle="Cada aporte se convierte en consultas, medicamentos y sonrisas para familias de Honduras."
       />
 
-      <main className={`${styles.main} container`}>
+      <main className="section-y container">
         <section className={styles.intro} aria-labelledby="donate-heading">
           <h2 id="donate-heading">Formas de ayudar a dibujar una sonrisa</h2>
           <p>
@@ -97,10 +101,10 @@ export default function Donar() {
           </p>
         </section>
 
-        <div className={styles.altGrid}>
+        <div className={`${styles.altGrid} tone-rotate`}>
           {alternatives.map((alt) => (
-            <article key={alt.id} className={styles.altCard}>
-              <div className={styles.altIcon} aria-hidden="true">
+            <article key={alt.id} className={`${styles.altCard} card-drawn lift`}>
+              <div className="icon-circle" aria-hidden="true">
                 {alt.icon}
               </div>
               <h3>{alt.title}</h3>
@@ -112,16 +116,16 @@ export default function Donar() {
 
         <section className={styles.impact} aria-labelledby="impact-heading">
           <h2 id="impact-heading">Tu donación hace posible</h2>
-          <ul className={styles.impactList}>
-            <li className={styles.impactItem}>
+          <ul className={`${styles.impactList} tone-rotate`}>
+            <li className="chip">
               <Stethoscope aria-hidden="true" />
               Atención médica y odontológica
             </li>
-            <li className={styles.impactItem}>
+            <li className="chip">
               <PillBottle aria-hidden="true" />
               Provisión de medicamentos
             </li>
-            <li className={styles.impactItem}>
+            <li className="chip">
               <BookOpenText aria-hidden="true" />
               Predicación del evangelio
             </li>
