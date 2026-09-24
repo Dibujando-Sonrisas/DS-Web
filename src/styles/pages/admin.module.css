@@ -2020,13 +2020,14 @@ button.step {
     border-radius: var(--radius-sm);
   }
 
-  /* el modal sube desde abajo, como hoja */
+  /* el modal sube desde abajo, como hoja: a todo el ancho, sea del tamaño que sea */
   .modalOverlay {
     align-items: flex-end;
     padding: 0;
   }
 
   .modal {
+    max-width: none;
     max-height: 92dvh;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }

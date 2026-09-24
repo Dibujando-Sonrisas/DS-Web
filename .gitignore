@@ -48,3 +48,7 @@ next-env.d.ts
 #supabase temp files and branches
 /supabase/.temp
 /supabase/.branches
+
+#AI files
+.claude
+.impeccable
