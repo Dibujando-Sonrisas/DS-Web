@@ -46,6 +46,7 @@ export function NuevoExpedienteClient() {
   // Data sources
   const [brigadas, setBrigadas] = useState<any[]>([]);
   const [medicos, setMedicos] = useState<any[]>([]);
+  const [odontologos, setOdontologos] = useState<any[]>([]);
   const [medicamentosList, setMedicamentosList] = useState<any[]>([]);
 
   // Form State
@@ -132,36 +133,15 @@ export function NuevoExpedienteClient() {
           setMedicamentosList(prescribibles);
 
           const allProfiles = pRes.data || [];
-          const activeMedicos = allProfiles.filter((v: any) => {
-            if (v.activo === false) return false;
+          // médicos y odontólogos activos, por rol, ordenados por nombre
+          const activos = allProfiles.filter((v: any) => v.activo !== false);
+          const porRol = (rol: string) =>
+            activos
+              .filter((v: any) => (v.rol || "").toLowerCase() === rol)
+              .sort((a: any, b: any) => (a.nombre_completo || "").localeCompare(b.nombre_completo || ""));
 
-            const rol = (v.rol || "").toLowerCase();
-            const cargo = (v.cargo || "").toLowerCase();
-            const espNombre = (v.especialidades?.nombre || "").toLowerCase();
-            const nombre = (v.nombre_completo || "").toLowerCase();
-
-            if (rol === "atencion_pacientes" || rol === "admin" || rol === "coordinador") {
-              return true;
-            }
-
-            const medicalKeywords = [
-              "medic", "médic", "odontol", "odontól", "dentis", "doctor",
-              "dr.", "dra.", "pediatr", "ciruj", "salud", "enfermer", "optomet", "ginec", "nutri", "general"
-            ];
-
-            const matchesEsp = medicalKeywords.some((k) => espNombre.includes(k));
-            const matchesCargo = medicalKeywords.some((k) => cargo.includes(k));
-            const matchesNombre = nombre.startsWith("dr.") || nombre.startsWith("dra.") || nombre.startsWith("dr ") || nombre.startsWith("dra ");
-
-            const nonMedicalKeywords = ["logística", "logistica", "ropa", "donaciones", "actividades", "coordinación", "coordinacion"];
-            const isNonMedical = nonMedicalKeywords.some((k) => espNombre.includes(k) || cargo.includes(k));
-
-            return matchesEsp || matchesCargo || matchesNombre || (v.especialidad_id && !isNonMedical) || (v.especialidades && !isNonMedical);
-          });
-
-          activeMedicos.sort((a: any, b: any) => (a.nombre_completo || "").localeCompare(b.nombre_completo || ""));
-
-          setMedicos(activeMedicos);
+          setMedicos(porRol("medico"));
+          setOdontologos(porRol("odontologo"));
         }
       } catch (e) {
         console.error(e);
@@ -671,6 +651,10 @@ export function NuevoExpedienteClient() {
   // menor de 18 años: el responsable pasa a ser obligatorio
   const esMenor = paciente.edad !== "" && !isNaN(Number(paciente.edad)) && Number(paciente.edad) < 18;
 
+  // la consulta médica la atiende un médico; la odontológica, un odontólogo
+  const esMedica = consulta.tipo_consulta === "Medica";
+  const profesionales = esMedica ? medicos : odontologos;
+
   return (
     <div className={styles.stack}>
       {/* Tabs navigation */}
@@ -1081,7 +1065,8 @@ export function NuevoExpedienteClient() {
                     aria-invalid={!!errors.tipo_consulta}
                     value={consulta.tipo_consulta}
                     onChange={(e) => {
-                      setConsulta({ ...consulta, tipo_consulta: e.target.value });
+                      // el profesional depende del tipo de consulta: se vuelve a elegir
+                      setConsulta({ ...consulta, tipo_consulta: e.target.value, medico_id: "" });
                       if (errors.tipo_consulta) setErrors((prev) => ({ ...prev, tipo_consulta: "" }));
                     }}
                   >
@@ -1100,18 +1085,20 @@ export function NuevoExpedienteClient() {
                     aria-required="true"
                     aria-invalid={!!errors.medico_id}
                     value={consulta.medico_id}
-                    disabled={medicos.length === 0 || isSubmitting}
+                    disabled={profesionales.length === 0 || isSubmitting}
                     onChange={(e) => {
                       setConsulta({ ...consulta, medico_id: e.target.value });
                       if (errors.medico_id) setErrors((prev) => ({ ...prev, medico_id: "" }));
                     }}
                   >
-                    {medicos.length === 0 ? (
-                      <option value="">No hay médicos disponibles</option>
+                    {profesionales.length === 0 ? (
+                      <option value="">
+                        No hay {esMedica ? "médicos" : "odontólogos"} disponibles
+                      </option>
                     ) : (
                       <>
                         <option value="">-- Seleccionar --</option>
-                        {medicos.map((m) => (
+                        {profesionales.map((m) => (
                           <option key={m.id} value={m.id}>
                             {m.nombre_completo || "Sin Nombre"}
                           </option>

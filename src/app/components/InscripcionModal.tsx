@@ -52,6 +52,7 @@ export default function InscripcionModal({
   onSuccess,
 }: InscripcionModalProps) {
   const [nombreCompleto, setNombreCompleto] = useState("");
+  const [lugar, setLugar] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
   const [areaInteres, setAreaInteres] = useState("Registro");
@@ -89,6 +90,10 @@ export default function InscripcionModal({
 
     if (!nombreCompleto.trim() || nombreCompleto.trim().length < 3) {
       errors.nombreCompleto = "Ingresa tu nombre completo (mínimo 3 caracteres).";
+    }
+
+    if (!lugar.trim() || lugar.trim().length < 5) {
+      errors.lugar = "Ingresa tu lugar de residencia (mínimo 5 caracteres).";
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -133,6 +138,7 @@ export default function InscripcionModal({
           profesion: profesion.trim() || null,
           comentarios: comentarios.trim() || null,
           estado: "pendiente",
+          lugar: lugar.trim(),
         });
 
       if (insertError) {
@@ -244,6 +250,24 @@ export default function InscripcionModal({
                       aria-describedby={formErrors.nombreCompleto ? "err_nombre" : undefined}
                     />
                     {fieldError("nombreCompleto", "err_nombre")}
+                  </div>
+
+                  <div className="form-field form-field-full">
+                    <label htmlFor="modal_lugar">Lugar de Residencia *</label>
+                    <input
+                      id="modal_lugar"
+                      type="text"
+                      className="form-input"
+                      placeholder="Ej. San Pedro Sula, Cortés"
+                      value={lugar}
+                      onChange={(e) => setLugar(e.target.value)}
+                      disabled={loading}
+                      required
+                      autoComplete="address-level2"
+                      aria-invalid={!!formErrors.lugar}
+                      aria-describedby={formErrors.lugar ? "err_lugar" : undefined}
+                    />
+                    {fieldError("lugar", "err_lugar")}
                   </div>
 
                   <div className="form-field">
