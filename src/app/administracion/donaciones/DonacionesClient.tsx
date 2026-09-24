@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   getDonacionesRopaAction as getDonacionesRopa,
   getEntregasRopaAction as getEntregasRopa,
@@ -11,28 +11,22 @@ import {
   registrarEntregaRopaAction as createEntregaRopa,
 } from "./actions";
 import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  Gift,
+  LoaderCircle,
+  Plus,
+  Shirt,
+  Users,
+} from "lucide-react";
+import AdminModal from "@/app/administracion/components/AdminModal";
+import AdminToast from "@/app/administracion/components/AdminToast";
+import StatCard from "@/app/administracion/components/StatCard";
 import styles from "@/styles/pages/admin.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-
-function CheckCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function AlertCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  );
-}
 
 export function DonacionesClient({ userId }: { userId: string }) {
   const { can } = usePermissions();
@@ -168,314 +162,307 @@ export function DonacionesClient({ userId }: { userId: string }) {
     }
   };
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
+  // Paginación de la pestaña activa (las entregas se filtran por brigada)
+  const entregasFiltradas = filtroBrigada === "todas"
+    ? entregas
+    : entregas.filter(e => e.brigada_id === filtroBrigada);
+  const listaActiva = activeTab === "donaciones" ? donaciones : entregasFiltradas;
+  const totalPages = Math.ceil(listaActiva.length / itemsPerPage);
+  const curPage = activeTab === "donaciones" ? currentPageDonaciones : currentPageEntregas;
+  const setCurPage = activeTab === "donaciones" ? setCurrentPageDonaciones : setCurrentPageEntregas;
 
+  return (
+    <div className={styles.stack}>
       {/* Stats Grid */}
-      <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statHeader}>
-            <h3>Prendas Donadas</h3>
-          </div>
-          <p className={styles.statValue}>{resumen?.prendas_donadas || 0}</p>
+      {isLoading ? (
+        <div className={styles.statGrid}>
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
         </div>
-        <div className={styles.statCard}>
-          <div className={styles.statHeader}>
-            <h3>Prendas Entregadas</h3>
-          </div>
-          <p className={styles.statValue}>{dashboard?.prendas_entregadas || 0}</p>
+      ) : (
+        <div className={`${styles.statGrid} tone-rotate`}>
+          <StatCard label="Prendas Donadas" value={resumen?.prendas_donadas || 0} icon={<Shirt />} />
+          <StatCard label="Prendas Entregadas" value={dashboard?.prendas_entregadas || 0} icon={<Gift />} />
+          <StatCard label="Pacientes Beneficiados" value={dashboard?.pacientes_beneficiados || 0} icon={<Users />} />
         </div>
-        <div className={styles.statCard}>
-          <div className={styles.statHeader}>
-            <h3>Pacientes Beneficiados</h3>
-          </div>
-          <p className={styles.statValue}>{dashboard?.pacientes_beneficiados || 0}</p>
-        </div>
-      </div>
+      )}
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: "1rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
+      <div className={styles.tabs} role="tablist" aria-label="Donaciones y entregas de ropa">
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "donaciones"}
+          className={styles.tab}
           onClick={() => setActiveTab("donaciones")}
-          style={{
-            padding: "0.8rem 1.6rem", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer", fontWeight: "bold",
-            background: activeTab === "donaciones" ? "var(--primaryColor)" : "transparent",
-            color: activeTab === "donaciones" ? "white" : "var(--gray)"
-          }}
         >
-          Donaciones Recibidas ({donaciones.length})
+          <Shirt aria-hidden="true" />
+          Donaciones Recibidas <span className={styles.tabCount}>{donaciones.length}</span>
         </button>
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "entregas"}
+          className={styles.tab}
           onClick={() => setActiveTab("entregas")}
-          style={{
-            padding: "0.8rem 1.6rem", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer", fontWeight: "bold",
-            background: activeTab === "entregas" ? "var(--primaryColor)" : "transparent",
-            color: activeTab === "entregas" ? "white" : "var(--gray)"
-          }}
         >
-          Ropa Entregada ({entregas.length})
+          <Gift aria-hidden="true" />
+          Ropa Entregada <span className={styles.tabCount}>{entregas.length}</span>
         </button>
       </div>
 
       {/* Tables */}
-      <div className={styles.tableContainer}>
-        <div className={styles.tableHeader}>
-          <h3>{activeTab === "donaciones" ? "Historial de Donaciones" : "Ropa Entregada en Brigadas"}</h3>
-          <div style={{ display: "flex", gap: "1rem" }}>
-            {can(PERMISSIONS.DONACIONES_CREATE) && (
-              <button className={styles.btnSecondary} onClick={openDonacionModal}>
-                + Nueva Donación
+      <section className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <h2 className={styles.panelTitle}>
+            {activeTab === "donaciones" ? "Historial de Donaciones" : "Ropa Entregada en Brigadas"}
+          </h2>
+          {can(PERMISSIONS.DONACIONES_CREATE) && (
+            <div className={styles.panelActions}>
+              <button type="button" className="btn-ghost btn-sm" onClick={openDonacionModal}>
+                <Plus aria-hidden="true" />
+                Nueva Donación
               </button>
-            )}
-            {can(PERMISSIONS.DONACIONES_CREATE) && (
-              <button className={styles.btnPrimary} onClick={openEntregaModal}>
-                + Registrar Entrega
+              <button type="button" className="btn-primary btn-sm" onClick={openEntregaModal}>
+                <Plus aria-hidden="true" />
+                Registrar Entrega
               </button>
-            )}
-          </div>
-        </div>
-
-        {activeTab === "entregas" && (
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.6rem", padding: "0 2.4rem" }}>
-            <label style={{ fontSize: "1.4rem", fontWeight: "600", color: "var(--text-color)" }}>Filtrar Historial por Brigada:</label>
-            <select
-              value={filtroBrigada}
-              onChange={e => setFiltroBrigada(e.target.value)}
-              style={{
-                padding: "0.6rem 1.2rem",
-                borderRadius: "var(--radius)",
-                border: "1px solid var(--border-color)",
-                background: "var(--white)",
-                color: "var(--text-color)",
-                fontSize: "1.4rem"
-              }}
-            >
-              <option value="todas">Todas las Brigadas</option>
-              {todasLasBrigadas.map(b => (
-                <option key={b.id} value={b.id}>{b.nombre}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div style={{ overflowX: "auto" }}>
-          {activeTab === "donaciones" ? (
-            <table className={styles.adminTable}>
-              <thead>
-                <tr>
-                  <th>Código</th>
-                  <th>Fecha</th>
-                  <th>Tipo</th>
-                  <th>Donante</th>
-                  <th>Cantidad</th>
-                  <th>Observaciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (<tr><td colSpan={6} style={{textAlign: "center"}}>Cargando...</td></tr>) :
-                 donaciones.length === 0 ? (<tr><td colSpan={6} style={{textAlign: "center", color:"var(--gray)"}}>No hay donaciones registradas</td></tr>) :
-                 donaciones.slice((currentPageDonaciones - 1) * itemsPerPage, currentPageDonaciones * itemsPerPage).map(d => (
-                  <tr key={d.id}>
-                    <td style={{fontWeight: "bold"}}>{d.codigo}</td>
-                    <td>{new Date(d.fecha_donacion).toLocaleDateString()}</td>
-                    <td>{d.tipo_donacion || 'Ropa'}</td>
-                    <td>{d.nombre_donante || "-"}</td>
-                    <td style={{fontWeight: "bold", fontSize: "1.2rem"}}>{d.cantidad_prendas}</td>
-                    <td>{d.observaciones || "-"}</td>
-                  </tr>
-                 ))
-                }
-              </tbody>
-            </table>
-          ) : (
-            <table className={styles.adminTable}>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Brigada</th>
-                  <th>Paciente</th>
-                  <th>Prendas</th>
-                  <th>Entregado Por</th>
-                  <th>Observaciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (<tr><td colSpan={6} style={{textAlign: "center"}}>Cargando...</td></tr>) :
-                 (() => {
-                   const filtered = filtroBrigada === "todas"
-                     ? entregas
-                     : entregas.filter(e => e.brigada_id === filtroBrigada);
-                   const paginated = filtered.slice((currentPageEntregas - 1) * itemsPerPage, currentPageEntregas * itemsPerPage);
-                   return filtered.length === 0 ? (
-                     <tr><td colSpan={6} style={{textAlign: "center", color:"var(--gray)"}}>No hay entregas registradas en esta brigada</td></tr>
-                   ) : (
-                     paginated.map(e => (
-                       <tr key={e.id}>
-                         <td>{new Date(e.fecha_entrega).toLocaleDateString()}</td>
-                         <td>{e.brigadas?.nombre}</td>
-                         <td style={{fontWeight: "bold"}}>{e.pacientes?.nombres} {e.pacientes?.apellidos}</td>
-                         <td style={{fontWeight: "bold", fontSize: "1.2rem"}}>{e.cantidad_prendas}</td>
-                         <td>{e.perfiles?.nombre_completo}</td>
-                         <td>{e.observaciones || "-"}</td>
-                       </tr>
-                     ))
-                   );
-                 })()
-                }
-              </tbody>
-            </table>
+            </div>
           )}
         </div>
 
-        {(() => {
-          const list = activeTab === "donaciones" ? donaciones : entregas;
-          const filtered = activeTab === "donaciones"
-            ? list
-            : list.filter(item => filtroBrigada === "todas" || item.brigada_id === filtroBrigada);
-          const totalPages = Math.ceil(filtered.length / itemsPerPage);
-          if (totalPages <= 1) return null;
-          const curPage = activeTab === "donaciones" ? currentPageDonaciones : currentPageEntregas;
-          const setCurPage = activeTab === "donaciones" ? setCurrentPageDonaciones : setCurrentPageEntregas;
-
-          return (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", marginTop: "2rem", padding: "1.5rem" }}>
-              <button 
-                disabled={curPage === 1} 
-                onClick={() => setCurPage(prev => Math.max(prev - 1, 1))}
-                className={styles.btnSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: curPage === 1 ? "not-allowed" : "pointer", opacity: curPage === 1 ? 0.5 : 1 }}
+        {activeTab === "entregas" && (
+          <div className={styles.toolbar}>
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="filtro-brigada">Filtrar Historial por Brigada:</label>
+              <select
+                id="filtro-brigada"
+                className="form-input form-input-sm"
+                value={filtroBrigada}
+                onChange={e => setFiltroBrigada(e.target.value)}
               >
+                <option value="todas">Todas las Brigadas</option>
+                {todasLasBrigadas.map(b => (
+                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className={styles.panelBody}>
+            <div className={`${styles.skeleton} ${styles.skeletonBlock}`} />
+          </div>
+        ) : (
+          <div className={styles.tableWrap}>
+            {activeTab === "donaciones" ? (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Donante</th>
+                    <th className={styles.num}>Cantidad</th>
+                    <th>Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {donaciones.length === 0 ? (
+                    <tr><td colSpan={6} className={styles.emptyCell}>No hay donaciones registradas</td></tr>
+                  ) : (
+                    donaciones.slice((currentPageDonaciones - 1) * itemsPerPage, currentPageDonaciones * itemsPerPage).map(d => (
+                      <tr key={d.id}>
+                        <td className={styles.cellCode}>{d.codigo}</td>
+                        <td className={styles.nowrap}>{new Date(d.fecha_donacion).toLocaleDateString()}</td>
+                        <td><span className={`${styles.badge} ${styles.badgeInfo}`}>{d.tipo_donacion || 'Ropa'}</span></td>
+                        <td>{d.nombre_donante || "-"}</td>
+                        <td className={`${styles.num} ${styles.cellMain}`}>{d.cantidad_prendas}</td>
+                        <td>{d.observaciones || "-"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Brigada</th>
+                    <th>Paciente</th>
+                    <th className={styles.num}>Prendas</th>
+                    <th>Entregado Por</th>
+                    <th>Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entregasFiltradas.length === 0 ? (
+                    <tr><td colSpan={6} className={styles.emptyCell}>No hay entregas registradas en esta brigada</td></tr>
+                  ) : (
+                    entregasFiltradas.slice((currentPageEntregas - 1) * itemsPerPage, currentPageEntregas * itemsPerPage).map(e => (
+                      <tr key={e.id}>
+                        <td className={styles.nowrap}>{new Date(e.fecha_entrega).toLocaleDateString()}</td>
+                        <td>{e.brigadas?.nombre}</td>
+                        <td className={styles.cellMain}>{e.pacientes?.nombres} {e.pacientes?.apellidos}</td>
+                        <td className={`${styles.num} ${styles.cellMain}`}>{e.cantidad_prendas}</td>
+                        <td>{e.perfiles?.nombre_completo}</td>
+                        <td>{e.observaciones || "-"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className={styles.panelFooter}>
+            <span className={styles.pagerInfo}>Página {curPage} de {totalPages}</span>
+            <div className={styles.row}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                disabled={curPage === 1}
+                onClick={() => setCurPage(prev => Math.max(prev - 1, 1))}
+              >
+                <ChevronLeft aria-hidden="true" />
                 Anterior
               </button>
-              <span style={{ fontSize: "1.3rem", fontWeight: "600" }}>Página {curPage} de {totalPages}</span>
-              <button 
-                disabled={curPage === totalPages} 
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                disabled={curPage === totalPages}
                 onClick={() => setCurPage(prev => Math.min(prev + 1, totalPages))}
-                className={styles.btnSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: curPage === totalPages ? "not-allowed" : "pointer", opacity: curPage === totalPages ? 0.5 : 1 }}
               >
                 Siguiente
+                <ChevronRight aria-hidden="true" />
               </button>
             </div>
-          );
-        })()}
-      </div>
+          </div>
+        )}
+      </section>
 
       {/* Modal Donacion */}
       {isDonacionModalOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={`${styles.modal} ${styles.modalSm}`}>
-            <div className={styles.modalHeader}>
-              <h3>Registrar Donación de Ropa</h3>
-              <button className={styles.modalClose} onClick={() => setIsDonacionModalOpen(false)}>&times;</button>
-            </div>
-            <div style={{ padding: "2.4rem" }}>
-              <form className={styles.adminForm} onSubmit={(e) => { e.preventDefault(); submitDonacion(); }}>
-                <div className={styles.formField}>
-                  <label>Tipo de Donación *</label>
-                  <select value={donacionForm.tipo_donacion} onChange={e => setDonacionForm({...donacionForm, tipo_donacion: e.target.value})} required>
+        <AdminModal title="Registrar Donación de Ropa" size="sm" onClose={() => setIsDonacionModalOpen(false)}>
+          <form className={styles.modalForm} onSubmit={(e) => { e.preventDefault(); submitDonacion(); }}>
+            <div className={styles.modalBody}>
+              <div className="form-grid">
+                <label className="form-field">
+                  <span className="form-label">
+                    Tipo de Donación <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <select className="form-input" value={donacionForm.tipo_donacion} onChange={e => setDonacionForm({...donacionForm, tipo_donacion: e.target.value})} required>
                     <option value="Ropa">Ropa</option>
                     <option value="Dinero">Dinero</option>
                     <option value="Juguetes">Juguetes</option>
                   </select>
-                </div>
-                <div className={styles.formField}>
-                  <label>Fecha de Donación *</label>
-                  <input type="date" value={donacionForm.fecha_donacion} onChange={e => setDonacionForm({...donacionForm, fecha_donacion: e.target.value})} required />
-                </div>
-                <div className={styles.formField}>
-                  <label>Donante</label>
-                  <input value={donacionForm.nombre_donante} onChange={e => setDonacionForm({...donacionForm, nombre_donante: e.target.value})} placeholder="Nombre de la persona o institución" />
-                </div>
-                <div className={styles.formField}>
-                  <label>Cantidad (Prendas, Lempiras o Unidades) *</label>
-                  <input type="number" min="1" step="any" value={donacionForm.cantidad_prendas} onChange={e => setDonacionForm({...donacionForm, cantidad_prendas: Number(e.target.value)})} required />
-                </div>
-                <div className={styles.formField}>
-                  <label>Observaciones</label>
-                  <textarea rows={2} value={donacionForm.observaciones} onChange={e => setDonacionForm({...donacionForm, observaciones: e.target.value})} />
-                </div>
-                <div className={styles.modalActions}>
-                  <button type="button" className={styles.btnSecondary} onClick={() => setIsDonacionModalOpen(false)}>Cancelar</button>
-                  <button type="submit" className={styles.btnPrimary}>Guardar Donación</button>
-                </div>
-              </form>
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Fecha de Donación <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input className="form-input" type="date" value={donacionForm.fecha_donacion} onChange={e => setDonacionForm({...donacionForm, fecha_donacion: e.target.value})} required />
+                </label>
+              </div>
+              <label className="form-field">
+                <span className="form-label">Donante</span>
+                <input className="form-input" value={donacionForm.nombre_donante} onChange={e => setDonacionForm({...donacionForm, nombre_donante: e.target.value})} placeholder="Nombre de la persona o institución" />
+              </label>
+              <label className="form-field">
+                <span className="form-label">
+                  Cantidad (Prendas, Lempiras o Unidades) <span className="form-required" aria-hidden="true">*</span>
+                </span>
+                <input className="form-input" type="number" min="1" step="any" value={donacionForm.cantidad_prendas} onChange={e => setDonacionForm({...donacionForm, cantidad_prendas: Number(e.target.value)})} required />
+              </label>
+              <label className="form-field">
+                <span className="form-label">Observaciones</span>
+                <textarea className="form-input" rows={2} value={donacionForm.observaciones} onChange={e => setDonacionForm({...donacionForm, observaciones: e.target.value})} />
+              </label>
             </div>
-          </div>
-        </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsDonacionModalOpen(false)}>Cancelar</button>
+              <button type="submit" className="btn-primary btn-sm">Guardar Donación</button>
+            </div>
+          </form>
+        </AdminModal>
       )}
 
       {/* Modal Entrega */}
       {isEntregaModalOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={`${styles.modal} ${styles.modalSm}`}>
-            <div className={styles.modalHeader}>
-              <h3>Registrar Entrega a Paciente</h3>
-              <button className={styles.modalClose} onClick={() => setIsEntregaModalOpen(false)}>&times;</button>
-            </div>
-            <div style={{ padding: "2.4rem" }}>
-              <form className={styles.adminForm} onSubmit={(e) => { e.preventDefault(); submitEntrega(); }}>
-                <div className={styles.formField}>
-                  <label>Brigada Activa *</label>
-                  <select value={entregaForm.brigada_id} onChange={e => handleBrigadaChange(e.target.value)} required>
-                    <option value="" disabled>-- Seleccionar Brigada --</option>
-                    {brigadasActivas.map(b => (
-                      <option key={b.id} value={b.id}>{b.nombre}</option>
+        <AdminModal title="Registrar Entrega a Paciente" size="sm" onClose={() => setIsEntregaModalOpen(false)}>
+          <form className={styles.modalForm} onSubmit={(e) => { e.preventDefault(); submitEntrega(); }}>
+            <div className={styles.modalBody}>
+              <label className="form-field">
+                <span className="form-label">
+                  Brigada Activa <span className="form-required" aria-hidden="true">*</span>
+                </span>
+                <select className="form-input" value={entregaForm.brigada_id} onChange={e => handleBrigadaChange(e.target.value)} required>
+                  <option value="" disabled>-- Seleccionar Brigada --</option>
+                  {brigadasActivas.map(b => (
+                    <option key={b.id} value={b.id}>{b.nombre}</option>
+                  ))}
+                </select>
+              </label>
+
+              {isFetchingPacientes && (
+                <p className="notice">
+                  <LoaderCircle className="spin" aria-hidden="true" />
+                  <span>Cargando pacientes de la brigada...</span>
+                </p>
+              )}
+
+              {entregaForm.brigada_id && !isFetchingPacientes && (
+                <label className="form-field">
+                  <span className="form-label">
+                    Paciente (Elegibles para Ropa) <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <select className="form-input" value={entregaForm.paciente_id} onChange={e => setEntregaForm({...entregaForm, paciente_id: e.target.value})} required>
+                    <option value="" disabled>-- Seleccionar Paciente --</option>
+                    {pacientesElegibles.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.nombres} {p.apellidos} (Max. disp: {p.prendasDisponibles})
+                      </option>
                     ))}
                   </select>
-                </div>
+                  {pacientesElegibles.length === 0 && (
+                    <span className="form-error">
+                      <CircleAlert size={14} aria-hidden="true" />
+                      No hay pacientes elegibles en esta brigada (o todos ya recibieron sus 2 prendas).
+                    </span>
+                  )}
+                </label>
+              )}
 
-                {isFetchingPacientes && <p style={{color: "var(--gray)", marginBottom: "1.6rem"}}>Cargando pacientes de la brigada...</p>}
+              <label className="form-field">
+                <span className="form-label">
+                  Cantidad (Máx 2 por paciente) <span className="form-required" aria-hidden="true">*</span>
+                </span>
+                <select className="form-input" value={entregaForm.cantidad_prendas} onChange={e => setEntregaForm({...entregaForm, cantidad_prendas: Number(e.target.value)})} required>
+                  <option value={1}>1 Prenda</option>
+                  <option value={2}>2 Prendas</option>
+                </select>
+              </label>
 
-                {entregaForm.brigada_id && !isFetchingPacientes && (
-                  <div className={styles.formField}>
-                    <label>Paciente (Elegibles para Ropa) *</label>
-                    <select value={entregaForm.paciente_id} onChange={e => setEntregaForm({...entregaForm, paciente_id: e.target.value})} required>
-                      <option value="" disabled>-- Seleccionar Paciente --</option>
-                      {pacientesElegibles.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.nombres} {p.apellidos} (Max. disp: {p.prendasDisponibles})
-                        </option>
-                      ))}
-                    </select>
-                    {pacientesElegibles.length === 0 && <span style={{fontSize: "1.2rem", color: "var(--danger)", marginTop: "0.4rem", display: "block"}}>No hay pacientes elegibles en esta brigada (o todos ya recibieron sus 2 prendas).</span>}
-                  </div>
-                )}
-
-                <div className={styles.formField}>
-                  <label>Cantidad (Máx 2 por paciente) *</label>
-                  <select value={entregaForm.cantidad_prendas} onChange={e => setEntregaForm({...entregaForm, cantidad_prendas: Number(e.target.value)})} required>
-                    <option value={1}>1 Prenda</option>
-                    <option value={2}>2 Prendas</option>
-                  </select>
-                </div>
-
-                <div className={styles.formField}>
-                  <label>Observaciones</label>
-                  <textarea rows={2} value={entregaForm.observaciones} onChange={e => setEntregaForm({...entregaForm, observaciones: e.target.value})} />
-                </div>
-
-                <div className={styles.modalActions}>
-                  <button type="button" className={styles.btnSecondary} onClick={() => setIsEntregaModalOpen(false)}>Cancelar</button>
-                  <button type="submit" className={styles.btnPrimary} disabled={!entregaForm.paciente_id}>Registrar Entrega</button>
-                </div>
-              </form>
+              <label className="form-field">
+                <span className="form-label">Observaciones</span>
+                <textarea className="form-input" rows={2} value={entregaForm.observaciones} onChange={e => setEntregaForm({...entregaForm, observaciones: e.target.value})} />
+              </label>
             </div>
-          </div>
-        </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsEntregaModalOpen(false)}>Cancelar</button>
+              <button type="submit" className="btn-primary btn-sm" disabled={!entregaForm.paciente_id}>Registrar Entrega</button>
+            </div>
+          </form>
+        </AdminModal>
       )}
 
       {/* Toast Alert */}
-      {toast && (
-        <div 
-          className={`${styles.toast} ${toast.type === "success" ? styles.toastSuccess : styles.toastError}`}
-          style={{ position: 'fixed', bottom: '2rem', right: '2rem', display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '1rem 1.6rem', borderRadius: '8px', zIndex: 1000 }}
-        >
-          {toast.type === "success" ? <CheckCircleIcon /> : <AlertCircleIcon />}
-          <span>{toast.message}</span>
-        </div>
-      )}
-
+      <AdminToast toast={toast} />
     </div>
   );
 }

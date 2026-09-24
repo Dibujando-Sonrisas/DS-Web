@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { CircleAlert, LoaderCircle } from "lucide-react";
+import AdminModal from "@/app/administracion/components/AdminModal";
 import styles from "@/styles/pages/admin.module.css";
 import type { Specialty } from "./EspecialidadesTable";
 
@@ -34,48 +36,51 @@ export default function EspecialidadForm({ specialty, onClose, onSave }: Especia
   };
 
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modal}>
-        <div className={styles.modalHeader}>
-          <h3>{specialty ? "Editar Especialidad" : "Nueva Especialidad"}</h3>
-          <button className={styles.closeButton} onClick={onClose}>×</button>
-        </div>
-        
-        <form onSubmit={handleSubmit} className={styles.adminForm} style={{ padding: "0" }}>
-          <div className={styles.formField}>
-            <label>Nombre de la Especialidad</label>
+    <AdminModal
+      title={specialty ? "Editar Especialidad" : "Nueva Especialidad"}
+      size="sm"
+      onClose={onClose}
+      busy={loading}
+    >
+      <form onSubmit={handleSubmit} className={styles.modalForm}>
+        <div className={styles.modalBody}>
+          <label className="form-field">
+            <span className="form-label">Nombre de la Especialidad</span>
             <input
               id="nombre"
               type="text"
+              className="form-input"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Ej. Odontología General"
               disabled={loading}
+              aria-invalid={!!error}
               autoFocus
             />
-          </div>
+            {error && (
+              <span className="form-error" role="alert">
+                <CircleAlert size={14} aria-hidden="true" />
+                {error}
+              </span>
+            )}
+          </label>
+        </div>
 
-          {error && <p style={{ color: "var(--danger)", fontSize: "1.4rem", margin: "1rem 0" }}>{error}</p>}
-
-          <div className={styles.modalActions}>
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className={styles.btnPrimary}
-              disabled={loading}
-            >
-              {loading ? "Guardando..." : "Guardar"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className={styles.modalFooter}>
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+          <button type="submit" className="btn-primary btn-sm" disabled={loading}>
+            {loading && <LoaderCircle className="spin" aria-hidden="true" />}
+            {loading ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+      </form>
+    </AdminModal>
   );
 }

@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Boxes, ChartColumn, Gift, Pill, Printer, Shirt } from "lucide-react";
+import EmptyState from "@/app/administracion/components/EmptyState";
+import StatCard from "@/app/administracion/components/StatCard";
+import admin from "@/styles/pages/admin.module.css";
 import styles from "@/styles/pages/reportes.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -165,21 +169,21 @@ export default function ResumenInsumos() {
       nombre: "Medicamentos Entregados",
       nombreCorto: "Medicamentos",
       cantidad: totalMedicamentos,
-      color: "#3498db",
+      bar: styles.barTeal,
     },
     {
       id: "ropa",
       nombre: "Prendas de Ropa Entregadas",
       nombreCorto: "Ropa",
       cantidad: totalRopa,
-      color: "#1abc9c",
+      bar: styles.barYellow,
     },
     {
       id: "jug",
       nombre: "Juguetes Entregados",
       nombreCorto: "Juguetes",
       cantidad: totalJuguetes,
-      color: "#2980b9",
+      bar: styles.barRed,
     },
   ];
 
@@ -202,185 +206,150 @@ export default function ResumenInsumos() {
   return (
     <div>
       {/* ── VISTA WEB (PAGINADA) ── */}
-      <div className={styles.screenView}>
+      <div className={`${styles.screenView} ${admin.stack}`}>
         {/* Encabezado */}
-        <div className={styles.reportHeader}>
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <div className={styles.reportHeaderText}>
-              <h3>Resumen de Entrega de Insumos</h3>
-              <p>
-                Consolidado sintetizado de insumos entregados durante la brigada seleccionada.
-              </p>
-            </div>
+        <div className={admin.sectionHead}>
+          <div>
+            <h2 className={admin.sectionTitle}>Resumen de Entrega de Insumos</h2>
+            <p className={admin.sectionLead}>
+              Consolidado sintetizado de insumos entregados durante la brigada seleccionada.
+            </p>
           </div>
-          <div className={styles.reportHeaderActions}>
-            <button
-              type="button"
-              className={styles.btnActionSecondary}
-              onClick={handlePrint}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5Zm-3 0h.008v.008H15V10.5Z"
-                />
-              </svg>
-              Imprimir
-            </button>
-          </div>
+          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+            <Printer aria-hidden="true" />
+            Imprimir
+          </button>
         </div>
 
         {/* Filtros */}
-        <div className={styles.reportFilters}>
-          <div className={styles.filterGroup}>
-            <label htmlFor="insumos-brigada">Filtrar por Brigada</label>
-            <select
-              id="insumos-brigada"
-              value={selectedBrigadaId}
-              onChange={(e) => setSelectedBrigadaId(e.target.value)}
-              disabled={loading}
-            >
-              <option value="todas">Todas las brigadas</option>
-              {brigadasData.map((b) => (
-                <option key={b.brigada_id} value={b.brigada_id}>
-                  {b.brigada_nombre} {b.fecha ? `(${new Date(b.fecha).toLocaleDateString("es-HN")})` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div
-            style={{
-              margin: "auto 0 0",
-              fontSize: "1.35rem",
-              color: "var(--gray)",
-              display: "flex",
-              gap: "1.5rem",
-              flexWrap: "wrap",
-            }}
-          >
-            <span><strong>Brigada:</strong> {displayNombre}</span>
-            <span><strong>Fecha:</strong> {displayFecha}</span>
-            <span><strong>Comunidad:</strong> {displayComunidad}</span>
+        <div className={admin.panel}>
+          <div className={admin.toolbar}>
+            <div className={`${admin.filter} ${admin.filterWide}`}>
+              <label className={admin.filterLabel} htmlFor="insumos-brigada">
+                Filtrar por Brigada
+              </label>
+              <select
+                id="insumos-brigada"
+                className="form-input form-input-sm"
+                value={selectedBrigadaId}
+                onChange={(e) => setSelectedBrigadaId(e.target.value)}
+                disabled={loading}
+              >
+                <option value="todas">Todas las brigadas</option>
+                {brigadasData.map((b) => (
+                  <option key={b.brigada_id} value={b.brigada_id}>
+                    {b.brigada_nombre} {b.fecha ? `(${new Date(b.fecha).toLocaleDateString("es-HN")})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={`${admin.toolbarNote} ${styles.toolbarMeta}`}>
+              <span><strong>Brigada:</strong> {displayNombre}</span>
+              <span><strong>Fecha:</strong> {displayFecha}</span>
+              <span><strong>Comunidad:</strong> {displayComunidad}</span>
+            </div>
           </div>
         </div>
 
         {/* KPIs de Insumos por Brigada */}
-        <div className={styles.kpiGrid}>
-          <div className={`${styles.kpiCard} ${styles.kpiCardBlue}`}>
-            <p className={styles.kpiLabel}>Total Insumos Entregados</p>
-            <p className={styles.kpiValue}>
-              {loading ? "..." : totalGeneral.toLocaleString()}
-            </p>
-            <p className={styles.kpiChange}>Total general en la brigada</p>
+        {loading ? (
+          <div className={admin.statGrid}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className={`${admin.skeleton} ${admin.skeletonStat}`} />
+            ))}
           </div>
-          <div className={`${styles.kpiCard} ${styles.kpiCardTeal}`}>
-            <p className={styles.kpiLabel}>Medicamentos Entregados</p>
-            <p className={styles.kpiValue}>
-              {loading ? "..." : totalMedicamentos.toLocaleString()}
-            </p>
-            <p className={styles.kpiChange}>Dosis y recetas de farmacia</p>
+        ) : (
+          <div className={`${admin.statGrid} tone-rotate`}>
+            <StatCard
+              label="Total Insumos Entregados"
+              value={totalGeneral.toLocaleString()}
+              icon={<Boxes />}
+              meta="Total general en la brigada"
+            />
+            <StatCard
+              label="Medicamentos Entregados"
+              value={totalMedicamentos.toLocaleString()}
+              icon={<Pill />}
+              meta="Dosis y recetas de farmacia"
+            />
+            <StatCard
+              label="Prendas de Ropa Entregadas"
+              value={totalRopa.toLocaleString()}
+              icon={<Shirt />}
+              meta="Piezas de vestir distribuidas"
+            />
+            <StatCard
+              label="Juguetes Entregados"
+              value={totalJuguetes.toLocaleString()}
+              icon={<Gift />}
+              meta="Regalos en actividades infantiles"
+            />
           </div>
-          <div className={`${styles.kpiCard} ${styles.kpiCardGreen}`}>
-            <p className={styles.kpiLabel}>Prendas de Ropa Entregadas</p>
-            <p className={styles.kpiValue}>
-              {loading ? "..." : totalRopa.toLocaleString()}
-            </p>
-            <p className={styles.kpiChange}>Piezas de vestir distribuidas</p>
-          </div>
-          <div className={`${styles.kpiCard} ${styles.kpiCardBlue}`}>
-            <p className={styles.kpiLabel}>Juguetes Entregados</p>
-            <p className={styles.kpiValue}>
-              {loading ? "..." : totalJuguetes.toLocaleString()}
-            </p>
-            <p className={styles.kpiChange}>Regalos en actividades infantiles</p>
-          </div>
-        </div>
+        )}
 
         {/* Gráfico y Tabla */}
-        <div className={styles.financeSection} style={{ padding: "2.4rem" }}>
-          <h4
-            style={{
-              marginBottom: "2rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.8rem",
-            }}
-          >
-            Distribución de Insumos Entregados ({displayNombre})
-          </h4>
+        <section className={admin.panel}>
+          <div className={admin.panelHeader}>
+            <h2 className={admin.panelTitle}>
+              Distribución de Insumos Entregados ({displayNombre})
+            </h2>
+          </div>
 
-          {/* Gráfico SVG de Barras Interactivo */}
-          <div
-            style={{
-              height: "240px",
-              width: "100%",
-              maxWidth: "800px",
-              margin: "0 auto 3.2rem",
-            }}
-          >
+          {/* Gráfico de Barras Interactivo */}
+          <div className={admin.panelBody}>
             {loading ? (
-              <div style={{ textAlign: "center", paddingTop: "50px", color: "var(--grayLight)" }}>
-                Cargando gráfico...
-              </div>
+              <div className={`${admin.skeleton} ${admin.skeletonBlock}`} />
             ) : totalGeneral === 0 ? (
-              <div style={{ textAlign: "center", paddingTop: "50px", color: "var(--grayLight)" }}>
-                No hay entregas registradas para esta brigada.
-              </div>
+              <EmptyState
+                icon={<ChartColumn />}
+                title="No hay entregas registradas para esta brigada."
+              />
             ) : (
-              <div className={styles.barChartGrid}>
-                {categorias.map((cat) => {
-                  const alturaPorcentaje = Math.max(
-                    (cat.cantidad / maxCantidad) * 80,
-                    8
-                  );
-                  return (
-                    <div key={cat.id} className={styles.barCol}>
-                      <div className={styles.barColTooltip}>
-                        {cat.cantidad.toLocaleString()} {cat.nombreCorto.toLowerCase()} entregados
+              <div className={styles.chart}>
+                <div className={styles.barChartGrid}>
+                  {categorias.map((cat) => {
+                    const alturaPorcentaje = Math.max(
+                      (cat.cantidad / maxCantidad) * 80,
+                      8
+                    );
+                    return (
+                      <div key={cat.id} className={styles.barCol}>
+                        <div className={styles.barColTooltip}>
+                          {cat.cantidad.toLocaleString()} {cat.nombreCorto.toLowerCase()} entregados
+                        </div>
+                        <div
+                          className={`${styles.chartBarElement} ${cat.bar}`}
+                          style={{ height: `${alturaPorcentaje}%` }}
+                        />
+                        <span className={styles.barLabel}>{cat.nombreCorto}</span>
                       </div>
-                      <div
-                        className={styles.chartBarElement}
-                        style={{
-                          height: `${alturaPorcentaje}%`,
-                          backgroundColor: cat.color,
-                          width: "3.6rem",
-                        }}
-                      />
-                      <span className={styles.barLabel}>{cat.nombreCorto}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
 
           {/* Tabla sintetizada por categoría */}
-          <div style={{ overflowX: "auto" }}>
-            <table className={styles.financeTable}>
+          <div className={admin.tableWrap}>
+            <table className={admin.table}>
               <thead>
                 <tr>
                   <th>Categoría de Insumo</th>
-                  <th style={{ textAlign: "right" }}>Total Entregado</th>
-                  <th style={{ textAlign: "right" }}>Porcentaje del Total</th>
+                  <th className={admin.num}>Total Entregado</th>
+                  <th className={admin.num}>Porcentaje del Total</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={3} style={{ textAlign: "center", padding: "2rem", color: "var(--grayLight)" }}>
+                    <td colSpan={3} className={admin.emptyCell}>
                       Cargando resumen de insumos...
                     </td>
                   </tr>
                 ) : totalGeneral === 0 ? (
                   <tr>
-                    <td colSpan={3} style={{ textAlign: "center", padding: "2rem", color: "var(--grayLight)" }}>
+                    <td colSpan={3} className={admin.emptyCell}>
                       No se encontraron entregas para esta brigada.
                     </td>
                   </tr>
@@ -391,42 +360,27 @@ export default function ResumenInsumos() {
                       : "0.0";
                     return (
                       <tr key={cat.id}>
-                        <td style={{ fontWeight: 700 }}>
-                          <span
-                            style={{
-                              display: "inline-block",
-                              width: "1.2rem",
-                              height: "1.2rem",
-                              borderRadius: "50%",
-                              backgroundColor: cat.color,
-                              marginRight: "0.8rem",
-                            }}
-                          />
+                        <td className={admin.cellMain}>
+                          <span className={`${styles.dot} ${cat.bar}`} aria-hidden="true" />
                           {cat.nombre}
                         </td>
-                        <td style={{ textAlign: "right", fontWeight: 600 }}>
-                          {cat.cantidad.toLocaleString()}
-                        </td>
-                        <td style={{ textAlign: "right", fontWeight: 600 }}>
-                          {porcentaje}%
-                        </td>
+                        <td className={admin.num}>{cat.cantidad.toLocaleString()}</td>
+                        <td className={admin.num}>{porcentaje}%</td>
                       </tr>
                     );
                   })
                 )}
                 {!loading && totalGeneral > 0 && (
-                  <tr className={styles.financeTotalsRow}>
+                  <tr className={styles.totalRow}>
                     <td>TOTAL GENERAL DE INSUMOS ENTREGADOS</td>
-                    <td style={{ textAlign: "right" }}>
-                      {totalGeneral.toLocaleString()}
-                    </td>
-                    <td style={{ textAlign: "right" }}>100%</td>
+                    <td className={admin.num}>{totalGeneral.toLocaleString()}</td>
+                    <td className={admin.num}>100%</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       </div>
       {/* ── FIN VISTA WEB ── */}
 
@@ -449,102 +403,31 @@ export default function ResumenInsumos() {
           footerNote="Consolidado de ayuda humanitaria e insumos — Fundación Dibujando Sonrisas"
         >
           {/* Gráfico de Barras en Impresión */}
-          <div
-            style={{
-              pageBreakInside: "avoid",
-              breakInside: "avoid",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              padding: "1rem 1.2rem",
-              marginBottom: "1.5rem",
-              background: "#ffffff",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "10.5pt",
-                fontWeight: "bold",
-                color: "#000000",
-                margin: "0 0 0.8rem 0",
-                textTransform: "uppercase",
-                borderBottom: "1px solid #cbd5e1",
-                paddingBottom: "0.4rem",
-                textAlign: "center",
-              }}
-            >
-              Distribución de Insumos Entregados
-            </h3>
+          <div className={styles.printGraph}>
+            <h3 className={styles.printGraphTitle}>Distribución de Insumos Entregados</h3>
 
-            <div style={{ height: "180px", width: "100%", maxWidth: "680px", margin: "0 auto" }}>
+            <div className={styles.printGraphArea}>
               {loading ? (
-                <div style={{ textAlign: "center", paddingTop: "40px", fontSize: "9pt" }}>
-                  Cargando gráfico...
-                </div>
+                <div className={styles.printGraphEmpty}>Cargando gráfico...</div>
               ) : totalGeneral === 0 ? (
-                <div style={{ textAlign: "center", paddingTop: "40px", fontSize: "9pt" }}>
+                <div className={styles.printGraphEmpty}>
                   No hay entregas registradas para esta brigada.
                 </div>
               ) : (
-                <div
-                  className={styles.barChartGrid}
-                  style={{
-                    height: "100%",
-                    borderBottom: "2px solid #000000",
-                    display: "flex",
-                    alignItems: "flex-end",
-                    justifyContent: "space-around",
-                    paddingBottom: "4px",
-                  }}
-                >
+                <div className={`${styles.barChartGrid} ${styles.printBars}`}>
                   {categorias.map((cat) => {
                     const alturaPorcentaje = Math.max(
                       (cat.cantidad / maxCantidad) * 75,
                       10
                     );
                     return (
-                      <div
-                        key={cat.id}
-                        className={styles.barCol}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "flex-end",
-                          height: "100%",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "8.5pt",
-                            fontWeight: "bold",
-                            color: "#1e293b",
-                            marginBottom: "2px",
-                          }}
-                        >
-                          {cat.cantidad.toLocaleString()}
-                        </span>
+                      <div key={cat.id} className={styles.barCol}>
+                        <span className={styles.printBarValue}>{cat.cantidad.toLocaleString()}</span>
                         <div
-                          style={{
-                            height: `${alturaPorcentaje}%`,
-                            backgroundColor: cat.color,
-                            width: "2.8rem",
-                            borderRadius: "3px 3px 0 0",
-                            WebkitPrintColorAdjust: "exact",
-                            printColorAdjust: "exact",
-                          }}
+                          className={`${styles.printBar} ${cat.bar}`}
+                          style={{ height: `${alturaPorcentaje}%` }}
                         />
-                        <span
-                          style={{
-                            fontSize: "8.5pt",
-                            color: "#000000",
-                            fontWeight: 600,
-                            marginTop: "4px",
-                            textAlign: "center",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {cat.nombreCorto}
-                        </span>
+                        <span className={styles.printBarLabel}>{cat.nombreCorto}</span>
                       </div>
                     );
                   })}
@@ -556,22 +439,22 @@ export default function ResumenInsumos() {
           <table className={styles.printTable}>
             <thead>
               <tr>
-                <th style={{ width: "8%", textAlign: "center" }}>#</th>
-                <th style={{ width: "48%" }}>Categoría de Insumo</th>
-                <th style={{ width: "24%", textAlign: "right" }}>Total Entregado</th>
-                <th style={{ width: "20%", textAlign: "right" }}>Porcentaje</th>
+                <th className={`${styles.w8} ${styles.printCenter}`}>#</th>
+                <th className={styles.w48}>Categoría de Insumo</th>
+                <th className={`${styles.w24} ${styles.printRight}`}>Total Entregado</th>
+                <th className={`${styles.w20} ${styles.printRight}`}>Porcentaje</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: "center", padding: "1.5rem" }}>
+                  <td colSpan={4} className={styles.printCenter}>
                     Cargando insumos...
                   </td>
                 </tr>
               ) : totalGeneral === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: "center", padding: "1.5rem" }}>
+                  <td colSpan={4} className={styles.printCenter}>
                     No hay entregas registradas para esta brigada.
                   </td>
                 </tr>
@@ -582,12 +465,12 @@ export default function ResumenInsumos() {
                     : "0.0";
                   return (
                     <tr key={cat.id}>
-                      <td style={{ textAlign: "center" }}>{idx + 1}</td>
-                      <td style={{ fontWeight: "bold" }}>{cat.nombre}</td>
-                      <td style={{ textAlign: "right", fontWeight: "bold" }}>
+                      <td className={styles.printCenter}>{idx + 1}</td>
+                      <td className={styles.printStrong}>{cat.nombre}</td>
+                      <td className={`${styles.printRight} ${styles.printStrong}`}>
                         {cat.cantidad.toLocaleString()}
                       </td>
-                      <td style={{ textAlign: "right", fontWeight: "bold" }}>
+                      <td className={`${styles.printRight} ${styles.printStrong}`}>
                         {porcentaje}%
                       </td>
                     </tr>
@@ -595,10 +478,10 @@ export default function ResumenInsumos() {
                 })
               )}
               {!loading && totalGeneral > 0 && (
-                <tr style={{ fontWeight: "bold", background: "#f1f5f9" }}>
+                <tr className={styles.printTotalRow}>
                   <td colSpan={2}>TOTAL GENERAL DE INSUMOS ENTREGADOS</td>
-                  <td style={{ textAlign: "right" }}>{totalGeneral.toLocaleString()}</td>
-                  <td style={{ textAlign: "right" }}>100%</td>
+                  <td className={styles.printRight}>{totalGeneral.toLocaleString()}</td>
+                  <td className={styles.printRight}>100%</td>
                 </tr>
               )}
             </tbody>

@@ -9,6 +9,9 @@ import {
   activateUserAction,
   deactivateUserAction,
 } from "./actions";
+import { LoaderCircle, Pencil, Search, TriangleAlert } from "lucide-react";
+import AdminModal from "../components/AdminModal";
+import AdminToast, { type ToastState } from "../components/AdminToast";
 import RoleBadge from "../components/RoleBadge";
 import StatusBadge from "../components/StatusBadge";
 import UserAvatar from "../components/UserAvatar";
@@ -44,10 +47,7 @@ export default function UsuariosAdminClient({
 
   // Transition & UX State
   const [isPending, startTransition] = useTransition();
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -131,41 +131,52 @@ export default function UsuariosAdminClient({
     return matchesSearch && matchesRole && matchesSpecialty && matchesStatus;
   });
 
+  const isSelf = editTarget?.id === currentUserId;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
+    <>
       {fetchError && (
-        <div className={styles.tableError}>
-          <strong>Error de Carga:</strong> {fetchError}
-        </div>
+        <p className="notice notice-bad" role="alert">
+          <TriangleAlert aria-hidden="true" />
+          <span>
+            <strong>Error de Carga:</strong> {fetchError}
+          </span>
+        </p>
       )}
 
-      {/* Caja de Filtros */}
-      <div className={styles.tableContainer} style={{ padding: "2rem" }}>
-        <h3 style={{ fontSize: "1.6rem", marginBottom: "1.6rem" }}>
-          Filtros de Búsqueda
-        </h3>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "1.6rem",
-          }}
-        >
-          {/* Buscar por Nombre */}
-          <div className={styles.formField}>
-            <span>Buscar por nombre</span>
-            <input
-              type="text"
-              placeholder="Buscar..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      <section className={styles.panel} aria-labelledby="miembros-registrados">
+        <div className={styles.panelHeader}>
+          <h2 id="miembros-registrados" className={styles.panelTitle}>
+            Miembros Registrados <span className={styles.count}>{filteredRows.length}</span>
+          </h2>
+        </div>
+
+        {/* Filtros */}
+        <div className={styles.toolbar}>
+          <div className={`${styles.filter} ${styles.filterWide}`}>
+            <label className={styles.filterLabel} htmlFor="usuarios-buscar">
+              Buscar por nombre
+            </label>
+            <div className={styles.search}>
+              <Search aria-hidden="true" />
+              <input
+                id="usuarios-buscar"
+                type="text"
+                className="form-input form-input-sm"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
 
-          {/* Filtrar por Rol */}
-          <div className={styles.formField}>
-            <span>Rol</span>
+          <div className={styles.filter}>
+            <label className={styles.filterLabel} htmlFor="usuarios-rol">
+              Rol
+            </label>
             <select
+              id="usuarios-rol"
+              className="form-input form-input-sm"
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
             >
@@ -178,10 +189,13 @@ export default function UsuariosAdminClient({
             </select>
           </div>
 
-          {/* Filtrar por Especialidad */}
-          <div className={styles.formField}>
-            <span>Especialidad</span>
+          <div className={styles.filter}>
+            <label className={styles.filterLabel} htmlFor="usuarios-especialidad">
+              Especialidad
+            </label>
             <select
+              id="usuarios-especialidad"
+              className="form-input form-input-sm"
               value={specialtyFilter}
               onChange={(e) => setSpecialtyFilter(e.target.value)}
             >
@@ -195,10 +209,13 @@ export default function UsuariosAdminClient({
             </select>
           </div>
 
-          {/* Filtrar por Estado */}
-          <div className={styles.formField}>
-            <span>Estado</span>
+          <div className={styles.filter}>
+            <label className={styles.filterLabel} htmlFor="usuarios-estado">
+              Estado
+            </label>
             <select
+              id="usuarios-estado"
+              className="form-input form-input-sm"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -208,16 +225,10 @@ export default function UsuariosAdminClient({
             </select>
           </div>
         </div>
-      </div>
 
-      {/* Tabla de Usuarios */}
-      <div className={styles.tableContainer}>
-        <div className={styles.tableHeader}>
-          <h3>Miembros Registrados ({filteredRows.length})</h3>
-        </div>
-
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.adminTable}>
+        {/* Tabla de Usuarios */}
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
             <thead>
               <tr>
                 <th>Miembro</th>
@@ -225,7 +236,7 @@ export default function UsuariosAdminClient({
                 <th>Cargo</th>
                 <th>Especialidad</th>
                 <th>Estado</th>
-                <th>Acciones</th>
+                <th className={styles.num}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -244,28 +255,17 @@ export default function UsuariosAdminClient({
                   return (
                     <tr key={user.id}>
                       <td>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "1.2rem",
-                          }}
-                        >
+                        <div className={styles.cellPerson}>
                           <UserAvatar
                             avatarUrl={user.avatar_url}
                             nombres={user.nombre_completo}
-                            size={40}
+                            size={36}
                           />
                           <div>
-                            <div style={{ fontWeight: 600 }}>{nameDisplay}</div>
-                            <div
-                              style={{
-                                fontSize: "1.2rem",
-                                color: "var(--gray)",
-                              }}
-                            >
+                            <span className={styles.cellMain}>{nameDisplay}</span>
+                            <span className={styles.cellSub}>
                               ID: <code>{user.id.substring(0, 8)}...</code>
-                            </div>
+                            </span>
                           </div>
                         </div>
                       </td>
@@ -273,26 +273,28 @@ export default function UsuariosAdminClient({
                         <RoleBadge role={user.rol} />
                       </td>
                       <td>
-                        {user.cargo || (
-                          <span style={{ color: "var(--grayLight)" }}>—</span>
-                        )}
+                        {user.cargo || <span className={styles.muted}>—</span>}
                       </td>
                       <td>
                         {user.especialidades?.nombre || (
-                          <span style={{ color: "var(--grayLight)" }}>—</span>
+                          <span className={styles.muted}>—</span>
                         )}
                       </td>
                       <td>
                         <StatusBadge activo={user.activo} />
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className={styles.linkBtn}
-                          onClick={() => openEditModal(user)}
-                        >
-                          Editar
-                        </button>
+                        <div className={styles.rowActions}>
+                          <button
+                            type="button"
+                            className="btn-icon"
+                            onClick={() => openEditModal(user)}
+                            aria-label={`Editar ${nameDisplay}`}
+                            title="Editar"
+                          >
+                            <Pencil aria-hidden="true" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -301,85 +303,64 @@ export default function UsuariosAdminClient({
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
       {/* Modal de Edición de Usuario */}
       {editTarget && (
-        <div className={styles.modalOverlay} onClick={closeEditModal}>
-          <div
-            className={styles.modal}
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "500px" }}
+        <AdminModal title="Editar Miembro" size="sm" onClose={closeEditModal} busy={isPending}>
+          <form
+            className={styles.modalForm}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }}
           >
-            <div className={styles.modalHeader}>
-              <h3>Editar Miembro</h3>
-              <button
-                type="button"
-                className={styles.modalClose}
-                onClick={closeEditModal}
-                disabled={isPending}
-              >
-                &times;
-              </button>
-            </div>
-
-            <div className={styles.adminForm}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1.2rem",
-                  marginBottom: "0.8rem",
-                }}
-              >
+            <div className={styles.modalBody}>
+              <div className={styles.cellPerson}>
                 <UserAvatar
                   avatarUrl={editTarget.avatar_url}
                   nombres={editTarget.nombre_completo}
                   size={56}
                 />
                 <div>
-                  <h4 style={{ margin: 0, fontSize: "1.6rem" }}>
+                  <span className={styles.cellMain}>
                     {editTarget.nombre_completo
                       ? editTarget.nombre_completo.trim()
                       : "Usuario Sin Nombre"}
-                  </h4>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "1.3rem",
-                      color: "var(--gray)",
-                    }}
-                  >
+                  </span>
+                  <span className={styles.cellSub}>
                     ID: <code>{editTarget.id}</code>
-                  </p>
+                  </span>
                 </div>
               </div>
 
               {/* Editar Rol */}
-               <label className={styles.formField}>
-                 <span>Rol en la Plataforma</span>
-                 <select
-                   value={selectedRole}
-                   onChange={(e) => setSelectedRole(e.target.value as AppRole)}
-                   disabled={isPending || editTarget.id === currentUserId}
-                 >
-                   {APP_ROLES.map((role) => (
-                     <option key={role} value={role}>
-                       {ROLE_LABELS[role]}
-                     </option>
-                   ))}
-                 </select>
-                 {editTarget.id === currentUserId && (
-                   <span style={{ fontSize: "1.2rem", color: "var(--gray)", marginTop: "0.4rem" }}>
-                     No puedes cambiar tu propio rol de administrador.
-                   </span>
-                 )}
-               </label>
+              <label className="form-field">
+                <span className="form-label">Rol en la Plataforma</span>
+                <select
+                  className="form-input"
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value as AppRole)}
+                  disabled={isPending || isSelf}
+                >
+                  {APP_ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {ROLE_LABELS[role]}
+                    </option>
+                  ))}
+                </select>
+                {isSelf && (
+                  <span className="form-hint">
+                    No puedes cambiar tu propio rol de administrador.
+                  </span>
+                )}
+              </label>
 
               {/* Editar Especialidad */}
-              <label className={styles.formField}>
-                <span>Especialidad Médica/Odontológica</span>
+              <label className="form-field">
+                <span className="form-label">Especialidad Médica/Odontológica</span>
                 <select
+                  className="form-input"
                   value={selectedSpecialtyId}
                   onChange={(e) => setSelectedSpecialtyId(e.target.value)}
                   disabled={isPending}
@@ -394,90 +375,55 @@ export default function UsuariosAdminClient({
               </label>
 
               {/* Editar Estado Activo */}
-              <div className={styles.formField}>
-                <span>Acceso Activo</span>
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.8rem",
-                    cursor: editTarget.id === currentUserId ? "not-allowed" : "pointer",
-                    marginTop: "0.4rem",
-                  }}
-                >
+              <div className="form-field">
+                <span className="form-label">Acceso Activo</span>
+                <label className="form-check">
                   <input
                     type="checkbox"
                     checked={selectedActive}
                     onChange={(e) => setSelectedActive(e.target.checked)}
-                    disabled={isPending || editTarget.id === currentUserId}
-                    style={{ width: "auto", cursor: editTarget.id === currentUserId ? "not-allowed" : "pointer" }}
+                    disabled={isPending || isSelf}
                   />
-                  <span style={{ fontSize: "1.4rem", fontWeight: "normal" }}>
-                    Permitir acceso al panel administrativo
-                  </span>
+                  Permitir acceso al panel administrativo
                 </label>
-                {editTarget.id === currentUserId && (
-                  <span style={{ fontSize: "1.2rem", color: "var(--gray)", marginTop: "0.4rem" }}>
-                    No puedes desactivar tu propio acceso.
-                  </span>
+                {isSelf && (
+                  <span className="form-hint">No puedes desactivar tu propio acceso.</span>
                 )}
               </div>
 
               {/* Mensaje de Confirmación Extra si se Desactiva */}
               {!selectedActive && editTarget.activo && (
-                <div
-                  style={{
-                    backgroundColor: "#fee2e2",
-                    border: "1px solid #fecaca",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "1rem 1.2rem",
-                    fontSize: "1.3rem",
-                    color: "#b91c1c",
-                  }}
-                >
-                  <strong>Atención:</strong> Desactivar esta cuenta bloqueará
-                  inmediatamente la sesión de este usuario y no podrá volver a
-                  iniciar sesión hasta ser reactivado.
-                </div>
+                <p className="notice notice-bad">
+                  <TriangleAlert aria-hidden="true" />
+                  <span>
+                    <strong>Atención:</strong> Desactivar esta cuenta bloqueará
+                    inmediatamente la sesión de este usuario y no podrá volver a
+                    iniciar sesión hasta ser reactivado.
+                  </span>
+                </p>
               )}
-
-              {/* Acciones de Modal */}
-              <div
-                className={styles.modalActions}
-                style={{ marginTop: "1rem" }}
-              >
-                <button
-                  type="button"
-                  className={styles.btnSecondary}
-                  onClick={closeEditModal}
-                  disabled={isPending}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className={styles.btnPrimary}
-                  onClick={handleSave}
-                  disabled={isPending}
-                >
-                  {isPending ? "Guardando..." : "Guardar Cambios"}
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
+
+            {/* Acciones de Modal */}
+            <div className={styles.modalFooter}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={closeEditModal}
+                disabled={isPending}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="btn-primary btn-sm" disabled={isPending}>
+                {isPending && <LoaderCircle className="spin" aria-hidden="true" />}
+                {isPending ? "Guardando..." : "Guardar Cambios"}
+              </button>
+            </div>
+          </form>
+        </AdminModal>
       )}
 
-      {/* Toast Alert */}
-      {toast && (
-        <div
-          className={`${styles.toast} ${
-            toast.type === "success" ? styles.toastSuccess : styles.toastError
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
-    </div>
+      <AdminToast toast={toast} />
+    </>
   );
 }

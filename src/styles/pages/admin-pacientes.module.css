@@ -1,0 +1,19 @@
+/* =====================================================
+   PACIENTES Y FARMACIA — admin-pacientes.module.css
+   Solo lo propio de estos módulos: pie del
+   asistente del expediente y la
+   cantidad editable de farmacia. Paneles, tablas,
+   pestañas, pasos y modales vienen de admin.module.css.
+===================================================== */
+
+/* ── NUEVO EXPEDIENTE ── */
+/* el botón para avanzar queda a la derecha aunque no haya "Atrás" */
+.next {
+  margin-left: auto;
+}
+
+/* ── FARMACIA ── */
+/* cantidad a entregar, editable dentro de la tabla de lotes */
+.qty input {
+  width: 8rem;
+}

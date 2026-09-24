@@ -2,8 +2,9 @@
    FOOTER — footer.module.css
 ===================================================== */
 
+/* verde oscuro: el texto blanco translúcido pasa AA (sobre el verde de marca no) */
 .footer {
-  background-color: var(--primaryColor);
+  background-color: var(--primaryDark);
   color: var(--white);
 }
 
@@ -41,7 +42,7 @@
 
 .tagline {
   font-size: 1.4rem;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.8);
   line-height: 1.7;
   max-width: 28rem;
 }
@@ -84,7 +85,7 @@
 
 .navList a {
   font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.8);
   transition: color 0.2s ease;
 }
 
@@ -101,7 +102,7 @@
 
 .infoCol p {
   font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* Bottom bar */
@@ -120,5 +121,10 @@
 
 .footerBottomInner p {
   font-size: 1.3rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* sobre el verde oscuro el anillo de foco oscuro no se vería */
+.footer :focus-visible {
+  outline-color: var(--secondaryColor);
 }

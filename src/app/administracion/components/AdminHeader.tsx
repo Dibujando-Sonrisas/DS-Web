@@ -1,10 +1,20 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
+import {
+  CalendarDays,
+  ChevronDown,
+  CircleUserRound,
+  LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+} from "lucide-react";
 import { logoutAction } from "@/app/auth/actions";
+import { findModule } from "./navModules";
 import UserAvatar from "./UserAvatar";
 import NotificacionesStockBtn from "./NotificacionesStockBtn";
 import styles from "@/styles/pages/admin.module.css";
@@ -31,6 +41,7 @@ const MODULE_TITLES: { prefix: string; title: string; subtitle: string }[] = [
   { prefix: "/administracion/reportes", title: "Reportes y Estadísticas", subtitle: "Análisis de datos, atenciones y brigadas" },
   { prefix: "/administracion/usuarios", title: "Login y Usuarios", subtitle: "Administración de accesos y credenciales" },
   { prefix: "/administracion/perfil", title: "Mi Perfil", subtitle: "Información personal y cuenta" },
+  { prefix: "/administracion/contacto", title: "Mensajes de Contacto", subtitle: "Bandeja de mensajes del sitio web" },
   { prefix: "/administracion", title: "Dashboard General", subtitle: "Resumen ejecutivo y métricas globales" },
 ];
 
@@ -47,20 +58,28 @@ export default function AdminHeader({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Find module title based on pathname
+  // Título del módulo según la ruta
   const activeModule = MODULE_TITLES.find((m) =>
     m.prefix === "/administracion" ? pathname === "/administracion" : pathname.startsWith(m.prefix)
   ) || { title: "Sistema Integral", subtitle: "Fundación Dibujando Sonrisas" };
+  const moduleIcon = findModule(pathname)?.icon;
 
-  // Close dropdown when clicking outside
+  // Cerrar el menú al hacer clic fuera o con Escape
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
     };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDropdownOpen(false);
+    };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const todayFormatted = new Intl.DateTimeFormat("es-HN", {
@@ -70,174 +89,109 @@ export default function AdminHeader({
   }).format(new Date());
 
   return (
-    <header className={styles.header100}>
-      {/* LADO IZQUIERDO: Alternar Menú + Brand + Módulo Dinámico */}
+    <header className={styles.adminHeader}>
       <div className={styles.headerLeft}>
         <button
-          className={styles.toggleBtn}
+          type="button"
+          className={`btn-icon ${styles.collapseBtn}`}
           onClick={onToggleSidebar}
           title={isCollapsed ? "Expandir menú lateral" : "Contraer menú lateral"}
-          aria-label="Alternar menú lateral"
+          aria-label={isCollapsed ? "Expandir menú lateral" : "Contraer menú lateral"}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.8}
-            stroke="currentColor"
-            style={{ width: "2.2rem", height: "2.2rem" }}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
+          {isCollapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
         </button>
 
         <button
-          className={styles.toggleMobileBtn}
+          type="button"
+          className={`btn-icon ${styles.mobileMenuBtn}`}
           onClick={onToggleMobile}
-          aria-label="Abrir menú móvil"
+          aria-label="Abrir menú"
+          aria-controls="admin-sidebar"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.8}
-            stroke="currentColor"
-            style={{ width: "2.2rem", height: "2.2rem" }}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-          </svg>
+          <Menu aria-hidden="true" />
         </button>
 
-        {/* Identidad institucional en el Header (solo cuando el Sidebar está contraído) */}
-        {isCollapsed && (
-          <>
-            <Link href="/" className={styles.headerBrandLink}>
-              <div className={styles.headerLogoContainer}>
-                <Image
-                  src="/DS-LOGO.png"
-                  alt="Logo Fundación Dibujando Sonrisas"
-                  width={38}
-                  height={38}
-                  className={styles.headerLogoImg}
-                  priority
-                />
-              </div>
-              <div className={styles.headerBrandInfo}>
-                <span className={styles.headerAppName}>Sistema Web de Gestión</span>
-                <span className={styles.headerFoundationName}>Dibujando Sonrisas</span>
-              </div>
-            </Link>
-            <div className={styles.headerDivider} />
-          </>
-        )}
-
-        <div className={styles.headerModuleBadge}>
-          <span className={styles.headerModuleName}>{activeModule.title}</span>
-          <span className={styles.headerModuleSub}>{activeModule.subtitle}</span>
+        <div className={styles.crumb}>
+          {moduleIcon && (
+            <span className={styles.crumbIcon} aria-hidden="true">
+              {moduleIcon}
+            </span>
+          )}
+          <div className={styles.crumbText}>
+            <span className={styles.crumbTitle}>{activeModule.title}</span>
+            <span className={styles.crumbSub}>{activeModule.subtitle}</span>
+          </div>
         </div>
       </div>
 
-      {/* CENTRO: Barra de búsqueda y fecha estilizada */}
-      <div className={styles.headerCenter}>
-        <div className={styles.headerSearchWrapper}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-            className={styles.headerSearchIcon}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-            />
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar paciente, brigada o medicina..."
-            className={styles.headerSearchInput}
-            aria-label="Buscar en el sistema"
-          />
-        </div>
-
-        <div className={styles.headerDateBadge} title="Fecha del sistema">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.8}
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
-            />
-          </svg>
-          <span style={{ textTransform: "capitalize" }}>{todayFormatted}</span>
-        </div>
+      <div className={styles.headerSearch} role="search">
+        <Search aria-hidden="true" />
+        <input
+          type="search"
+          placeholder="Buscar paciente, brigada o medicina..."
+          className={styles.headerSearchInput}
+          aria-label="Buscar en el sistema"
+        />
       </div>
 
-      {/* LADO DERECHO: Notificaciones de Stock + Perfil de usuario + Dropdown */}
       <div className={styles.headerRight}>
-        {/* Botón de notificaciones de alertas de stock mínimo */}
+        {/* la fecha del servidor puede diferir de la del navegador */}
+        <span className={styles.headerDate} title="Fecha del sistema" suppressHydrationWarning>
+          <CalendarDays aria-hidden="true" />
+          {todayFormatted}
+        </span>
+
+        {/* Alertas de stock mínimo */}
         <NotificacionesStockBtn />
 
-        <div className={styles.headerRightDivider} />
+        <div className={styles.headerDivider} />
 
-        <div ref={dropdownRef} style={{ position: "relative" }}>
-        <div
-          className={styles.userProfileTrigger}
-          onClick={() => setDropdownOpen((prev) => !prev)}
-        >
-          <div className={styles.userProfileText}>
-            <span className={styles.userProfileName}>{displayName}</span>
-            <span className={styles.userRoleBadge}>{roleLabel}</span>
-          </div>
-          <UserAvatar avatarUrl={avatarUrl} nombres={displayName} email={email} size={38} />
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-            className={`${styles.dropdownArrow} ${dropdownOpen ? styles.dropdownArrowOpen : ""}`}
+        <div ref={dropdownRef} className={styles.menuWrap}>
+          <button
+            type="button"
+            className={styles.userTrigger}
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            aria-haspopup="menu"
+            aria-expanded={dropdownOpen}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-          </svg>
-        </div>
+            <UserAvatar avatarUrl={avatarUrl} nombres={displayName} email={email} size={36} />
+            <span className={styles.userText}>
+              <span className={styles.userName}>{displayName}</span>
+              <span className={styles.userRole}>{roleLabel}</span>
+            </span>
+            <ChevronDown
+              className={`${styles.chevron} ${dropdownOpen ? styles.chevronOpen : ""}`}
+              aria-hidden="true"
+            />
+          </button>
 
-        {dropdownOpen && (
-          <div className={styles.userDropdownMenu}>
-            <div className={styles.dropdownHeaderInfo}>
-              <span className={styles.dropdownUserName}>{displayName}</span>
-              <span className={styles.dropdownUserEmail}>{email}</span>
+          {dropdownOpen && (
+            <div className={styles.dropdown} role="menu">
+              <div className={styles.dropdownHead}>
+                <span className={styles.dropdownName}>{displayName}</span>
+                <span className={styles.dropdownEmail}>{email}</span>
+              </div>
+              <Link
+                href="/administracion/perfil"
+                role="menuitem"
+                className={styles.dropdownItem}
+                onClick={() => setDropdownOpen(false)}
+              >
+                <CircleUserRound aria-hidden="true" />
+                Mi Perfil
+              </Link>
+              <form action={logoutAction}>
+                <button
+                  type="submit"
+                  role="menuitem"
+                  className={`${styles.dropdownItem} ${styles.dropdownDanger}`}
+                >
+                  <LogOut aria-hidden="true" />
+                  Cerrar Sesión
+                </button>
+              </form>
             </div>
-            <hr className={styles.dropdownDivider} />
-            <Link
-              href="/administracion/perfil"
-              className={styles.dropdownItem}
-              onClick={() => setDropdownOpen(false)}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-              </svg>
-              Mi Perfil
-            </Link>
-            <form action={logoutAction}>
-              <button type="submit" className={`${styles.dropdownItem} ${styles.dropdownLogout}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
-                </svg>
-                Cerrar Sesión
-              </button>
-            </form>
-          </div>
-        )}
+          )}
         </div>
       </div>
     </header>

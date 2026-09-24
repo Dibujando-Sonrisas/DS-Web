@@ -1,7 +1,10 @@
 "use client";
 
-import React, { useTransition } from "react";
+import { useState, useTransition } from "react";
+import { Check, TriangleAlert, X } from "lucide-react";
+import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import styles from "@/styles/pages/admin.module.css";
+import brig from "@/styles/pages/admin-brigadas.module.css";
 
 export type InscripcionRow = {
   id: string;
@@ -50,8 +53,8 @@ const STATE_LABELS = {
 };
 
 const STATE_CLASSES = {
-  pendiente: styles.badgeInfo,
-  aceptado: styles.badgeSuccess || styles.badgeInfo,
+  pendiente: styles.badgeWarning,
+  aceptado: styles.badgeSuccess,
   rechazado: styles.badgeDanger,
 };
 
@@ -65,6 +68,7 @@ export default function InscripcionesTable({
   isReadOnly = false,
 }: InscripcionesTableProps) {
   const [isPending, startTransition] = useTransition();
+  const [rejectTarget, setRejectTarget] = useState<InscripcionRow | null>(null);
 
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString("es-HN", {
@@ -80,12 +84,11 @@ export default function InscripcionesTable({
     });
   };
 
-  const handleReject = (id: string) => {
+  const confirmReject = () => {
+    if (!rejectTarget) return;
     startTransition(async () => {
-      const confirm = window.confirm("¿Estás seguro de que deseas rechazar esta solicitud?");
-      if (confirm) {
-        await onReject(id);
-      }
+      await onReject(rejectTarget.id);
+      setRejectTarget(null);
     });
   };
 
@@ -96,147 +99,133 @@ export default function InscripcionesTable({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.6rem" }}>
-      <h3 style={{ fontSize: "1.6rem", fontWeight: "bold" }}>
-        Solicitudes de Voluntariado ({inscripciones.length})
+    <section className={styles.stackSm}>
+      <h3 className={styles.subTitle}>
+        Solicitudes de Voluntariado <span className={styles.count}>{inscripciones.length}</span>
       </h3>
 
-      <div className={styles.tableContainer}>
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.adminTable}>
-            <thead>
+      <div className={`${styles.tableWrap} ${brig.bleed}`}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Voluntario</th>
+              <th>Contacto</th>
+              <th>Área de Interés</th>
+              <th>Fecha Solicitud</th>
+              <th>Estado</th>
+              <th>Asignación Rápida</th>
+              {!isReadOnly && <th className={styles.num}>Acciones</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {inscripciones.length === 0 ? (
               <tr>
-                <th>Voluntario</th>
-                <th>Contacto</th>
-                <th>Área de Interés</th>
-                <th>Fecha Solicitud</th>
-                <th>Estado</th>
-                <th>Asignación Rápida</th>
-                {!isReadOnly && <th>Acciones</th>}
+                <td colSpan={isReadOnly ? 6 : 7} className={styles.emptyCell}>
+                  No hay solicitudes registradas para esta brigada.
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {inscripciones.length === 0 ? (
-                <tr>
-                  <td colSpan={isReadOnly ? 6 : 7} className={styles.emptyCell}>
-                    No hay solicitudes registradas para esta brigada.
-                  </td>
-                </tr>
-              ) : (
-                inscripciones.map((ins) => {
-                  // Find profile matching names (since emails are only in auth.users)
-                  const matchingProfile = profiles.find((p) => {
-                    const fullName = (p.nombre_completo || "").trim().toLowerCase();
-                    return fullName === ins.nombre_completo.trim().toLowerCase();
-                  });
+            ) : (
+              inscripciones.map((ins) => {
+                // Find profile matching names (since emails are only in auth.users)
+                const matchingProfile = profiles.find((p) => {
+                  const fullName = (p.nombre_completo || "").trim().toLowerCase();
+                  return fullName === ins.nombre_completo.trim().toLowerCase();
+                });
 
-                  const assignedArea = matchingProfile ? assignments[matchingProfile.id] || "none" : "none";
+                const assignedArea = matchingProfile ? assignments[matchingProfile.id] || "none" : "none";
 
-                  return (
-                    <tr key={ins.id}>
-                      <td>
-                        <strong>{ins.nombre_completo}</strong>
-                      </td>
-                      <td>
-                        <span style={{ display: "block", fontSize: "1.3rem" }}>{ins.correo}</span>
-                        <span style={{ display: "block", fontSize: "1.2rem", color: "var(--gray)" }}>
-                          {ins.telefono}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{ fontStyle: "italic", fontSize: "1.3rem" }}>{ins.area_interes}</span>
-                      </td>
-                      <td>{formatDate(ins.created_at)}</td>
-                      <td>
-                        <span
-                          className={`${styles.badge} ${STATE_CLASSES[ins.estado]} ${
-                            ins.estado === "aceptado" ? "badgeSuccess" : ""
-                          }`}
-                          style={
-                            ins.estado === "aceptado"
-                              ? { backgroundColor: "#10b981", color: "#fff" }
-                              : {}
-                          }
-                        >
-                          {STATE_LABELS[ins.estado]}
-                        </span>
-                      </td>
-                      <td>
-                        {ins.estado === "aceptado" ? (
-                          matchingProfile ? (
-                            <select
-                              value={assignedArea}
-                              onChange={(e) => handleAssignChange(matchingProfile.id, e.target.value)}
-                              disabled={isPending || isReadOnly}
-                              style={{ width: "100%", padding: "0.4rem" }}
-                            >
-                              <option value="none">Sin asignar</option>
-                              {Object.entries(AREAS_MAP).map(([val, label]) => (
-                                <option key={val} value={val}>
-                                  {label}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span
-                              style={{
-                                fontSize: "1.2rem",
-                                color: "#f59e0b",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.4rem",
-                                maxWidth: "200px",
-                              }}
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                              </svg>
-                              Sin perfil registrado. Solicitar registro en la app.
-                            </span>
-                          )
+                return (
+                  <tr key={ins.id}>
+                    <td className={styles.cellMain}>{ins.nombre_completo}</td>
+                    <td>
+                      {ins.correo}
+                      <span className={styles.cellSub}>{ins.telefono}</span>
+                    </td>
+                    <td>{ins.area_interes}</td>
+                    <td className={styles.nowrap}>{formatDate(ins.created_at)}</td>
+                    <td>
+                      <span className={`${styles.badge} ${STATE_CLASSES[ins.estado]}`}>
+                        {STATE_LABELS[ins.estado]}
+                      </span>
+                    </td>
+                    <td>
+                      {ins.estado === "aceptado" ? (
+                        matchingProfile ? (
+                          <select
+                            className={`form-input form-input-sm ${brig.areaSelect}`}
+                            aria-label={`Área asignada a ${ins.nombre_completo}`}
+                            value={assignedArea}
+                            onChange={(e) => handleAssignChange(matchingProfile.id, e.target.value)}
+                            disabled={isPending || isReadOnly}
+                          >
+                            <option value="none">Sin asignar</option>
+                            {Object.entries(AREAS_MAP).map(([val, label]) => (
+                              <option key={val} value={val}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
-                          <span style={{ fontSize: "1.2rem", color: "var(--gray)" }}>
-                            Debe ser aceptado primero.
+                          <span className={brig.cellWarn}>
+                            <TriangleAlert aria-hidden="true" />
+                            Sin perfil registrado. Solicitar registro en la app.
                           </span>
-                        )}
-                      </td>
-                      {!isReadOnly && (
-                        <td>
+                        )
+                      ) : (
+                        <span className={styles.muted}>Debe ser aceptado primero.</span>
+                      )}
+                    </td>
+                    {!isReadOnly && (
+                      <td>
+                        <div className={styles.rowActions}>
                           {ins.estado === "pendiente" ? (
-                            <div className={styles.tableActions}>
+                            <>
                               <button
                                 type="button"
-                                className={styles.linkBtn}
+                                className="btn-primary btn-xs"
                                 onClick={() => handleAccept(ins.id)}
                                 disabled={isPending}
-                                style={{ color: "#10b981" }}
                               >
+                                <Check aria-hidden="true" />
                                 Aceptar
                               </button>
                               <button
                                 type="button"
-                                className={styles.linkBtnDanger}
-                                onClick={() => handleReject(ins.id)}
+                                className="btn-ghost btn-xs"
+                                onClick={() => setRejectTarget(ins)}
                                 disabled={isPending}
                               >
+                                <X aria-hidden="true" />
                                 Rechazar
                               </button>
-                            </div>
+                            </>
                           ) : (
-                            <span style={{ fontSize: "1.2rem", color: "var(--gray)" }}>—</span>
+                            <span className={styles.muted}>—</span>
                           )}
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
-    </div>
+
+      {rejectTarget && (
+        <ConfirmDialog
+          title="¿Rechazar solicitud?"
+          confirmLabel="Sí, rechazar"
+          busyLabel="Rechazando..."
+          busy={isPending}
+          onCancel={() => setRejectTarget(null)}
+          onConfirm={confirmReject}
+        >
+          ¿Estás seguro de que deseas rechazar la solicitud de{" "}
+          <strong>{rejectTarget.nombre_completo}</strong>?
+        </ConfirmDialog>
+      )}
+    </section>
   );
 }

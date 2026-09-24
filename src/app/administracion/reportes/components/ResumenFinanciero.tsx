@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Banknote, ChartColumn, Gift, Printer, Receipt, ShoppingCart } from "lucide-react";
+import EmptyState from "@/app/administracion/components/EmptyState";
+import StatCard from "@/app/administracion/components/StatCard";
+import admin from "@/styles/pages/admin.module.css";
 import styles from "@/styles/pages/reportes.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { ROLE_LABELS } from "@/lib/auth/roles";
@@ -171,21 +175,21 @@ export default function ResumenFinanciero() {
       label: "Ventas",
       fullLabel: "Ventas de Apoyo",
       monto: totalVentas,
-      color: "#1abc9c",
+      bar: styles.barTeal,
     },
     {
       id: "donaciones",
       label: "Donaciones",
       fullLabel: "Donaciones Recibidas",
       monto: totalDonaciones,
-      color: "#3498db",
+      bar: styles.barYellow,
     },
     {
       id: "total",
       label: "Total General",
       fullLabel: "Total General de Ingresos",
       monto: totalGeneral,
-      color: "#2980b9",
+      bar: styles.barDark,
     },
   ];
 
@@ -208,48 +212,31 @@ export default function ResumenFinanciero() {
   return (
     <div>
       {/* ── VISTA WEB (PAGINADA) ── */}
-      <div className={styles.screenView}>
+      <div className={`${styles.screenView} ${admin.stack}`}>
         {/* Encabezado */}
-        <div className={styles.reportHeader}>
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <div className={styles.reportHeaderText}>
-              <h3>Resumen Financiero por Período</h3>
-              <p>
-                Consolidado ejecutivo mensual de ingresos por ventas de apoyo y donaciones recibidas.
-              </p>
-            </div>
+        <div className={admin.sectionHead}>
+          <div>
+            <h2 className={admin.sectionTitle}>Resumen Financiero por Período</h2>
+            <p className={admin.sectionLead}>
+              Consolidado ejecutivo mensual de ingresos por ventas de apoyo y donaciones recibidas.
+            </p>
           </div>
-          <div className={styles.reportHeaderActions}>
-            <button
-              type="button"
-              className={styles.btnActionSecondary}
-              onClick={handlePrint}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5Zm-3 0h.008v.008H15V10.5Z"
-                />
-              </svg>
-              Imprimir
-            </button>
-          </div>
+          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+            <Printer aria-hidden="true" />
+            Imprimir
+          </button>
         </div>
 
         {/* Filtros por Mes y Año */}
-        <div className={styles.reportFilters}>
-          <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-            <div className={styles.filterGroup}>
-              <label htmlFor="filtro-mes">Mes</label>
+        <div className={admin.panel}>
+          <div className={admin.toolbar}>
+            <div className={admin.filter}>
+              <label className={admin.filterLabel} htmlFor="filtro-mes">
+                Mes
+              </label>
               <select
                 id="filtro-mes"
+                className="form-input form-input-sm"
                 value={mesFiltro}
                 onChange={(e) => setMesFiltro(e.target.value)}
                 disabled={loading}
@@ -263,10 +250,13 @@ export default function ResumenFinanciero() {
               </select>
             </div>
 
-            <div className={styles.filterGroup}>
-              <label htmlFor="filtro-anio">Año</label>
+            <div className={admin.filter}>
+              <label className={admin.filterLabel} htmlFor="filtro-anio">
+                Año
+              </label>
               <select
                 id="filtro-anio"
+                className="form-input form-input-sm"
                 value={anioFiltro}
                 onChange={(e) => setAnioFiltro(e.target.value)}
                 disabled={loading}
@@ -279,212 +269,166 @@ export default function ResumenFinanciero() {
                 ))}
               </select>
             </div>
-          </div>
 
-          <p
-            style={{
-              margin: "auto 0 0",
-              fontSize: "1.35rem",
-              color: "var(--gray)",
-            }}
-          >
-            Moneda:{" "}
-            <strong style={{ color: "var(--dark)" }}>
-              Lempira Hondureño (HNL)
-            </strong>
-          </p>
+            <p className={admin.toolbarNote}>
+              Moneda: <strong>Lempira Hondureño (HNL)</strong>
+            </p>
+          </div>
         </div>
 
         {/* KPIs Financieros */}
-        <div className={styles.kpiGrid}>
-          <div className={`${styles.kpiCard} ${styles.kpiCardGreen}`}>
-            <p className={styles.kpiLabel}>Total Recaudado por Ventas</p>
-            <p className={styles.kpiValue}>
-              {loading ? "..." : formatHNL(totalVentas)}
-            </p>
-            <p className={`${styles.kpiChange} ${styles.kpiChangePositive}`}>
-              {loading ? "..." : `${cantidadVentas.toLocaleString()} ventas realizadas`}
-            </p>
+        {loading ? (
+          <div className={admin.statGrid}>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className={`${admin.skeleton} ${admin.skeletonStat}`} />
+            ))}
           </div>
-
-          <div className={`${styles.kpiCard} ${styles.kpiCardTeal}`}>
-            <p className={styles.kpiLabel}>Total Recibido por Donaciones</p>
-            <p className={styles.kpiValue}>
-              {loading ? "..." : formatHNL(totalDonaciones)}
-            </p>
-            <p className={`${styles.kpiChange} ${styles.kpiChangePositive}`}>
-              {loading ? "..." : `${cantidadDonaciones.toLocaleString()} donaciones registradas`}
-            </p>
+        ) : (
+          <div className={`${admin.statGrid} tone-rotate`}>
+            <StatCard
+              label="Total Recaudado por Ventas"
+              value={formatHNL(totalVentas)}
+              icon={<ShoppingCart />}
+              meta={`${cantidadVentas.toLocaleString()} ventas realizadas`}
+              metaTone="ok"
+            />
+            <StatCard
+              label="Total Recibido por Donaciones"
+              value={formatHNL(totalDonaciones)}
+              icon={<Gift />}
+              meta={`${cantidadDonaciones.toLocaleString()} donaciones registradas`}
+              metaTone="ok"
+            />
+            <StatCard
+              label="Total General de Ingresos"
+              value={formatHNL(totalGeneral)}
+              icon={<Banknote />}
+              meta={`Período: ${displayPeriodo}`}
+              metaTone="ok"
+              valueTone="ok"
+            />
+            <StatCard
+              label="Registros Financieros"
+              value={(cantidadVentas + cantidadDonaciones).toLocaleString()}
+              icon={<Receipt />}
+              meta="Transacciones en el período"
+            />
           </div>
-
-          <div className={`${styles.kpiCard} ${styles.kpiCardBlue}`}>
-            <p className={styles.kpiLabel}>Total General de Ingresos</p>
-            <p className={styles.kpiValue}>
-              {loading ? "..." : formatHNL(totalGeneral)}
-            </p>
-            <p className={`${styles.kpiChange} ${styles.kpiChangePositive}`}>
-              Período: {displayPeriodo}
-            </p>
-          </div>
-
-          <div className={`${styles.kpiCard} ${styles.kpiCardGreen}`}>
-            <p className={styles.kpiLabel}>Registros Financieros</p>
-            <p className={styles.kpiValue}>
-              {loading ? "..." : (cantidadVentas + cantidadDonaciones).toLocaleString()}
-            </p>
-            <p className={styles.kpiChange}>Transacciones en el período</p>
-          </div>
-        </div>
+        )}
 
         {/* Sección de Gráfico (Ventas, Donaciones, Total General) */}
-        <div className={styles.financeSection} style={{ padding: "2.4rem" }}>
-          <h4 style={{ marginBottom: "2rem" }}>
-            Comparativo de Ingresos Financieros ({displayPeriodo})
-          </h4>
-          <div
-            style={{
-              height: "240px",
-              width: "100%",
-              maxWidth: "800px",
-              margin: "0 auto 3.2rem",
-            }}
-          >
+        <section className={admin.panel}>
+          <div className={admin.panelHeader}>
+            <h2 className={admin.panelTitle}>
+              Comparativo de Ingresos Financieros ({displayPeriodo})
+            </h2>
+          </div>
+          <div className={admin.panelBody}>
             {loading ? (
-              <div style={{ textAlign: "center", paddingTop: "50px", color: "var(--grayLight)" }}>
-                Cargando gráfico...
-              </div>
+              <div className={`${admin.skeleton} ${admin.skeletonBlock}`} />
             ) : totalGeneral === 0 ? (
-              <div style={{ textAlign: "center", paddingTop: "50px", color: "var(--grayLight)" }}>
-                No hay ingresos registrados en el período seleccionado.
-              </div>
+              <EmptyState
+                icon={<ChartColumn />}
+                title="No hay ingresos registrados en el período seleccionado."
+              />
             ) : (
-              <div className={styles.barChartGrid}>
-                {chartItems.map((item) => {
-                  const alturaPorcentaje = Math.max(
-                    (item.monto / maxMontoChart) * 80,
-                    8
-                  );
-                  return (
-                    <div key={item.id} className={styles.barCol}>
-                      <div className={styles.barColTooltip}>
-                        {item.fullLabel}: {formatHNL(item.monto)}
+              <div className={styles.chart}>
+                <div className={styles.barChartGrid}>
+                  {chartItems.map((item) => {
+                    const alturaPorcentaje = Math.max(
+                      (item.monto / maxMontoChart) * 80,
+                      8
+                    );
+                    return (
+                      <div key={item.id} className={styles.barCol}>
+                        <div className={styles.barColTooltip}>
+                          {item.fullLabel}: {formatHNL(item.monto)}
+                        </div>
+                        <div
+                          className={`${styles.chartBarElement} ${item.bar}`}
+                          style={{ height: `${alturaPorcentaje}%` }}
+                        />
+                        <span className={styles.barLabel}>{item.label}</span>
                       </div>
-                      <div
-                        className={styles.chartBarElement}
-                        style={{
-                          height: `${alturaPorcentaje}%`,
-                          backgroundColor: item.color,
-                          width: "3.6rem",
-                        }}
-                      />
-                      <span className={styles.barLabel}>{item.label}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
-        </div>
+        </section>
 
         {/* Tabla Resumen Ejecutivo */}
-        <div className={styles.financeSection}>
-          <div className={styles.financeSectionTitle}>
-            <h4>
-              Resumen Ejecutivo Financiero
-            </h4>
-            <span>{displayPeriodo}</span>
+        <section className={admin.panel}>
+          <div className={admin.panelHeader}>
+            <div>
+              <h2 className={admin.panelTitle}>Resumen Ejecutivo Financiero</h2>
+              <p className={admin.panelSub}>{displayPeriodo}</p>
+            </div>
           </div>
-          <div style={{ overflowX: "auto" }}>
-            <table className={styles.financeTable}>
+          <div className={admin.tableWrap}>
+            <table className={admin.table}>
               <thead>
                 <tr>
                   <th>Concepto / Fuente de Ingreso</th>
-                  <th style={{ textAlign: "right" }}>Cantidad de Registros</th>
-                  <th className={styles.colAmount}>Total Recaudado (HNL)</th>
-                  <th style={{ textAlign: "right" }}>Porcentaje del Total</th>
+                  <th className={admin.num}>Cantidad de Registros</th>
+                  <th className={admin.num}>Total Recaudado (HNL)</th>
+                  <th className={admin.num}>Porcentaje del Total</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: "center", padding: "2rem", color: "var(--grayLight)" }}>
+                    <td colSpan={4} className={admin.emptyCell}>
                       Cargando resumen ejecutivo...
                     </td>
                   </tr>
                 ) : totalGeneral === 0 ? (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: "center", padding: "2rem", color: "var(--grayLight)" }}>
+                    <td colSpan={4} className={admin.emptyCell}>
                       No se encontraron registros de ingresos para este período.
                     </td>
                   </tr>
                 ) : (
                   <>
                     <tr>
-                      <td style={{ fontWeight: 700 }}>
-                        <span
-                          style={{
-                            display: "inline-block",
-                            width: "1.2rem",
-                            height: "1.2rem",
-                            borderRadius: "50%",
-                            backgroundColor: "#1abc9c",
-                            marginRight: "0.8rem",
-                          }}
-                        />
+                      <td className={admin.cellMain}>
+                        <span className={`${styles.dot} ${styles.barTeal}`} aria-hidden="true" />
                         Ventas de Apoyo
                       </td>
-                      <td style={{ textAlign: "right", fontWeight: 600 }}>
-                        {cantidadVentas.toLocaleString()} ventas
-                      </td>
-                      <td className={styles.colAmount} style={{ fontWeight: 700, color: "var(--accentColor)" }}>
-                        {formatHNL(totalVentas)}
-                      </td>
-                      <td style={{ textAlign: "right", fontWeight: 600 }}>
+                      <td className={admin.num}>{cantidadVentas.toLocaleString()} ventas</td>
+                      <td className={`${admin.num} ${styles.cellOk}`}>{formatHNL(totalVentas)}</td>
+                      <td className={admin.num}>
                         {totalGeneral > 0 ? ((totalVentas / totalGeneral) * 100).toFixed(1) : "0.0"}%
                       </td>
                     </tr>
                     <tr>
-                      <td style={{ fontWeight: 700 }}>
-                        <span
-                          style={{
-                            display: "inline-block",
-                            width: "1.2rem",
-                            height: "1.2rem",
-                            borderRadius: "50%",
-                            backgroundColor: "#3498db",
-                            marginRight: "0.8rem",
-                          }}
-                        />
+                      <td className={admin.cellMain}>
+                        <span className={`${styles.dot} ${styles.barYellow}`} aria-hidden="true" />
                         Donaciones Recibidas
                       </td>
-                      <td style={{ textAlign: "right", fontWeight: 600 }}>
-                        {cantidadDonaciones.toLocaleString()} donaciones
-                      </td>
-                      <td className={styles.colAmount} style={{ fontWeight: 700, color: "var(--primaryColor)" }}>
-                        {formatHNL(totalDonaciones)}
-                      </td>
-                      <td style={{ textAlign: "right", fontWeight: 600 }}>
+                      <td className={admin.num}>{cantidadDonaciones.toLocaleString()} donaciones</td>
+                      <td className={`${admin.num} ${styles.cellOk}`}>{formatHNL(totalDonaciones)}</td>
+                      <td className={admin.num}>
                         {totalGeneral > 0 ? ((totalDonaciones / totalGeneral) * 100).toFixed(1) : "0.0"}%
                       </td>
                     </tr>
                   </>
                 )}
                 {!loading && totalGeneral > 0 && (
-                  <tr className={styles.financeTotalsRow}>
+                  <tr className={styles.totalRow}>
                     <td>TOTAL GENERAL DE INGRESOS</td>
-                    <td style={{ textAlign: "right" }}>
+                    <td className={admin.num}>
                       {(cantidadVentas + cantidadDonaciones).toLocaleString()} registros
                     </td>
-                    <td className={styles.colAmount} style={{ textAlign: "right" }}>
-                      {formatHNL(totalGeneral)}
-                    </td>
-                    <td style={{ textAlign: "right" }}>100%</td>
+                    <td className={`${admin.num} ${styles.cellOk}`}>{formatHNL(totalGeneral)}</td>
+                    <td className={admin.num}>100%</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       </div>
 
       {/* ── VISTA DE IMPRESIÓN REUTILIZABLE INSTITUCIONAL ── */}
@@ -505,101 +449,30 @@ export default function ResumenFinanciero() {
           footerNote="Consolidado de ingresos financieros — Fundación Dibujando Sonrisas"
         >
           {/* Gráfico en Impresión */}
-          <div
-            style={{
-              pageBreakInside: "avoid",
-              breakInside: "avoid",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              padding: "1rem 1.2rem",
-              marginBottom: "1.5rem",
-              background: "#ffffff",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "10.5pt",
-                fontWeight: "bold",
-                color: "#000000",
-                margin: "0 0 0.8rem 0",
-                textTransform: "uppercase",
-                borderBottom: "1px solid #cbd5e1",
-                paddingBottom: "0.4rem",
-                textAlign: "center",
-              }}
-            >
-              Comparativo de Ingresos Financieros
-            </h3>
-            <div style={{ height: "180px", width: "100%", maxWidth: "680px", margin: "0 auto" }}>
+          <div className={styles.printGraph}>
+            <h3 className={styles.printGraphTitle}>Comparativo de Ingresos Financieros</h3>
+            <div className={styles.printGraphArea}>
               {loading ? (
-                <div style={{ textAlign: "center", paddingTop: "40px", fontSize: "9pt" }}>
-                  Cargando gráfico...
-                </div>
+                <div className={styles.printGraphEmpty}>Cargando gráfico...</div>
               ) : totalGeneral === 0 ? (
-                <div style={{ textAlign: "center", paddingTop: "40px", fontSize: "9pt" }}>
+                <div className={styles.printGraphEmpty}>
                   No hay ingresos registrados en el período.
                 </div>
               ) : (
-                <div
-                  className={styles.barChartGrid}
-                  style={{
-                    height: "100%",
-                    borderBottom: "2px solid #000000",
-                    display: "flex",
-                    alignItems: "flex-end",
-                    justifyContent: "space-around",
-                    paddingBottom: "4px",
-                  }}
-                >
+                <div className={`${styles.barChartGrid} ${styles.printBars}`}>
                   {chartItems.map((item) => {
                     const alturaPorcentaje = Math.max(
                       (item.monto / maxMontoChart) * 75,
                       10
                     );
                     return (
-                      <div
-                        key={item.id}
-                        className={styles.barCol}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "flex-end",
-                          height: "100%",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "8.5pt",
-                            fontWeight: "bold",
-                            color: "#1e293b",
-                            marginBottom: "2px",
-                          }}
-                        >
-                          {formatHNL(item.monto)}
-                        </span>
+                      <div key={item.id} className={styles.barCol}>
+                        <span className={styles.printBarValue}>{formatHNL(item.monto)}</span>
                         <div
-                          style={{
-                            height: `${alturaPorcentaje}%`,
-                            backgroundColor: item.color,
-                            width: "2.8rem",
-                            borderRadius: "3px 3px 0 0",
-                            WebkitPrintColorAdjust: "exact",
-                            printColorAdjust: "exact",
-                          }}
+                          className={`${styles.printBar} ${item.bar}`}
+                          style={{ height: `${alturaPorcentaje}%` }}
                         />
-                        <span
-                          style={{
-                            fontSize: "8.5pt",
-                            color: "#000000",
-                            fontWeight: 600,
-                            marginTop: "4px",
-                            textAlign: "center",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {item.label}
-                        </span>
+                        <span className={styles.printBarLabel}>{item.label}</span>
                       </div>
                     );
                   })}
@@ -611,56 +484,56 @@ export default function ResumenFinanciero() {
           <table className={styles.printTable}>
             <thead>
               <tr>
-                <th style={{ width: "8%", textAlign: "center" }}>#</th>
-                <th style={{ width: "42%" }}>Fuente de Ingreso</th>
-                <th style={{ width: "22%", textAlign: "right" }}>Cantidad de Registros</th>
-                <th style={{ width: "28%", textAlign: "right" }}>Monto Recaudado (HNL)</th>
+                <th className={`${styles.w8} ${styles.printCenter}`}>#</th>
+                <th className={styles.w42}>Fuente de Ingreso</th>
+                <th className={`${styles.w22} ${styles.printRight}`}>Cantidad de Registros</th>
+                <th className={`${styles.w28} ${styles.printRight}`}>Monto Recaudado (HNL)</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: "center", padding: "1.5rem" }}>
+                  <td colSpan={4} className={styles.printCenter}>
                     Cargando resumen...
                   </td>
                 </tr>
               ) : totalGeneral === 0 ? (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: "center", padding: "1.5rem" }}>
+                  <td colSpan={4} className={styles.printCenter}>
                     No hay ingresos registrados en este período.
                   </td>
                 </tr>
               ) : (
                 <>
                   <tr>
-                    <td style={{ textAlign: "center" }}>1</td>
-                    <td style={{ fontWeight: "bold" }}>Ventas de Apoyo</td>
-                    <td style={{ textAlign: "right", fontWeight: "bold" }}>
+                    <td className={styles.printCenter}>1</td>
+                    <td className={styles.printStrong}>Ventas de Apoyo</td>
+                    <td className={`${styles.printRight} ${styles.printStrong}`}>
                       {cantidadVentas.toLocaleString()} ventas
                     </td>
-                    <td style={{ textAlign: "right", fontWeight: "bold" }}>
+                    <td className={`${styles.printRight} ${styles.printStrong}`}>
                       {formatHNL(totalVentas)}
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ textAlign: "center" }}>2</td>
-                    <td style={{ fontWeight: "bold" }}>Donaciones Recibidas</td>
-                    <td style={{ textAlign: "right", fontWeight: "bold" }}>
+                    <td className={styles.printCenter}>2</td>
+                    <td className={styles.printStrong}>Donaciones Recibidas</td>
+                    <td className={`${styles.printRight} ${styles.printStrong}`}>
                       {cantidadDonaciones.toLocaleString()} donaciones
                     </td>
-                    <td style={{ textAlign: "right", fontWeight: "bold" }}>
+                    <td className={`${styles.printRight} ${styles.printStrong}`}>
                       {formatHNL(totalDonaciones)}
                     </td>
                   </tr>
                 </>
               )}
               {!loading && totalGeneral > 0 && (
-                <tr style={{ fontWeight: "bold", background: "#f1f5f9" }}>
+                <tr className={styles.printTotalRow}>
                   <td colSpan={2}>TOTAL GENERAL DE INGRESOS DEL PERÍODO</td>
-                  <td style={{ textAlign: "right" }}>
+                  <td className={styles.printRight}>
                     {(cantidadVentas + cantidadDonaciones).toLocaleString()} registros
                   </td>
-                  <td style={{ textAlign: "right" }}>{formatHNL(totalGeneral)}</td>
+                  <td className={styles.printRight}>{formatHNL(totalGeneral)}</td>
                 </tr>
               )}
             </tbody>

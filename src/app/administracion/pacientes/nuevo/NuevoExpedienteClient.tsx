@@ -1,12 +1,44 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
 import { getMedicamentosAction as getMedicamentos } from "@/app/administracion/inventario/actions";
 import { supabase } from "@/lib/supabase";
 import { createExpedienteCompletoAction as createExpedienteCompleto } from "../actions";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CircleAlert,
+  CircleCheck,
+  LoaderCircle,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 import styles from "@/styles/pages/admin.module.css";
+import pac from "@/styles/pages/admin-pacientes.module.css";
+
+// pasos del asistente; "next" es el texto del botón que lleva al siguiente
+const STEPS = [
+  { id: 1, label: "Datos Paciente", next: "Siguiente: Signos" },
+  { id: 2, label: "Signos Vitales", next: "Siguiente: Consulta" },
+  { id: 3, label: "Consulta", next: "Siguiente: Diagnósticos" },
+  { id: 4, label: "Diagnósticos", next: "Siguiente: Medicamentos" },
+  { id: 5, label: "Receta Médica" },
+];
+
+/** Mensaje de error bajo un campo. */
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return (
+    <span className="form-error">
+      <CircleAlert size={14} aria-hidden="true" />
+      {msg}
+    </span>
+  );
+}
 
 export function NuevoExpedienteClient() {
   const router = useRouter();
@@ -101,24 +133,15 @@ export function NuevoExpedienteClient() {
           setMedicamentosList(prescribibles);
 
           const allProfiles = pRes.data || [];
+          // médicos y odontólogos activos, por rol, ordenados por nombre
+          const activos = allProfiles.filter((v: any) => v.activo !== false);
+          const porRol = (rol: string) =>
+            activos
+              .filter((v: any) => (v.rol || "").toLowerCase() === rol)
+              .sort((a: any, b: any) => (a.nombre_completo || "").localeCompare(b.nombre_completo || ""));
 
-          const activeMedicos = allProfiles.filter((v: any) => {
-            if (v.activo === false) return false;
-            const rol: string = (v.rol || "").toLowerCase();
-            return rol === "medico";
-          });
-
-          const activeOdontologos = allProfiles.filter((v: any) => {
-            if (v.activo === false) return false;
-            const rol: string = (v.rol || "").toLowerCase();
-            return rol === "odontologo";
-          })
-
-          activeMedicos.sort((a: any, b: any) => (a.nombre_completo || "").localeCompare(b.nombre_completo || ""));
-          activeOdontologos.sort((a: any, b: any) => (a.nombre_completo || "").localeCompare(b.nombre_completo || ""));
-
-          setMedicos(activeMedicos);
-          setOdontologos(activeOdontologos);
+          setMedicos(porRol("medico"));
+          setOdontologos(porRol("odontologo"));
         }
       } catch (e) {
         console.error(e);
@@ -617,1151 +640,767 @@ export function NuevoExpedienteClient() {
     }
   };
 
-  const getInputStyle = (fieldName: string) => {
-    if (errors[fieldName]) {
-      return { borderColor: "#dc2626", borderWidth: "1px", borderStyle: "solid" };
-    }
-    return {};
-  };
+  if (isLoading) {
+    return (
+      <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
+        <span className="sr-only">Cargando información base...</span>
+      </div>
+    );
+  }
 
-  if (isLoading) return <div>Cargando información base...</div>;
+  // menor de 18 años: el responsable pasa a ser obligatorio
+  const esMenor = paciente.edad !== "" && !isNaN(Number(paciente.edad)) && Number(paciente.edad) < 18;
+
+  // la consulta médica la atiende un médico; la odontológica, un odontólogo
+  const esMedica = consulta.tipo_consulta === "Medica";
+  const profesionales = esMedica ? medicos : odontologos;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "2.4rem",
-        paddingBottom: "5rem",
-      }}
-    >
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    <div className={styles.stack}>
       {/* Tabs navigation */}
-      <div
-        style={{
-          display: "flex",
-          gap: "1rem",
-          borderBottom: "1px solid var(--border-color)",
-          paddingBottom: "1rem",
-        }}
-      >
-        {[
-          { id: 1, label: "1. Datos Paciente" },
-          { id: 2, label: "2. Signos Vitales" },
-          { id: 3, label: "3. Consulta" },
-          { id: 4, label: "4. Diagnósticos" },
-          { id: 5, label: "5. Receta Médica" },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => goToTab(t.id)}
-            disabled={isSubmitting}
-            style={{
-              padding: "0.8rem 1.6rem",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              cursor: isSubmitting ? "not-allowed" : "pointer",
-              fontWeight: "bold",
-              background:
-                activeTab === t.id ? "var(--primaryColor)" : "transparent",
-              color: activeTab === t.id ? "white" : "var(--gray)",
-              opacity: isSubmitting ? 0.6 : 1,
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className={styles.tableContainer} style={{ padding: "2.4rem" }}>
-        {/* TAB 1: PACIENTE */}
-        {activeTab === 1 && (
-          <div className={styles.adminFormSingleColumn}>
-            <div className={styles.formSectionTitle}>
-              1. Datos Personales del Paciente
-            </div>
-
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Brigada Médica{" "}
-                <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <select
-                ref={registerRef("brigada_id")}
-                style={getInputStyle("brigada_id")}
-                value={paciente.brigada_id}
-                onChange={(e) => {
-                  setPaciente({ ...paciente, brigada_id: e.target.value });
-                  if (errors.brigada_id)
-                    setErrors((prev) => ({ ...prev, brigada_id: "" }));
-                }}
+      <ol className={styles.steps} aria-label="Pasos del expediente">
+        {STEPS.map((t) => {
+          const current = activeTab === t.id;
+          const done = t.id < activeTab;
+          return (
+            <li key={t.id}>
+              <button
+                type="button"
+                className={`${styles.step} ${current ? styles.stepCurrent : ""} ${done ? styles.stepDone : ""}`}
+                aria-current={current ? "step" : undefined}
+                onClick={() => goToTab(t.id)}
+                disabled={isSubmitting}
               >
-                <option value="">-- Seleccionar Brigada --</option>
-                {brigadas.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.nombre} ({b.departamento})
-                  </option>
-                ))}
-              </select>
-              {errors.brigada_id && (
-                <span className={styles.formFieldError}>
-                  {errors.brigada_id}
-                </span>
-              )}
-            </label>
+                <span className={styles.stepNum}>{done ? <Check aria-hidden="true" /> : t.id}</span>
+                {t.label}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "1.6rem",
-              }}
-            >
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Nombres{" "}
-                  <strong className={styles.requiredStar}>* (Requerido)</strong>
-                </span>
-                <input
-                  ref={registerRef("nombres")}
-                  style={getInputStyle("nombres")}
-                  placeholder="Ej. Juan Carlos"
-                  value={paciente.nombres}
-                  onChange={(e) => {
-                    setPaciente({ ...paciente, nombres: e.target.value });
-                    if (errors.nombres)
-                      setErrors((prev) => ({ ...prev, nombres: "" }));
-                  }}
-                />
-                {errors.nombres && (
-                  <span className={styles.formFieldError}>
-                    {errors.nombres}
-                  </span>
-                )}
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Apellidos{" "}
-                  <strong className={styles.requiredStar}>* (Requerido)</strong>
-                </span>
-                <input
-                  ref={registerRef("apellidos")}
-                  style={getInputStyle("apellidos")}
-                  placeholder="Ej. Pérez Rodríguez"
-                  value={paciente.apellidos}
-                  onChange={(e) => {
-                    setPaciente({ ...paciente, apellidos: e.target.value });
-                    if (errors.apellidos)
-                      setErrors((prev) => ({ ...prev, apellidos: "" }));
-                  }}
-                />
-                {errors.apellidos && (
-                  <span className={styles.formFieldError}>
-                    {errors.apellidos}
-                  </span>
-                )}
-              </label>
-            </div>
+      <section className={styles.panel}>
+        <div className={styles.panelBody}>
+          {/* TAB 1: PACIENTE */}
+          {activeTab === 1 && (
+            <div className={styles.formSection}>
+              <h2 className={styles.formSectionTitle}>1. Datos Personales del Paciente</h2>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: "1.6rem",
-              }}
-            >
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Sexo{" "}
-                  <strong className={styles.requiredStar}>* (Requerido)</strong>
+              <label className="form-field">
+                <span className="form-label">
+                  Brigada Médica <span className="form-required" aria-hidden="true">*</span>
                 </span>
                 <select
-                  ref={registerRef("sexo")}
-                  style={getInputStyle("sexo")}
-                  value={paciente.sexo}
+                  ref={registerRef("brigada_id")}
+                  className="form-input"
+                  aria-required="true"
+                  aria-invalid={!!errors.brigada_id}
+                  value={paciente.brigada_id}
                   onChange={(e) => {
-                    setPaciente({ ...paciente, sexo: e.target.value });
-                    if (errors.sexo)
-                      setErrors((prev) => ({ ...prev, sexo: "" }));
+                    setPaciente({ ...paciente, brigada_id: e.target.value });
+                    if (errors.brigada_id) setErrors((prev) => ({ ...prev, brigada_id: "" }));
                   }}
                 >
-                  <option value="Masculino">Masculino</option>
-                  <option value="Femenino">Femenino</option>
+                  <option value="">-- Seleccionar Brigada --</option>
+                  {brigadas.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.nombre} ({b.departamento})
+                    </option>
+                  ))}
                 </select>
-                {errors.sexo && (
-                  <span className={styles.formFieldError}>{errors.sexo}</span>
-                )}
+                <FieldError msg={errors.brigada_id} />
               </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Edad (Años){" "}
-                  <strong className={styles.requiredStar}>* (Requerido)</strong>
-                </span>
-                <input
-                  ref={registerRef("edad")}
-                  style={getInputStyle("edad")}
-                  type="number"
-                  min="0"
-                  max="120"
-                  placeholder="Ej. 25"
-                  value={paciente.edad}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setPaciente({ ...paciente, edad: val });
-                    if (errors.edad)
-                      setErrors((prev) => ({ ...prev, edad: "" }));
-                    if (errors.responsable && Number(val) >= 18) {
-                      setErrors((prev) => ({ ...prev, responsable: "" }));
-                    }
-                  }}
-                />
-                {errors.edad && (
-                  <span className={styles.formFieldError}>{errors.edad}</span>
-                )}
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Teléfono{" "}
-                  <span className={styles.optionalTag}>(Opcional)</span>
-                </span>
-                <input
-                  ref={registerRef("telefono")}
-                  style={getInputStyle("telefono")}
-                  placeholder="Ej. 99887766 (8 dígitos)"
-                  value={paciente.telefono}
-                  onChange={(e) => {
-                    setPaciente({ ...paciente, telefono: e.target.value });
-                    if (errors.telefono)
-                      setErrors((prev) => ({ ...prev, telefono: "" }));
-                  }}
-                />
-                {errors.telefono && (
-                  <span className={styles.formFieldError}>
-                    {errors.telefono}
+
+              <div className="form-grid">
+                <label className="form-field">
+                  <span className="form-label">
+                    Nombres <span className="form-required" aria-hidden="true">*</span>
                   </span>
-                )}
+                  <input
+                    ref={registerRef("nombres")}
+                    className="form-input"
+                    aria-required="true"
+                    aria-invalid={!!errors.nombres}
+                    placeholder="Ej. Juan Carlos"
+                    value={paciente.nombres}
+                    onChange={(e) => {
+                      setPaciente({ ...paciente, nombres: e.target.value });
+                      if (errors.nombres) setErrors((prev) => ({ ...prev, nombres: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.nombres} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Apellidos <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    ref={registerRef("apellidos")}
+                    className="form-input"
+                    aria-required="true"
+                    aria-invalid={!!errors.apellidos}
+                    placeholder="Ej. Pérez Rodríguez"
+                    value={paciente.apellidos}
+                    onChange={(e) => {
+                      setPaciente({ ...paciente, apellidos: e.target.value });
+                      if (errors.apellidos) setErrors((prev) => ({ ...prev, apellidos: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.apellidos} />
+                </label>
+              </div>
+
+              <div className="form-grid-3">
+                <label className="form-field">
+                  <span className="form-label">
+                    Sexo <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <select
+                    ref={registerRef("sexo")}
+                    className="form-input"
+                    aria-required="true"
+                    aria-invalid={!!errors.sexo}
+                    value={paciente.sexo}
+                    onChange={(e) => {
+                      setPaciente({ ...paciente, sexo: e.target.value });
+                      if (errors.sexo) setErrors((prev) => ({ ...prev, sexo: "" }));
+                    }}
+                  >
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
+                  </select>
+                  <FieldError msg={errors.sexo} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Edad (Años) <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    ref={registerRef("edad")}
+                    className="form-input"
+                    aria-required="true"
+                    aria-invalid={!!errors.edad}
+                    type="number"
+                    min="0"
+                    max="120"
+                    placeholder="Ej. 25"
+                    value={paciente.edad}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPaciente({ ...paciente, edad: val });
+                      if (errors.edad) setErrors((prev) => ({ ...prev, edad: "" }));
+                      if (errors.responsable && Number(val) >= 18) {
+                        setErrors((prev) => ({ ...prev, responsable: "" }));
+                      }
+                    }}
+                  />
+                  <FieldError msg={errors.edad} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Teléfono <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    ref={registerRef("telefono")}
+                    className="form-input"
+                    aria-invalid={!!errors.telefono}
+                    placeholder="Ej. 99887766 (8 dígitos)"
+                    value={paciente.telefono}
+                    onChange={(e) => {
+                      setPaciente({ ...paciente, telefono: e.target.value });
+                      if (errors.telefono) setErrors((prev) => ({ ...prev, telefono: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.telefono} />
+                </label>
+              </div>
+
+              <label className="form-field">
+                <span className="form-label">
+                  Comunidad <span className="form-optional">(Opcional)</span>
+                </span>
+                <input
+                  ref={registerRef("comunidad")}
+                  className="form-input"
+                  aria-invalid={!!errors.comunidad}
+                  placeholder="Ej. Aldea El Cacao"
+                  value={paciente.comunidad}
+                  onChange={(e) => {
+                    setPaciente({ ...paciente, comunidad: e.target.value });
+                    if (errors.comunidad) setErrors((prev) => ({ ...prev, comunidad: "" }));
+                  }}
+                />
+                <FieldError msg={errors.comunidad} />
+              </label>
+
+              <label className="form-field">
+                <span className="form-label">
+                  Responsable (Padre/Tutor){" "}
+                  {esMenor ? (
+                    <span className="form-required" aria-hidden="true">*</span>
+                  ) : (
+                    <span className="form-optional">(Opcional)</span>
+                  )}
+                </span>
+                <input
+                  ref={registerRef("responsable")}
+                  className="form-input"
+                  aria-required={esMenor}
+                  aria-invalid={!!errors.responsable}
+                  placeholder={
+                    esMenor
+                      ? "Obligatorio para menores de 18 años"
+                      : "Nombre del padre, madre o tutor legal"
+                  }
+                  value={paciente.responsable}
+                  onChange={(e) => {
+                    setPaciente({ ...paciente, responsable: e.target.value });
+                    if (errors.responsable) setErrors((prev) => ({ ...prev, responsable: "" }));
+                  }}
+                />
+                <FieldError msg={errors.responsable} />
               </label>
             </div>
+          )}
 
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Comunidad <span className={styles.optionalTag}>(Opcional)</span>
-              </span>
-              <input
-                ref={registerRef("comunidad")}
-                style={getInputStyle("comunidad")}
-                placeholder="Ej. Aldea El Cacao"
-                value={paciente.comunidad}
-                onChange={(e) => {
-                  setPaciente({ ...paciente, comunidad: e.target.value });
-                  if (errors.comunidad)
-                    setErrors((prev) => ({ ...prev, comunidad: "" }));
-                }}
-              />
-              {errors.comunidad && (
-                <span className={styles.formFieldError}>
-                  {errors.comunidad}
+          {/* TAB 2: SIGNOS VITALES */}
+          {activeTab === 2 && (
+            <div className={styles.formSection}>
+              <h2 className={styles.formSectionTitle}>2. Signos Vitales del Paciente</h2>
+              <p className="form-hint">
+                Todos los campos son opcionales. Si ingresas datos, se verificarán sus rangos normales.
+              </p>
+
+              <div className="form-grid-3">
+                <label className="form-field">
+                  <span className="form-label">
+                    Peso (kg) <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    ref={registerRef("peso")}
+                    className="form-input"
+                    aria-invalid={!!errors.peso}
+                    type="number"
+                    step="0.01"
+                    placeholder="0.5 - 400"
+                    value={signos.peso}
+                    onChange={(e) => {
+                      setSignos({ ...signos, peso: e.target.value });
+                      if (errors.peso) setErrors((prev) => ({ ...prev, peso: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.peso} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Talla (cm) <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    ref={registerRef("talla")}
+                    className="form-input"
+                    aria-invalid={!!errors.talla}
+                    type="number"
+                    step="0.01"
+                    placeholder="30 - 250"
+                    value={signos.talla}
+                    onChange={(e) => {
+                      setSignos({ ...signos, talla: e.target.value });
+                      if (errors.talla) setErrors((prev) => ({ ...prev, talla: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.talla} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Temperatura (°C) <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    ref={registerRef("temperatura")}
+                    className="form-input"
+                    aria-invalid={!!errors.temperatura}
+                    type="number"
+                    step="0.1"
+                    placeholder="30 - 45"
+                    value={signos.temperatura}
+                    onChange={(e) => {
+                      setSignos({ ...signos, temperatura: e.target.value });
+                      if (errors.temperatura) setErrors((prev) => ({ ...prev, temperatura: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.temperatura} />
+                </label>
+              </div>
+
+              <div className="form-grid">
+                <label className="form-field">
+                  <span className="form-label">
+                    Frecuencia Cardíaca (lpm) <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    ref={registerRef("frecuencia_cardiaca")}
+                    className="form-input"
+                    aria-invalid={!!errors.frecuencia_cardiaca}
+                    type="number"
+                    placeholder="20 - 250"
+                    value={signos.frecuencia_cardiaca}
+                    onChange={(e) => {
+                      setSignos({ ...signos, frecuencia_cardiaca: e.target.value });
+                      if (errors.frecuencia_cardiaca) setErrors((prev) => ({ ...prev, frecuencia_cardiaca: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.frecuencia_cardiaca} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Frecuencia Respiratoria (rpm) <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    ref={registerRef("frecuencia_respiratoria")}
+                    className="form-input"
+                    aria-invalid={!!errors.frecuencia_respiratoria}
+                    type="number"
+                    placeholder="5 - 80"
+                    value={signos.frecuencia_respiratoria}
+                    onChange={(e) => {
+                      setSignos({ ...signos, frecuencia_respiratoria: e.target.value });
+                      if (errors.frecuencia_respiratoria) setErrors((prev) => ({ ...prev, frecuencia_respiratoria: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.frecuencia_respiratoria} />
+                </label>
+              </div>
+
+              <div className="form-grid-3">
+                <label className="form-field">
+                  <span className="form-label">
+                    Presión Arterial <span className="form-optional">(Opcional, ej. 120/80)</span>
+                  </span>
+                  <input
+                    ref={registerRef("presion_arterial")}
+                    className="form-input"
+                    aria-invalid={!!errors.presion_arterial}
+                    placeholder="120/80"
+                    value={signos.presion_arterial}
+                    onChange={(e) => {
+                      setSignos({ ...signos, presion_arterial: e.target.value });
+                      if (errors.presion_arterial) setErrors((prev) => ({ ...prev, presion_arterial: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.presion_arterial} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Saturación O2 (%) <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    ref={registerRef("saturacion")}
+                    className="form-input"
+                    aria-invalid={!!errors.saturacion}
+                    type="number"
+                    placeholder="0 - 100"
+                    value={signos.saturacion}
+                    onChange={(e) => {
+                      setSignos({ ...signos, saturacion: e.target.value });
+                      if (errors.saturacion) setErrors((prev) => ({ ...prev, saturacion: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.saturacion} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Glucosa (mg/dL) <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    ref={registerRef("glucosa")}
+                    className="form-input"
+                    aria-invalid={!!errors.glucosa}
+                    type="number"
+                    step="0.01"
+                    placeholder="20 - 700"
+                    value={signos.glucosa}
+                    onChange={(e) => {
+                      setSignos({ ...signos, glucosa: e.target.value });
+                      if (errors.glucosa) setErrors((prev) => ({ ...prev, glucosa: "" }));
+                    }}
+                  />
+                  <FieldError msg={errors.glucosa} />
+                </label>
+              </div>
+
+              <label className="form-field">
+                <span className="form-label">
+                  Observaciones de Preclínica <span className="form-optional">(Opcional, máx. 1000 caracteres)</span>
                 </span>
-              )}
-            </label>
-
-            <div className={styles.formField}>
-              <label>
-                Responsable (Padre/Tutor){" "}
-                {paciente.edad !== "" &&
-                !isNaN(Number(paciente.edad)) &&
-                Number(paciente.edad) < 18
-                  ? " *"
-                  : " (Opcional)"}
-              </label>
-              <input
-                ref={registerRef("responsable")}
-                style={getInputStyle("responsable")}
-                placeholder={
-                  paciente.edad !== "" &&
-                  !isNaN(Number(paciente.edad)) &&
-                  Number(paciente.edad) < 18
-                    ? "Obligatorio para menores de 18 años"
-                    : "Nombre del padre, madre o tutor legal"
-                }
-                value={paciente.responsable}
-                onChange={(e) => {
-                  setPaciente({ ...paciente, responsable: e.target.value });
-                  if (errors.responsable)
-                    setErrors((prev) => ({ ...prev, responsable: "" }));
-                }}
-              />
-              {errors.responsable && (
-                <span className={styles.formError}>{errors.responsable}</span>
-              )}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginTop: "1rem",
-              }}
-            >
-              <button
-                className={styles.btnPrimary}
-                onClick={() => goToTab(2)}
-                disabled={isSubmitting}
-              >
-                Siguiente: Signos &rarr;
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: SIGNOS VITALES */}
-        {activeTab === 2 && (
-          <div className={styles.adminFormSingleColumn}>
-            <div className={styles.formSectionTitle}>
-              2. Signos Vitales del Paciente
-            </div>
-            <p
-              style={{
-                color: "var(--gray)",
-                fontSize: "1.4rem",
-                marginTop: "-0.8rem",
-              }}
-            >
-              Todos los campos son opcionales. Si ingresas datos, se verificarán
-              sus rangos normales.
-            </p>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: "1.6rem",
-              }}
-            >
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Peso (kg){" "}
-                  <span className={styles.optionalTag}>(Opcional)</span>
-                </span>
-                <input
-                  ref={registerRef("peso")}
-                  style={getInputStyle("peso")}
-                  type="number"
-                  step="0.01"
-                  placeholder="0.5 - 400"
-                  value={signos.peso}
+                <textarea
+                  ref={registerRef("observaciones")}
+                  className="form-input"
+                  aria-invalid={!!errors.observaciones}
+                  rows={3}
+                  placeholder="Ej. Paciente llega con acompañante, refiere alergias a penicilina..."
+                  value={signos.observaciones}
                   onChange={(e) => {
-                    setSignos({ ...signos, peso: e.target.value });
-                    if (errors.peso)
-                      setErrors((prev) => ({ ...prev, peso: "" }));
+                    setSignos({ ...signos, observaciones: e.target.value });
+                    if (errors.observaciones) setErrors((prev) => ({ ...prev, observaciones: "" }));
                   }}
                 />
-                {errors.peso && (
-                  <span className={styles.formFieldError}>{errors.peso}</span>
-                )}
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Talla (cm){" "}
-                  <span className={styles.optionalTag}>(Opcional)</span>
-                </span>
-                <input
-                  ref={registerRef("talla")}
-                  style={getInputStyle("talla")}
-                  type="number"
-                  step="0.01"
-                  placeholder="30 - 250"
-                  value={signos.talla}
-                  onChange={(e) => {
-                    setSignos({ ...signos, talla: e.target.value });
-                    if (errors.talla)
-                      setErrors((prev) => ({ ...prev, talla: "" }));
-                  }}
-                />
-                {errors.talla && (
-                  <span className={styles.formFieldError}>{errors.talla}</span>
-                )}
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Temperatura (°C){" "}
-                  <span className={styles.optionalTag}>(Opcional)</span>
-                </span>
-                <input
-                  ref={registerRef("temperatura")}
-                  style={getInputStyle("temperatura")}
-                  type="number"
-                  step="0.1"
-                  placeholder="30 - 45"
-                  value={signos.temperatura}
-                  onChange={(e) => {
-                    setSignos({ ...signos, temperatura: e.target.value });
-                    if (errors.temperatura)
-                      setErrors((prev) => ({ ...prev, temperatura: "" }));
-                  }}
-                />
-                {errors.temperatura && (
-                  <span className={styles.formFieldError}>
-                    {errors.temperatura}
-                  </span>
-                )}
+                <FieldError msg={errors.observaciones} />
               </label>
             </div>
+          )}
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "1.6rem",
-              }}
-            >
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Frecuencia Cardíaca (lpm){" "}
-                  <span className={styles.optionalTag}>(Opcional)</span>
-                </span>
-                <input
-                  ref={registerRef("frecuencia_cardiaca")}
-                  style={getInputStyle("frecuencia_cardiaca")}
-                  type="number"
-                  placeholder="20 - 250"
-                  value={signos.frecuencia_cardiaca}
-                  onChange={(e) => {
-                    setSignos({
-                      ...signos,
-                      frecuencia_cardiaca: e.target.value,
-                    });
-                    if (errors.frecuencia_cardiaca)
-                      setErrors((prev) => ({
-                        ...prev,
-                        frecuencia_cardiaca: "",
-                      }));
-                  }}
-                />
-                {errors.frecuencia_cardiaca && (
-                  <span className={styles.formFieldError}>
-                    {errors.frecuencia_cardiaca}
-                  </span>
-                )}
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Frecuencia Respiratoria (rpm){" "}
-                  <span className={styles.optionalTag}>(Opcional)</span>
-                </span>
-                <input
-                  ref={registerRef("frecuencia_respiratoria")}
-                  style={getInputStyle("frecuencia_respiratoria")}
-                  type="number"
-                  placeholder="5 - 80"
-                  value={signos.frecuencia_respiratoria}
-                  onChange={(e) => {
-                    setSignos({
-                      ...signos,
-                      frecuencia_respiratoria: e.target.value,
-                    });
-                    if (errors.frecuencia_respiratoria)
-                      setErrors((prev) => ({
-                        ...prev,
-                        frecuencia_respiratoria: "",
-                      }));
-                  }}
-                />
-                {errors.frecuencia_respiratoria && (
-                  <span className={styles.formFieldError}>
-                    {errors.frecuencia_respiratoria}
-                  </span>
-                )}
-              </label>
-            </div>
+          {/* TAB 3: CONSULTA */}
+          {activeTab === 3 && (
+            <div className={styles.formSection}>
+              <h2 className={styles.formSectionTitle}>3. Consulta Médica / Odontológica</h2>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: "1.6rem",
-              }}
-            >
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Presión Arterial{" "}
-                  <span className={styles.optionalTag}>
-                    (Opcional, ej. 120/80)
+              <div className="form-grid">
+                <label className="form-field">
+                  <span className="form-label">
+                    Tipo de Consulta <span className="form-required" aria-hidden="true">*</span>
                   </span>
-                </span>
-                <input
-                  ref={registerRef("presion_arterial")}
-                  style={getInputStyle("presion_arterial")}
-                  placeholder="120/80"
-                  value={signos.presion_arterial}
-                  onChange={(e) => {
-                    setSignos({ ...signos, presion_arterial: e.target.value });
-                    if (errors.presion_arterial)
-                      setErrors((prev) => ({ ...prev, presion_arterial: "" }));
-                  }}
-                />
-                {errors.presion_arterial && (
-                  <span className={styles.formFieldError}>
-                    {errors.presion_arterial}
+                  <select
+                    ref={registerRef("tipo_consulta")}
+                    className="form-input"
+                    aria-required="true"
+                    aria-invalid={!!errors.tipo_consulta}
+                    value={consulta.tipo_consulta}
+                    onChange={(e) => {
+                      // el profesional depende del tipo de consulta: se vuelve a elegir
+                      setConsulta({ ...consulta, tipo_consulta: e.target.value, medico_id: "" });
+                      if (errors.tipo_consulta) setErrors((prev) => ({ ...prev, tipo_consulta: "" }));
+                    }}
+                  >
+                    <option value="Medica">Médica</option>
+                    <option value="Odontologica">Odontológica</option>
+                  </select>
+                  <FieldError msg={errors.tipo_consulta} />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Médico / Odontólogo que atendió <span className="form-required" aria-hidden="true">*</span>
                   </span>
-                )}
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Saturación O2 (%){" "}
-                  <span className={styles.optionalTag}>(Opcional)</span>
-                </span>
-                <input
-                  ref={registerRef("saturacion")}
-                  style={getInputStyle("saturacion")}
-                  type="number"
-                  placeholder="0 - 100"
-                  value={signos.saturacion}
-                  onChange={(e) => {
-                    setSignos({ ...signos, saturacion: e.target.value });
-                    if (errors.saturacion)
-                      setErrors((prev) => ({ ...prev, saturacion: "" }));
-                  }}
-                />
-                {errors.saturacion && (
-                  <span className={styles.formFieldError}>
-                    {errors.saturacion}
-                  </span>
-                )}
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Glucosa (mg/dL){" "}
-                  <span className={styles.optionalTag}>(Opcional)</span>
-                </span>
-                <input
-                  ref={registerRef("glucosa")}
-                  style={getInputStyle("glucosa")}
-                  type="number"
-                  step="0.01"
-                  placeholder="20 - 700"
-                  value={signos.glucosa}
-                  onChange={(e) => {
-                    setSignos({ ...signos, glucosa: e.target.value });
-                    if (errors.glucosa)
-                      setErrors((prev) => ({ ...prev, glucosa: "" }));
-                  }}
-                />
-                {errors.glucosa && (
-                  <span className={styles.formFieldError}>
-                    {errors.glucosa}
-                  </span>
-                )}
-              </label>
-            </div>
-
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Observaciones de Preclínica{" "}
-                <span className={styles.optionalTag}>
-                  (Opcional, máx. 1000 caracteres)
-                </span>
-              </span>
-              <textarea
-                ref={registerRef("observaciones")}
-                style={getInputStyle("observaciones")}
-                rows={3}
-                placeholder="Ej. Paciente llega con acompañante, refiere alergias a penicilina..."
-                value={signos.observaciones}
-                onChange={(e) => {
-                  setSignos({ ...signos, observaciones: e.target.value });
-                  if (errors.observaciones)
-                    setErrors((prev) => ({ ...prev, observaciones: "" }));
-                }}
-              />
-              {errors.observaciones && (
-                <span className={styles.formFieldError}>
-                  {errors.observaciones}
-                </span>
-              )}
-            </label>
-
-            <div className={styles.modalActions} style={{ marginTop: "1rem" }}>
-              <button
-                className={styles.btnSecondary}
-                onClick={() => goToTab(1)}
-                disabled={isSubmitting}
-              >
-                &larr; Atrás
-              </button>
-              <button
-                className={styles.btnPrimary}
-                onClick={() => goToTab(3)}
-                disabled={isSubmitting}
-              >
-                Siguiente: Consulta &rarr;
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: CONSULTA */}
-        {activeTab === 3 && (
-          <div className={styles.adminFormSingleColumn}>
-            <div className={styles.formSectionTitle}>
-              3. Consulta Médica / Odontológica
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "1.6rem",
-              }}
-            >
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Tipo de Consulta{" "}
-                  <strong className={styles.requiredStar}>* (Requerido)</strong>
-                </span>
-                <select
-                  ref={registerRef("tipo_consulta")}
-                  style={getInputStyle("tipo_consulta")}
-                  value={consulta.tipo_consulta}
-                  onChange={(e) => {
-                    setConsulta({ ...consulta, tipo_consulta: e.target.value });
-                    if (errors.tipo_consulta)
-                      setErrors((prev) => ({ ...prev, tipo_consulta: "" }));
-                  }}
-                >
-                  <option value="Medica">Médica</option>
-                  <option value="Odontologica">Odontológica</option>
-                </select>
-                {errors.tipo_consulta && (
-                  <span className={styles.formFieldError}>
-                    {errors.tipo_consulta}
-                  </span>
-                )}
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Médico / Odontólogo que atendió{" "}
-                  <strong className={styles.requiredStar}>* (Requerido)</strong>
-                </span>
-                <select
-                  ref={registerRef("medico_id")}
-                  style={getInputStyle("medico_id")}
-                  value={consulta.medico_id}
-                  disabled={medicos.length === 0 || isSubmitting}
-                  onChange={(e) => {
-                    setConsulta({ ...consulta, medico_id: e.target.value });
-                    if (errors.medico_id)
-                      setErrors((prev) => ({ ...prev, medico_id: "" }));
-                  }}
-                >
-                  {consulta.tipo_consulta == "Medica" ? (
-                    medicos.length === 0 ? (
-                      <option value="">No hay médicos disponibles</option>
+                  <select
+                    ref={registerRef("medico_id")}
+                    className="form-input"
+                    aria-required="true"
+                    aria-invalid={!!errors.medico_id}
+                    value={consulta.medico_id}
+                    disabled={profesionales.length === 0 || isSubmitting}
+                    onChange={(e) => {
+                      setConsulta({ ...consulta, medico_id: e.target.value });
+                      if (errors.medico_id) setErrors((prev) => ({ ...prev, medico_id: "" }));
+                    }}
+                  >
+                    {profesionales.length === 0 ? (
+                      <option value="">
+                        No hay {esMedica ? "médicos" : "odontólogos"} disponibles
+                      </option>
                     ) : (
                       <>
                         <option value="">-- Seleccionar --</option>
-                        {medicos.map((m) => (
+                        {profesionales.map((m) => (
                           <option key={m.id} value={m.id}>
                             {m.nombre_completo || "Sin Nombre"}
                           </option>
                         ))}
                       </>
-                    )
-                  ) : odontologos.length === 0 ? (
-                    <option value="">No hay médicos disponibles</option>
-                  ) : (
-                    <>
-                      <option value="">-- Seleccionar --</option>
-                      {odontologos.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.nombre_completo || "Sin Nombre"}
-                        </option>
-                      ))}
-                    </>
-                  )}
-                </select>
-                {errors.medico_id && (
-                  <span className={styles.formFieldError}>
-                    {errors.medico_id}
-                  </span>
-                )}
+                    )}
+                  </select>
+                  <FieldError msg={errors.medico_id} />
+                </label>
+              </div>
+
+              <label className="form-field">
+                <span className="form-label">
+                  Motivo de Consulta <span className="form-required" aria-hidden="true">*</span>
+                </span>
+                <textarea
+                  ref={registerRef("motivo_consulta")}
+                  className="form-input"
+                  aria-required="true"
+                  aria-invalid={!!errors.motivo_consulta}
+                  rows={2}
+                  placeholder="Mínimo 10 caracteres. Ej. Dolor de cabeza frecuente y fiebre desde hace 2 días."
+                  value={consulta.motivo_consulta}
+                  onChange={(e) => {
+                    setConsulta({ ...consulta, motivo_consulta: e.target.value });
+                    if (errors.motivo_consulta) setErrors((prev) => ({ ...prev, motivo_consulta: "" }));
+                  }}
+                />
+                <FieldError msg={errors.motivo_consulta} />
               </label>
-            </div>
 
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Motivo de Consulta{" "}
-                <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <textarea
-                ref={registerRef("motivo_consulta")}
-                style={getInputStyle("motivo_consulta")}
-                rows={2}
-                placeholder="Mínimo 10 caracteres. Ej. Dolor de cabeza frecuente y fiebre desde hace 2 días."
-                value={consulta.motivo_consulta}
-                onChange={(e) => {
-                  setConsulta({ ...consulta, motivo_consulta: e.target.value });
-                  if (errors.motivo_consulta)
-                    setErrors((prev) => ({ ...prev, motivo_consulta: "" }));
-                }}
-              />
-              {errors.motivo_consulta && (
-                <span className={styles.formFieldError}>
-                  {errors.motivo_consulta}
+              <label className="form-field">
+                <span className="form-label">
+                  Enfermedad Actual <span className="form-required" aria-hidden="true">*</span>
                 </span>
-              )}
-            </label>
+                <textarea
+                  ref={registerRef("enfermedad_actual")}
+                  className="form-input"
+                  aria-required="true"
+                  aria-invalid={!!errors.enfermedad_actual}
+                  rows={2}
+                  placeholder="Mínimo 10 caracteres. Ej. Paciente refiere síntomas de inicio súbito..."
+                  value={consulta.enfermedad_actual}
+                  onChange={(e) => {
+                    setConsulta({ ...consulta, enfermedad_actual: e.target.value });
+                    if (errors.enfermedad_actual) setErrors((prev) => ({ ...prev, enfermedad_actual: "" }));
+                  }}
+                />
+                <FieldError msg={errors.enfermedad_actual} />
+              </label>
 
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Enfermedad Actual{" "}
-                <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <textarea
-                ref={registerRef("enfermedad_actual")}
-                style={getInputStyle("enfermedad_actual")}
-                rows={2}
-                placeholder="Mínimo 10 caracteres. Ej. Paciente refiere síntomas de inicio súbito..."
-                value={consulta.enfermedad_actual}
-                onChange={(e) => {
-                  setConsulta({
-                    ...consulta,
-                    enfermedad_actual: e.target.value,
-                  });
-                  if (errors.enfermedad_actual)
-                    setErrors((prev) => ({ ...prev, enfermedad_actual: "" }));
-                }}
-              />
-              {errors.enfermedad_actual && (
-                <span className={styles.formFieldError}>
-                  {errors.enfermedad_actual}
+              <label className="form-field">
+                <span className="form-label">
+                  Plan de Tratamiento <span className="form-required" aria-hidden="true">*</span>
                 </span>
-              )}
-            </label>
+                <textarea
+                  ref={registerRef("tratamiento")}
+                  className="form-input"
+                  aria-required="true"
+                  aria-invalid={!!errors.tratamiento}
+                  rows={3}
+                  placeholder="Mínimo 10 caracteres. Ej. Hidratación oral, reposo y administración de analgésicos."
+                  value={consulta.tratamiento}
+                  onChange={(e) => {
+                    setConsulta({ ...consulta, tratamiento: e.target.value });
+                    if (errors.tratamiento) setErrors((prev) => ({ ...prev, tratamiento: "" }));
+                  }}
+                />
+                <FieldError msg={errors.tratamiento} />
+              </label>
 
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Plan de Tratamiento{" "}
-                <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <textarea
-                ref={registerRef("tratamiento")}
-                style={getInputStyle("tratamiento")}
-                rows={3}
-                placeholder="Mínimo 10 caracteres. Ej. Hidratación oral, reposo y administración de analgésicos."
-                value={consulta.tratamiento}
-                onChange={(e) => {
-                  setConsulta({ ...consulta, tratamiento: e.target.value });
-                  if (errors.tratamiento)
-                    setErrors((prev) => ({ ...prev, tratamiento: "" }));
-                }}
-              />
-              {errors.tratamiento && (
-                <span className={styles.formFieldError}>
-                  {errors.tratamiento}
-                </span>
-              )}
-            </label>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem",
-                padding: "1rem 1.4rem",
-                background: "var(--bg-light)",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--border-color)",
-              }}
-            >
-              <input
-                type="checkbox"
-                id="postclinica"
-                checked={consulta.requiere_postclinica}
-                onChange={(e) =>
-                  setConsulta({
-                    ...consulta,
-                    requiere_postclinica: e.target.checked,
-                  })
-                }
-              />
-              <label
-                htmlFor="postclinica"
-                style={{
-                  margin: 0,
-                  cursor: "pointer",
-                  fontWeight: "600",
-                  fontSize: "1.4rem",
-                }}
-              >
+              <label className="form-check">
+                <input
+                  type="checkbox"
+                  checked={consulta.requiere_postclinica}
+                  onChange={(e) => setConsulta({ ...consulta, requiere_postclinica: e.target.checked })}
+                />
                 Requiere Postclínica
               </label>
             </div>
+          )}
 
-            <div className={styles.modalActions} style={{ marginTop: "1rem" }}>
-              <button
-                className={styles.btnSecondary}
-                onClick={() => goToTab(2)}
-                disabled={isSubmitting}
-              >
-                &larr; Atrás
-              </button>
-              <button
-                className={styles.btnPrimary}
-                onClick={() => goToTab(4)}
-                disabled={isSubmitting}
-              >
-                Siguiente: Diagnósticos &rarr;
-              </button>
-            </div>
-          </div>
-        )}
+          {/* TAB 4: DIAGNÓSTICOS */}
+          {activeTab === 4 && (
+            <div className={styles.formSection}>
+              <h2 className={styles.formSectionTitle}>4. Diagnósticos Clínicos</h2>
+              <p className="form-hint">
+                Ingresa los diagnósticos separados por coma (,). Cada diagnóstico debe tener al menos 3 caracteres.
+              </p>
 
-        {/* TAB 4: DIAGNÓSTICOS */}
-        {activeTab === 4 && (
-          <div className={styles.adminFormSingleColumn}>
-            <div className={styles.formSectionTitle}>
-              4. Diagnósticos Clínicos
-            </div>
-            <p
-              style={{
-                color: "var(--gray)",
-                fontSize: "1.4rem",
-                marginTop: "-0.8rem",
-              }}
-            >
-              Ingresa los diagnósticos separados por coma (,). Cada diagnóstico
-              debe tener al menos 3 caracteres.
-            </p>
-
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Diagnósticos{" "}
-                <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <textarea
-                ref={registerRef("diagnosticosStr")}
-                style={getInputStyle("diagnosticosStr")}
-                rows={4}
-                placeholder="Ej. Faringitis Aguda, Anemia, Cefalea Tensional"
-                value={diagnosticosStr}
-                onChange={(e) => {
-                  setDiagnosticosStr(e.target.value);
-                  if (errors.diagnosticosStr)
-                    setErrors((prev) => ({ ...prev, diagnosticosStr: "" }));
-                }}
-              />
-              {errors.diagnosticosStr && (
-                <span className={styles.formFieldError}>
-                  {errors.diagnosticosStr}
+              <label className="form-field">
+                <span className="form-label">
+                  Diagnósticos <span className="form-required" aria-hidden="true">*</span>
                 </span>
-              )}
-            </label>
-
-            <div className={styles.modalActions} style={{ marginTop: "1rem" }}>
-              <button
-                className={styles.btnSecondary}
-                onClick={() => goToTab(3)}
-                disabled={isSubmitting}
-              >
-                &larr; Atrás
-              </button>
-              <button
-                className={styles.btnPrimary}
-                onClick={() => goToTab(5)}
-                disabled={isSubmitting}
-              >
-                Siguiente: Medicamentos &rarr;
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: MEDICAMENTOS */}
-        {activeTab === 5 && (
-          <div className={styles.adminFormSingleColumn}>
-            <div className={styles.formSectionTitle}>
-              5. Receta de Medicamentos
-            </div>
-
-            {recetaError && (
-              <div className={styles.formErrorBanner}>
-                <span>{recetaError}</span>
-              </div>
-            )}
-
-            <div
-              style={{
-                background: "var(--bg-light)",
-                padding: "1.6rem",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--border-color)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.2rem",
-              }}
-            >
-              <h4 style={{ fontSize: "1.5rem", fontWeight: "600", margin: 0 }}>
-                Añadir Medicamento a la Receta
-              </h4>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "1.2rem",
-                }}
-              >
-                <label className={styles.formField}>
-                  <span className={styles.fieldLabel}>
-                    Medicamento{" "}
-                    <strong className={styles.requiredStar}>
-                      * (Requerido)
-                    </strong>
-                  </span>
-                  <select
-                    ref={registerRef("newMedId")}
-                    style={getInputStyle("newMedId")}
-                    value={newMedId}
-                    onChange={(e) => {
-                      setNewMedId(e.target.value);
-                      setRecetaError("");
-                      if (errors.newMedId)
-                        setErrors((prev) => ({ ...prev, newMedId: "" }));
-                    }}
-                  >
-                    <option value="">-- Seleccionar --</option>
-                    {medicamentosList.map((m) => (
-                      <option
-                        key={m.medicamento_id || m.id}
-                        value={m.medicamento_id || m.id}
-                      >
-                        {m.nombre} (Stock: {m.stock_total || 0})
-                      </option>
-                    ))}
-                  </select>
-                  {errors.newMedId && (
-                    <span className={styles.formFieldError}>
-                      {errors.newMedId}
-                    </span>
-                  )}
-                </label>
-                <label className={styles.formField}>
-                  <span className={styles.fieldLabel}>
-                    Cantidad{" "}
-                    <strong className={styles.requiredStar}>
-                      * (Requerido)
-                    </strong>
-                  </span>
-                  <input
-                    ref={registerRef("newMedCantidad")}
-                    style={getInputStyle("newMedCantidad")}
-                    type="number"
-                    min="1"
-                    value={newMedCantidad}
-                    onChange={(e) => {
-                      setNewMedCantidad(e.target.value);
-                      if (errors.newMedCantidad)
-                        setErrors((prev) => ({ ...prev, newMedCantidad: "" }));
-                    }}
-                  />
-                  {errors.newMedCantidad && (
-                    <span className={styles.formFieldError}>
-                      {errors.newMedCantidad}
-                    </span>
-                  )}
-                </label>
-              </div>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Indicaciones (Dosis, Frecuencia){" "}
-                  <strong className={styles.requiredStar}>* (Requerido)</strong>
-                </span>
-                <input
-                  ref={registerRef("newMedIndicaciones")}
-                  style={getInputStyle("newMedIndicaciones")}
-                  placeholder="Ej. 1 tableta cada 8 horas por 5 días"
-                  value={newMedIndicaciones}
+                <textarea
+                  ref={registerRef("diagnosticosStr")}
+                  className="form-input"
+                  aria-required="true"
+                  aria-invalid={!!errors.diagnosticosStr}
+                  rows={4}
+                  placeholder="Ej. Faringitis Aguda, Anemia, Cefalea Tensional"
+                  value={diagnosticosStr}
                   onChange={(e) => {
-                    setNewMedIndicaciones(e.target.value);
-                    if (errors.newMedIndicaciones)
-                      setErrors((prev) => ({
-                        ...prev,
-                        newMedIndicaciones: "",
-                      }));
+                    setDiagnosticosStr(e.target.value);
+                    if (errors.diagnosticosStr) setErrors((prev) => ({ ...prev, diagnosticosStr: "" }));
                   }}
                 />
-                {errors.newMedIndicaciones && (
-                  <span className={styles.formFieldError}>
-                    {errors.newMedIndicaciones}
-                  </span>
-                )}
+                <FieldError msg={errors.diagnosticosStr} />
               </label>
-              <div>
-                <button
-                  className={styles.btnSecondary}
-                  onClick={handleAddMed}
-                  disabled={isSubmitting}
-                >
-                  + Añadir a Receta
+            </div>
+          )}
+
+          {/* TAB 5: MEDICAMENTOS */}
+          {activeTab === 5 && (
+            <div className={styles.stack}>
+              <div className={styles.formSection}>
+                <h2 className={styles.formSectionTitle}>5. Receta de Medicamentos</h2>
+
+                {recetaError && (
+                  <p className="form-error form-alert" role="alert">
+                    <CircleAlert aria-hidden="true" />
+                    <span>{recetaError}</span>
+                  </p>
+                )}
+
+                <h3 className={styles.subTitle}>Añadir Medicamento a la Receta</h3>
+                <div className="form-grid">
+                  <label className="form-field">
+                    <span className="form-label">
+                      Medicamento <span className="form-required" aria-hidden="true">*</span>
+                    </span>
+                    <select
+                      ref={registerRef("newMedId")}
+                      className="form-input"
+                      aria-required="true"
+                      aria-invalid={!!errors.newMedId}
+                      value={newMedId}
+                      onChange={(e) => {
+                        setNewMedId(e.target.value);
+                        setRecetaError("");
+                        if (errors.newMedId) setErrors((prev) => ({ ...prev, newMedId: "" }));
+                      }}
+                    >
+                      <option value="">-- Seleccionar --</option>
+                      {medicamentosList.map((m) => (
+                        <option key={m.medicamento_id || m.id} value={m.medicamento_id || m.id}>
+                          {m.nombre} (Stock: {m.stock_total || 0})
+                        </option>
+                      ))}
+                    </select>
+                    <FieldError msg={errors.newMedId} />
+                  </label>
+                  <label className="form-field">
+                    <span className="form-label">
+                      Cantidad <span className="form-required" aria-hidden="true">*</span>
+                    </span>
+                    <input
+                      ref={registerRef("newMedCantidad")}
+                      className="form-input"
+                      aria-required="true"
+                      aria-invalid={!!errors.newMedCantidad}
+                      type="number"
+                      min="1"
+                      value={newMedCantidad}
+                      onChange={(e) => {
+                        setNewMedCantidad(e.target.value);
+                        if (errors.newMedCantidad) setErrors((prev) => ({ ...prev, newMedCantidad: "" }));
+                      }}
+                    />
+                    <FieldError msg={errors.newMedCantidad} />
+                  </label>
+                  <label className="form-field form-field-full">
+                    <span className="form-label">
+                      Indicaciones (Dosis, Frecuencia) <span className="form-required" aria-hidden="true">*</span>
+                    </span>
+                    <input
+                      ref={registerRef("newMedIndicaciones")}
+                      className="form-input"
+                      aria-required="true"
+                      aria-invalid={!!errors.newMedIndicaciones}
+                      placeholder="Ej. 1 tableta cada 8 horas por 5 días"
+                      value={newMedIndicaciones}
+                      onChange={(e) => {
+                        setNewMedIndicaciones(e.target.value);
+                        if (errors.newMedIndicaciones) setErrors((prev) => ({ ...prev, newMedIndicaciones: "" }));
+                      }}
+                    />
+                    <FieldError msg={errors.newMedIndicaciones} />
+                  </label>
+                </div>
+                <button type="button" className="btn-ghost btn-sm" onClick={handleAddMed} disabled={isSubmitting}>
+                  <Plus aria-hidden="true" />
+                  Añadir a Receta
                 </button>
               </div>
-            </div>
 
-            <div>
-              <h4
-                style={{
-                  fontSize: "1.5rem",
-                  fontWeight: "600",
-                  margin: "0 0 1rem 0",
-                }}
-              >
-                Medicamentos Agregados ({medsRecetados.length})
-              </h4>
-              {medsRecetados.length === 0 ? (
-                <p style={{ color: "var(--gray)", fontSize: "1.4rem" }}>
-                  No hay medicamentos recetados aún.
-                </p>
-              ) : (
-                <table
-                  className={styles.adminTable}
-                  style={{ marginTop: "1rem" }}
-                >
-                  <thead>
-                    <tr>
-                      <th>Medicamento</th>
-                      <th>Cantidad</th>
-                      <th>Indicaciones</th>
-                      <th>Quitar</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {medsRecetados.map((m, idx) => (
-                      <tr key={idx}>
-                        <td style={{ fontWeight: "bold" }}>{m.nombre}</td>
-                        <td>{m.cantidad}</td>
-                        <td>{m.indicaciones}</td>
-                        <td>
-                          <button
-                            className={styles.btnDanger}
-                            style={{
-                              padding: "0.3rem 0.8rem",
-                              fontSize: "1.2rem",
-                            }}
-                            onClick={() => handleRemoveMed(idx)}
-                            disabled={isSubmitting}
-                          >
-                            Quitar
-                          </button>
-                        </td>
+              <div className={styles.formSection}>
+                <h3 className={styles.subTitle}>
+                  Medicamentos Agregados <span className={styles.count}>{medsRecetados.length}</span>
+                </h3>
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Medicamento</th>
+                        <th className={styles.num}>Cantidad</th>
+                        <th>Indicaciones</th>
+                        <th className={styles.num}>Quitar</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {medsRecetados.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className={styles.emptyCell}>
+                            No hay medicamentos recetados aún.
+                          </td>
+                        </tr>
+                      ) : (
+                        medsRecetados.map((m, idx) => (
+                          <tr key={idx}>
+                            <td className={styles.cellMain}>{m.nombre}</td>
+                            <td className={styles.num}>{m.cantidad}</td>
+                            <td>{m.indicaciones}</td>
+                            <td>
+                              <div className={styles.rowActions}>
+                                <button
+                                  type="button"
+                                  className="btn-icon btn-icon-danger"
+                                  onClick={() => handleRemoveMed(idx)}
+                                  disabled={isSubmitting}
+                                  aria-label={`Quitar ${m.nombre} de la receta`}
+                                  title="Quitar"
+                                >
+                                  <Trash2 aria-hidden="true" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {backendError && (
+                <p className="form-error form-alert" role="alert">
+                  <CircleAlert aria-hidden="true" />
+                  <span>{backendError}</span>
+                </p>
+              )}
+
+              {successMsg && (
+                <p className="notice notice-ok" role="status">
+                  <CircleCheck aria-hidden="true" />
+                  <span>{successMsg}</span>
+                </p>
               )}
             </div>
+          )}
+        </div>
 
-            {backendError && (
-              <div
-                className={styles.formErrorBanner}
-                style={{ marginTop: "1.6rem" }}
-              >
-                <span>{backendError}</span>
-              </div>
-            )}
-
-            {successMsg && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  padding: "1.2rem 1.6rem",
-                  borderRadius: "var(--radius-sm)",
-                  background: "#dcfce7",
-                  color: "#166534",
-                  border: "1px solid #86efac",
-                  fontSize: "1.4rem",
-                  fontWeight: "600",
-                  marginTop: "1.6rem",
-                }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                {successMsg}
-              </div>
-            )}
-
-            <div
-              className={styles.modalActions}
-              style={{
-                marginTop: "2rem",
-                paddingTop: "2rem",
-                borderTop: "1px solid var(--border-color)",
-              }}
+        {/* key: los botones se montan de nuevo en cada paso, como antes; así un Enter repetido no avanza ni guarda de más */}
+        <div key={activeTab} className={styles.panelFooter}>
+          {activeTab > 1 && (
+            <button
+              type="button"
+              className="btn-ghost btn-sm"
+              onClick={() => goToTab(activeTab - 1)}
+              disabled={isSubmitting}
             >
-              <button
-                className={styles.btnSecondary}
-                onClick={() => goToTab(4)}
-                disabled={isSubmitting}
-              >
-                &larr; Atrás
-              </button>
-              <button
-                className={styles.btnPrimary}
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.8rem",
-                }}
-              >
-                {isSubmitting && (
-                  <svg
-                    style={{
-                      width: "1.6rem",
-                      height: "1.6rem",
-                      animation: "spin 1s linear infinite",
-                    }}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      opacity="0.25"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      opacity="0.75"
-                    />
-                  </svg>
-                )}
-                <span>
-                  {isSubmitting
-                    ? "Guardando expediente..."
-                    : "Guardar Expediente"}
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+              <ArrowLeft aria-hidden="true" />
+              Atrás
+            </button>
+          )}
+          {activeTab < STEPS.length ? (
+            <button
+              type="button"
+              className={`btn-primary btn-sm ${pac.next}`}
+              onClick={() => goToTab(activeTab + 1)}
+              disabled={isSubmitting}
+            >
+              {STEPS[activeTab - 1].next}
+              <ArrowRight aria-hidden="true" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={`btn-primary btn-sm ${pac.next}`}
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <LoaderCircle className="spin" aria-hidden="true" />
+              ) : (
+                <Save aria-hidden="true" />
+              )}
+              {isSubmitting ? "Guardando expediente..." : "Guardar Expediente"}
+            </button>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

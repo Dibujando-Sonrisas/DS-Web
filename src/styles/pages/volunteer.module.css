@@ -1,175 +1,84 @@
-.hero {
-  background-image: url(/new-Voluntariado-hero.png);
-  background-color: rgba(26, 35, 50, 0.65);
-  background-blend-mode: multiply;
-  background-size: cover;
-  background-position: center;
-  color: var(--white);
-  text-align: center;
-  padding: 10rem 2rem 8rem;
-}
-
-.hero h1 {
-  color: var(--white);
-  font-size: 4.8rem;
-  margin-bottom: 1.5rem;
-}
-
-.heroSub {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.9rem;
-  font-weight: 400;
-  max-width: 60rem;
-  margin: 0 auto 3rem;
-}
-
-.heroButtons {
-  display: flex;
-  gap: 1.6rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.btnPrimary {
-  display: inline-block;
-  background-color: var(--primaryColor);
-  color: var(--white);
-  font-size: 1.5rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  padding: 0.9rem 2rem;
-  border: 2px solid var(--primaryColor);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.btnPrimary:hover {
-  background-color: var(--primaryDark);
-  border-color: var(--primaryDark);
-  transform: translateY(-2px);
-}
-
-.btnOutlined {
-  display: inline-block;
-  background: transparent;
-  border: 2px solid var(--white);
-  color: var(--white);
-  font-size: 1.5rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  padding: 0.9rem 2rem;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.btnOutlined:hover {
-  background: var(--white);
-  color: var(--primaryColor);
-  transform: translateY(-2px);
-}
+/* =====================================================
+   VOLUNTEER — volunteer.module.css
+   Solo el layout propio de /voluntariado. Tarjetas, íconos,
+   tonos, botones y formulario vienen de globals.css; el hero
+   de PageHero.
+===================================================== */
 
 .volunteerMain {
   padding-bottom: 6rem;
-  background: var(--bg-light);
 }
 
-.innerContainer {
-  width: min(90%, 110rem);
-  margin: 0 auto;
-}
-
-.whySection {
-  padding: 7rem 0;
-}
-
-.whySection h2 {
+/* ── ENCABEZADOS DE SECCIÓN: rotan por los colores de marca ── */
+.whySection,
+.rolesSection,
+.stepsSection,
+.formSection {
+  padding-top: clamp(5rem, 9vw, 8rem);
   text-align: center;
+}
+
+.whySection h2,
+.formSection h2 {
+  color: var(--primaryColor);
+  margin-bottom: 1rem;
+  text-wrap: balance;
+}
+
+.rolesSection h2 {
+  color: var(--tertiaryColor);
   margin-bottom: 1rem;
 }
 
-.whySubtitle {
-  text-align: center;
-  color: var(--gray);
-  font-weight: 400;
-  font-size: 1.7rem;
-  margin-bottom: 4rem;
+.stepsSection h2 {
+  color: var(--secondaryDark);
+  margin-bottom: clamp(3rem, 6vw, 4.4rem);
 }
 
+.whySubtitle,
+.rolesSubtitle,
+.formIntro {
+  font-size: 1.7rem;
+  max-width: 64rem;
+  margin: 0 auto clamp(3rem, 6vw, 4.4rem);
+}
+
+/* ── ¿POR QUÉ SER VOLUNTARIO? ── */
 .whyCards {
   display: grid;
   grid-template-columns: 1fr;
   gap: 2.5rem;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 900px) {
   .whyCards {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 .whyCard {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 3rem 2.5rem;
-  text-align: center;
-  box-shadow: var(--shadow-sm);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
-.whyCard:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-md);
-}
-
-.circle {
-  background: var(--primaryLight);
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  margin: 0 auto 2rem;
+  gap: 1.2rem;
 }
 
-.circleIcon {
-  color: var(--primaryColor);
-  font-size: 2.8rem;
-  display: flex;
-  align-items: center;
-}
-
-.whyCard h4 {
+.whyCard h3 {
   font-size: 2rem;
-  margin-bottom: 0.8rem;
+  color: var(--tone-text);
+  margin: 0.6rem 0 0;
 }
 
 .whyCard p {
   font-size: 1.5rem;
 }
 
-.rolesSection {
-  padding: 7rem 0;
-}
-
-.rolesSection h2 {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.rolesSection > div > p {
-  text-align: center;
-  font-size: 1.6rem;
-  margin-bottom: 4rem;
-}
-
+/* ── ROLES DISPONIBLES ── */
 .rolesGrid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 3rem;
+  text-align: left;
 }
 
 @media (min-width: 768px) {
@@ -179,69 +88,57 @@
 }
 
 .roleCard {
-  background: var(--white);
-  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.3s ease;
 }
 
-.roleCard:hover {
-  transform: translateY(-4px);
+.roleImg1,
+.roleImg2 {
+  background-size: cover;
+  background-position: center;
+  height: 22rem;
+  margin: 1.5rem 1.5rem 0;
+  border-radius: var(--radius-md);
 }
 
 .roleImg1 {
   background-image: url(/Profesion.jpg);
-  background-size: cover;
-  background-position: center;
-  height: 20rem;
 }
 
 .roleImg2 {
   background-image: url(/ApoyoYLogistica.jpg);
-  background-size: cover;
-  background-position: center;
-  height: 20rem;
 }
 
 .roleName {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 2rem 2.5rem 1rem;
-}
-
-.roleIcon {
-  color: var(--primaryColor);
-  font-size: 2.8rem;
-  display: flex;
-  align-items: center;
+  gap: 1.4rem;
+  padding: 2.4rem 2.5rem 1rem;
 }
 
 .roleName h3 {
-  font-size: 2rem;
+  font-size: 2.2rem;
+  color: var(--tone-text);
   margin: 0;
 }
 
 .roleCard ul {
   padding: 0 2.5rem 2.5rem;
-  list-style: none;
 }
 
 .roleItem {
   font-size: 1.5rem;
   color: var(--gray);
-  padding: 0.8rem 0;
-  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 0;
+  border-bottom: 2px dashed var(--border-color);
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 1rem;
 }
 
-.roleItem::before {
-  content: "✓";
+.roleItem svg {
+  width: 1.8rem;
+  height: 1.8rem;
   color: var(--primaryColor);
-  font-weight: 700;
   flex-shrink: 0;
 }
 
@@ -249,19 +146,12 @@
   border-bottom: none;
 }
 
-.stepsSection {
-  padding: 7rem 0;
-  text-align: center;
-}
-
-.stepsSection h2 {
-  margin-bottom: 5rem;
-}
-
+/* ── CÓMO UNIRTE ── */
 .stepsGrid {
+  list-style: none;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 3rem;
+  gap: 2.4rem;
 }
 
 @media (min-width: 600px) {
@@ -277,24 +167,15 @@
 }
 
 .step {
-  background: var(--white);
-  border-radius: var(--radius-md);
   padding: 3rem 2rem;
-  box-shadow: var(--shadow-sm);
 }
 
+/* número dentro de .icon-circle, con trazo de marcador */
 .stepNumber {
-  width: 5rem;
-  height: 5rem;
-  border-radius: 50%;
-  background: var(--primaryColor);
-  color: var(--white);
-  font-size: 2rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 2rem;
+  font-family: var(--fontHeading);
+  font-size: 2.6rem;
+  margin: 0 auto 1.8rem;
+  transform: rotate(-4deg);
 }
 
 .step h3 {
@@ -306,8 +187,9 @@
   font-size: 1.5rem;
 }
 
+/* ── CITA VOLUNTARIO ── */
 .quoteSection {
-  padding: 7rem 0;
+  padding-top: clamp(5rem, 9vw, 8rem);
   display: grid;
   grid-template-columns: 1fr;
   gap: 4rem;
@@ -321,146 +203,86 @@
 }
 
 .quoteImage {
+  position: relative;
+  isolation: isolate;
   background-image: url(/volunteer-quote.jpeg);
   background-size: cover;
   background-position: top;
-  height: 35rem;
+  height: 36rem;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+}
+
+/* marco punteado desplazado, como trazado a mano detrás de la foto */
+.quoteImage::before {
+  content: "";
+  position: absolute;
+  inset: 1.4rem -1.4rem -1.4rem 1.4rem;
+  z-index: -1;
+  border: 3px dashed var(--secondaryColor);
+  border-radius: var(--radius-lg);
 }
 
 .quoteIcon {
-  color: var(--primaryColor);
-  font-size: 5rem;
-  margin-bottom: 1rem;
-  line-height: 1;
+  width: 4.8rem;
+  height: 4.8rem;
+  color: var(--secondaryColor);
+  margin-bottom: 1.4rem;
 }
 
-.quoteWords h3 {
-  font-size: 2.2rem;
-  font-style: italic;
-  font-weight: 400;
+.quoteWords blockquote {
+  font-family: var(--fontHeading);
+  font-size: clamp(2.2rem, 3vw, 2.8rem);
+  line-height: 1.4;
+  color: var(--dark);
   margin-bottom: 2rem;
-  line-height: 1.5;
 }
 
-.quoteWords h4 {
-  font-size: 1.8rem;
-  color: var(--primaryColor);
-  margin-bottom: 0.3rem;
+.quoteWords figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
 
-.quoteWords p {
+.quoteWords figcaption strong {
+  font-family: var(--fontHeading);
+  font-size: 2rem;
+  color: var(--tertiaryColor);
+}
+
+.quoteWords figcaption span {
   font-size: 1.4rem;
+  color: var(--primaryDark);
 }
 
-.formSection {
-  padding: 7rem 0;
-  text-align: center;
-}
-
-.formSection h2 {
-  margin-bottom: 1rem;
-}
-
-.formSection > div > p {
-  margin-bottom: 4rem;
-  font-size: 1.6rem;
-}
-
+/* ── FORMULARIO ── */
 .form {
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  padding: 4rem 3rem;
-  box-shadow: var(--shadow-md);
   max-width: 80rem;
   margin: 0 auto;
   text-align: left;
 }
 
-.formGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
+.fieldset {
+  border: none;
 }
 
-@media (min-width: 600px) {
-  .formGrid {
-    grid-template-columns: 1fr 1fr;
-  }
+/* ── CUPO LLENO ── */
+.fullCard {
+  max-width: 64rem;
+  margin: 0 auto;
 }
 
-.campo label,
-.campoFull label {
-  display: block;
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--dark);
-  margin-bottom: 0.6rem;
+.fullIcon {
+  margin: 0 auto 1.6rem;
 }
 
-.campoFull {
-  grid-column: 1 / -1;
+.fullCard p {
+  margin-bottom: 2rem;
 }
 
-.input {
-  width: 100%;
-  padding: 1.2rem 1.6rem;
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  font-size: 1.5rem;
-  font-family: var(--fontBody);
-  color: var(--dark);
-  transition: border-color 0.2s ease;
-  background: var(--white);
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--primaryColor);
-}
-
-.textarea {
-  min-height: 12rem;
-  resize: vertical;
-}
-
-.submitRow {
+.fullActions {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 2rem;
-}
-
-.submitBtn {
-  display: inline-block;
-  background-color: var(--primaryColor);
-  color: var(--white);
-  font-size: 1.5rem;
-  font-weight: 600;
-  font-family: var(--fontBody);
-  border-radius: var(--radius-sm);
-  padding: 0.9rem 2.4rem;
-  border: 2px solid var(--primaryColor);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.submitBtn:hover:not(:disabled) {
-  background-color: var(--primaryDark);
-  border-color: var(--primaryDark);
-  transform: translateY(-2px);
-}
-
-.submitBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.successMsg {
-  text-align: center;
-  padding: 3rem;
-  font-size: 1.8rem;
-  color: var(--primaryColor);
-  font-weight: 600;
+  gap: 1.2rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }

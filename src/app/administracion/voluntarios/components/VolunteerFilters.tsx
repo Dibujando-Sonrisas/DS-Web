@@ -1,5 +1,6 @@
 "use client";
 
+import { Search } from "lucide-react";
 import styles from "@/styles/pages/admin.module.css";
 
 type VolunteerFiltersProps = {
@@ -12,6 +13,7 @@ type VolunteerFiltersProps = {
   specialties: { id: string; nombre: string }[];
 };
 
+/** Barra de filtros: va dentro del panel de voluntarios, bajo su título. */
 export default function VolunteerFilters({
   searchTerm,
   onSearchChange,
@@ -22,49 +24,55 @@ export default function VolunteerFilters({
   specialties,
 }: VolunteerFiltersProps) {
   return (
-    <div className={styles.tableContainer} style={{ padding: "2rem" }}>
-      <h3 style={{ fontSize: "1.6rem", marginBottom: "1.6rem", marginTop: 0 }}>
-        Filtros de Búsqueda
-      </h3>
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: "1.6rem",
-      }}>
-        <div className={styles.formField}>
-          <span>Buscar por nombre</span>
+    <div className={styles.toolbar}>
+      <div className={`${styles.filter} ${styles.filterWide}`}>
+        <label className={styles.filterLabel} htmlFor="voluntarios-buscar">
+          Buscar por nombre
+        </label>
+        <div className={styles.search}>
+          <Search aria-hidden="true" />
           <input
+            id="voluntarios-buscar"
             type="text"
+            className="form-input form-input-sm"
             placeholder="Buscar voluntario..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
+      </div>
 
-        <div className={styles.formField}>
-          <span>Especialidad</span>
-          <select
-            value={filterSpecialty}
-            onChange={(e) => onSpecialtyChange(e.target.value)}
-          >
-            <option value="all">Todas las especialidades</option>
-            {specialties.map((sp) => (
-              <option key={sp.id} value={sp.id}>{sp.nombre}</option>
-            ))}
-          </select>
-        </div>
+      <div className={styles.filter}>
+        <label className={styles.filterLabel} htmlFor="voluntarios-especialidad">
+          Especialidad
+        </label>
+        <select
+          id="voluntarios-especialidad"
+          className="form-input form-input-sm"
+          value={filterSpecialty}
+          onChange={(e) => onSpecialtyChange(e.target.value)}
+        >
+          <option value="all">Todas las especialidades</option>
+          {specialties.map((sp) => (
+            <option key={sp.id} value={sp.id}>{sp.nombre}</option>
+          ))}
+        </select>
+      </div>
 
-        <div className={styles.formField}>
-          <span>Estado</span>
-          <select
-            value={filterStatus}
-            onChange={(e) => onStatusChange(e.target.value)}
-          >
-            <option value="all">Todos los estados</option>
-            <option value="active">Activos</option>
-            <option value="inactive">Inactivos</option>
-          </select>
-        </div>
+      <div className={styles.filter}>
+        <label className={styles.filterLabel} htmlFor="voluntarios-estado">
+          Estado
+        </label>
+        <select
+          id="voluntarios-estado"
+          className="form-input form-input-sm"
+          value={filterStatus}
+          onChange={(e) => onStatusChange(e.target.value)}
+        >
+          <option value="all">Todos los estados</option>
+          <option value="active">Activos</option>
+          <option value="inactive">Inactivos</option>
+        </select>
       </div>
     </div>
   );

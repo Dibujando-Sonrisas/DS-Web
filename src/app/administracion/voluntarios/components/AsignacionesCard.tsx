@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { CircleAlert, ClipboardList, LoaderCircle, Pencil } from "lucide-react";
+import EmptyState from "@/app/administracion/components/EmptyState";
 import styles from "@/styles/pages/admin.module.css";
 import { actualizarAsignacion } from "../actions";
 
@@ -46,76 +48,102 @@ export default function AsignacionesCard({ perfilId, asignaciones }: Asignacione
   };
 
   return (
-    <div className={styles.tableContainer} style={{ padding: "1.5rem" }}>
-      <h3 style={{ margin: "0 0 1rem 0" }}>Áreas Asignadas</h3>
-      
+    <section className={styles.panel} aria-labelledby="areas-asignadas">
+      <div className={styles.panelHeader}>
+        <h2 id="areas-asignadas" className={styles.panelTitle}>
+          Áreas Asignadas <span className={styles.count}>{asignaciones.length}</span>
+        </h2>
+      </div>
+
       {error && (
-        <div style={{ color: "var(--red-dark)", marginBottom: "1rem" }}>
-          <strong>Error: </strong> {error}
+        <div className={styles.panelBody}>
+          <p className="notice notice-bad" role="alert">
+            <CircleAlert aria-hidden="true" />
+            <span>
+              <strong>Error: </strong> {error}
+            </span>
+          </p>
         </div>
       )}
 
       {asignaciones.length === 0 ? (
-        <p style={{ color: "var(--gray)", textAlign: "center", margin: "1rem 0" }}>
-          No tiene asignaciones en brigadas pendientes.
-        </p>
+        <EmptyState icon={<ClipboardList />} title="No tiene asignaciones en brigadas pendientes." />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {asignaciones.map(asig => {
-            const isEditing = editingId === asig.id;
-            return (
-              <div key={asig.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem", backgroundColor: "var(--bg-default)", border: "1px solid var(--border-color)", borderRadius: "8px" }}>
-                <div>
-                  <h4 style={{ margin: "0 0 0.2rem 0" }}>{asig.brigada?.nombre || `Brigada ID: ${asig.brigada_id.substring(0,8)}...`}</h4>
-                  {isEditing ? (
-                    <input 
-                      type="text" 
-                      value={area}
-                      onChange={e => setArea(e.target.value)}
-                      style={{ padding: "0.8rem", borderRadius: "4px", border: "1px solid var(--border-color)", marginTop: "0.5rem", width: "100%", fontSize: "1.4rem" }}
-                      placeholder="Ej. Triage, Farmacia..."
-                    />
-                  ) : (
-                    <p style={{ margin: 0, color: "var(--gray)", fontSize: "0.9rem" }}>
-                      <strong>Área:</strong> {asig.area_asignada || "Sin área específica"}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  {isEditing ? (
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <button 
-                        className={styles.btnPrimary} 
-                        onClick={() => handleSave(asig.id)}
-                        disabled={loading}
-                        style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
-                      >
-                        {loading ? "..." : "Guardar"}
-                      </button>
-                      <button 
-                        className={styles.btnSecondary} 
-                        onClick={() => setEditingId(null)}
-                        disabled={loading}
-                        style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  ) : (
-                    <button 
-                      className={styles.btnSecondary} 
-                      onClick={() => handleEdit(asig)}
-                      style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
-                    >
-                      Cambiar Área
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Brigada</th>
+                <th className={styles.num}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {asignaciones.map(asig => {
+                const isEditing = editingId === asig.id;
+                const brigadaNombre = asig.brigada?.nombre || `Brigada ID: ${asig.brigada_id.substring(0,8)}...`;
+                return (
+                  <tr key={asig.id}>
+                    <td>
+                      <span className={styles.cellMain}>{brigadaNombre}</span>
+                      {isEditing ? (
+                        <label className={styles.cellSub}>
+                          <span className="sr-only">Área asignada en {brigadaNombre}</span>
+                          <input 
+                            type="text" 
+                            className="form-input form-input-sm"
+                            value={area}
+                            onChange={e => setArea(e.target.value)}
+                            placeholder="Ej. Triage, Farmacia..."
+                          />
+                        </label>
+                      ) : (
+                        <span className={styles.cellSub}>
+                          <strong>Área:</strong> {asig.area_asignada || "Sin área específica"}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        {isEditing ? (
+                          <>
+                            <button 
+                              type="button"
+                              className="btn-primary btn-xs"
+                              onClick={() => handleSave(asig.id)}
+                              disabled={loading}
+                            >
+                              {loading && <LoaderCircle className="spin" aria-hidden="true" />}
+                              Guardar
+                            </button>
+                            <button 
+                              type="button"
+                              className="btn-ghost btn-xs"
+                              onClick={() => setEditingId(null)}
+                              disabled={loading}
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <button 
+                            type="button"
+                            className="btn-ghost btn-xs"
+                            onClick={() => handleEdit(asig)}
+                            aria-label={`Cambiar área en ${brigadaNombre}`}
+                          >
+                            <Pencil aria-hidden="true" />
+                            Cambiar Área
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
-    </div>
+    </section>
   );
 }

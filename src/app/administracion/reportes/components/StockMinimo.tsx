@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import styles from "@/styles/pages/reportes.module.css";
+import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
+import styles from "@/styles/pages/admin.module.css";
+import rep from "@/styles/pages/reportes.module.css";
+import listas from "@/styles/pages/admin-reportes-listas.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { supabase } from "@/lib/supabase";
@@ -82,16 +85,16 @@ export default function StockMinimo() {
           : 100;
         let estado: "critico" | "advertencia" | "optimo" = "optimo";
         let estadoLabel = "Óptimo";
-        let statusClass = styles.statusSuccess;
+        let statusClass = styles.badgeSuccess;
 
         if (item.stockActual < item.stockMinimo) {
           estado = "critico";
           estadoLabel = "Crítico (Bajo Mínimo)";
-          statusClass = styles.statusCritical;
+          statusClass = styles.badgeDanger;
         } else if (item.stockActual <= item.stockMinimo * 1.3) {
           estado = "advertencia";
           estadoLabel = "Advertencia (Stock Límite)";
-          statusClass = styles.statusWarning;
+          statusClass = styles.badgeWarning;
         }
 
         return {
@@ -147,238 +150,180 @@ export default function StockMinimo() {
   return (
     <div>
       {/* ── VISTA WEB (PAGINADA) ── */}
-      <div className={styles.screenView}>
+      <div className={`${rep.screenView} ${styles.stack} no-print`}>
         {/* Encabezado */}
-        <div className={styles.reportHeader}>
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <div className={styles.reportHeaderText}>
-              <h3>Alerta de Stock Mínimo de Insumos</h3>
-              <p>
-                Muestra los materiales e insumos odontológicos, de farmacia e
-                higiene que requieren reabastecimiento urgente.
-              </p>
+        <div className={styles.sectionHead}>
+          <div>
+            <h2 className={styles.sectionTitle}>Alerta de Stock Mínimo de Insumos</h2>
+            <p className={styles.sectionLead}>
+              Muestra los materiales e insumos odontológicos, de farmacia e
+              higiene que requieren reabastecimiento urgente.
+            </p>
+          </div>
+          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+            <Printer aria-hidden="true" />
+            Imprimir
+          </button>
+        </div>
+
+        <section className={styles.panel}>
+          {/* Filtros */}
+          <div className={styles.toolbar}>
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="cat-filtro">Categoría</label>
+              <select
+                id="cat-filtro"
+                className="form-input form-input-sm"
+                value={categoriaFiltro}
+                onChange={(e) => setCategoriaFiltro(e.target.value)}
+              >
+                <option value="todas">Todas las categorías</option>
+                {categoriasDisponibles.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
             </div>
-          </div>
-          <div className={styles.reportHeaderActions}>
-            <button
-              type="button"
-              className={styles.btnActionSecondary}
-              onClick={handlePrint}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5Zm-3 0h.008v.008H15V10.5Z"
-                />
-              </svg>
-              Imprimir
-            </button>
-          </div>
-        </div>
 
-        {/* Filtros */}
-        <div className={styles.reportFilters}>
-          <div className={styles.filterGroup}>
-            <label htmlFor="cat-filtro">Categoría</label>
-            <select
-              id="cat-filtro"
-              value={categoriaFiltro}
-              onChange={(e) => setCategoriaFiltro(e.target.value)}
-            >
-              <option value="todas">Todas las categorías</option>
-              {categoriasDisponibles.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="estado-filtro">Estado del Stock</label>
+              <select
+                id="estado-filtro"
+                className="form-input form-input-sm"
+                value={estadoFiltro}
+                onChange={(e) => setEstadoFiltro(e.target.value)}
+              >
+                <option value="todos">Todos los niveles</option>
+                <option value="critico"> Crítico (Bajo Mínimo)</option>
+                <option value="advertencia">
+                   Advertencia (Cerca del Límite)
                 </option>
-              ))}
-            </select>
+                <option value="optimo"> Óptimo (Correcto)</option>
+              </select>
+            </div>
+
+            <p className={styles.toolbarNote}>
+              Umbral de alerta: <strong>&lt; 100% de Stock Mínimo</strong>
+            </p>
           </div>
 
-          <div className={styles.filterGroup}>
-            <label htmlFor="estado-filtro">Estado del Stock</label>
-            <select
-              id="estado-filtro"
-              value={estadoFiltro}
-              onChange={(e) => setEstadoFiltro(e.target.value)}
-            >
-              <option value="todos">Todos los niveles</option>
-              <option value="critico"> Crítico (Bajo Mínimo)</option>
-              <option value="advertencia">
-                 Advertencia (Cerca del Límite)
-              </option>
-              <option value="optimo"> Óptimo (Correcto)</option>
-            </select>
-          </div>
-
-          <p
-            style={{
-              margin: "auto 0 0",
-              fontSize: "1.35rem",
-              color: "var(--gray)",
-              fontStyle: "italic",
-            }}
-          >
-            Umbral de alerta: <strong>&lt; 100% de Stock Mínimo</strong>
-          </p>
-        </div>
-
-        {/* Tabla Web */}
-        <div className={styles.printableContainer}>
-          <div style={{ overflowX: "auto" }}>
-            <table className={styles.printableTable}>
-              <thead>
-                <tr>
-                  <th>Código / SKU</th>
-                  <th>Nombre del Insumo</th>
-                  <th>Categoría</th>
-                  <th style={{ textAlign: "right" }}>Stock Mínimo</th>
-                  <th style={{ textAlign: "right" }}>Stock Actual</th>
-                  <th>Unidad</th>
-                  <th>Ubicación</th>
-                  <th style={{ width: "160px" }}>Nivel de Cobertura</th>
-                  <th>Estado de Alerta</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
+          {/* Tabla Web */}
+          {loading ? (
+            <div className={styles.panelBody}>
+              <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
+                <span className="sr-only">Cargando información del inventario...</span>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
                   <tr>
-                    <td colSpan={9} style={{ textAlign: "center", padding: "2rem", color: "var(--grayLight)" }}>
-                      Cargando información del inventario...
-                    </td>
+                    <th>Código / SKU</th>
+                    <th>Nombre del Insumo</th>
+                    <th>Categoría</th>
+                    <th className={styles.num}>Stock Mínimo</th>
+                    <th className={styles.num}>Stock Actual</th>
+                    <th>Unidad</th>
+                    <th>Ubicación</th>
+                    <th>Nivel de Cobertura</th>
+                    <th>Estado de Alerta</th>
                   </tr>
-                ) : inventarioFiltrado.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className={styles.noData}>
-                      No hay insumos que requieran reabastecimiento con los
-                      filtros seleccionados.
-                    </td>
-                  </tr>
-                ) : (
-                  inventarioFiltrado
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((item, index) => {
-                      const nivelAncho = Math.min(item.porcentaje, 100);
-                      let colorBarra = "var(--primaryColor)";
-                      if (item.estado === "critico") colorBarra = "#ef4444";
-                      else if (item.estado === "advertencia")
-                        colorBarra = "#f59e0b";
-                      else colorBarra = "#10b981";
+                </thead>
+                <tbody>
+                  {inventarioFiltrado.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className={styles.emptyCell}>
+                        No hay insumos que requieran reabastecimiento con los
+                        filtros seleccionados.
+                      </td>
+                    </tr>
+                  ) : (
+                    inventarioFiltrado
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((item, index) => {
+                        const nivelAncho = Math.min(item.porcentaje, 100);
+                        const barraClass =
+                          item.estado === "critico"
+                            ? styles.progressBad
+                            : item.estado === "advertencia"
+                              ? styles.progressWarn
+                              : "";
 
-                      return (
-                        <tr key={`${item.id}-${index}`}>
-                          <td style={{ fontWeight: 600, color: "var(--gray)" }}>
-                            {item.id}
-                          </td>
-                          <td style={{ fontWeight: 700 }}>{item.nombre}</td>
-                          <td>{item.categoria}</td>
-                          <td style={{ textAlign: "right", fontWeight: 600 }}>
-                            {item.stockMinimo}
-                          </td>
-                          <td
-                            style={{
-                              textAlign: "right",
-                              fontWeight: 700,
-                              color:
-                                item.stockActual < item.stockMinimo
-                                  ? "#dc2626"
-                                  : "inherit",
-                            }}
-                          >
-                            {item.stockActual}
-                          </td>
-                          <td>{item.unidad}</td>
-                          <td>{item.ubicacion}</td>
-                          {/* Barra de progreso visual */}
-                          <td>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "0.8rem",
-                              }}
+                        return (
+                          <tr key={`${item.id}-${index}`}>
+                            <td className={styles.cellCode}>{item.id}</td>
+                            <td className={styles.cellMain}>{item.nombre}</td>
+                            <td>{item.categoria}</td>
+                            <td className={styles.num}>{item.stockMinimo}</td>
+                            <td
+                              className={`${styles.num} ${
+                                item.stockActual < item.stockMinimo ? listas.cellBad : styles.cellMain
+                              }`}
                             >
-                              <div
-                                style={{
-                                  height: "0.6rem",
-                                  backgroundColor: "var(--border-color)",
-                                  borderRadius: "999px",
-                                  overflow: "hidden",
-                                  flex: 1,
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    height: "100%",
-                                    borderRadius: "999px",
-                                    backgroundColor: colorBarra,
-                                    width: `${nivelAncho}%`,
-                                    transition: "width 0.4s ease",
-                                  }}
-                                />
+                              {item.stockActual}
+                            </td>
+                            <td>{item.unidad}</td>
+                            <td>{item.ubicacion}</td>
+                            {/* Barra de progreso visual */}
+                            <td>
+                              <div className={styles.meter}>
+                                <div className={styles.progress}>
+                                  <div
+                                    className={`${styles.progressFill} ${barraClass}`}
+                                    style={{ width: `${nivelAncho}%` }}
+                                  />
+                                </div>
+                                <span className={styles.meterPct}>{item.porcentaje}%</span>
                               </div>
-                              <span
-                                style={{
-                                  fontSize: "1.15rem",
-                                  fontWeight: 700,
-                                  color: "var(--gray)",
-                                  minWidth: "3rem",
-                                  textAlign: "right",
-                                }}
-                              >
-                                {item.porcentaje}%
+                            </td>
+                            <td>
+                              <span className={`${styles.badge} ${item.statusClass}`}>
+                                {item.estadoLabel}
                               </span>
-                            </div>
-                          </td>
-                          <td>
-                            <span
-                              className={`${styles.badgeStatus} ${item.statusClass}`}
-                            >
-                              {item.estadoLabel}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {inventarioFiltrado.length > 0 && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", marginTop: "2rem", padding: "1rem" }} className="no-print">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                className={styles.btnActionSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}
-              >
-                Anterior
-              </button>
-              <span style={{ fontSize: "1.3rem", fontWeight: "600" }}>
-                Página {currentPage} de {totalPages}
-              </span>
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                className={styles.btnActionSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1 }}
-              >
-                Siguiente
-              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
-        </div>
+
+          {inventarioFiltrado.length > 0 && (
+            <div className={styles.panelFooter}>
+              <span className={styles.pagerInfo}>
+                Página {currentPage} de {totalPages}
+              </span>
+              <div className={styles.row}>
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                >
+                  <ChevronLeft aria-hidden="true" />
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                >
+                  Siguiente
+                  <ChevronRight aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
       {/* ── VISTA DE IMPRESIÓN REUTILIZABLE INSTITUCIONAL ── */}
-      <div className={styles.printView}>
+      <div className={rep.printView}>
         <PrintReportDocument
           title="Reporte de Alerta de Stock Mínimo"
           userRole={userRole}
@@ -389,36 +334,36 @@ export default function StockMinimo() {
           ]}
           footerNote="Gestión de Inventario e Insumos — Fundación Dibujando Sonrisas"
         >
-          <table className={styles.printTable}>
+          <table className={rep.printTable}>
             <thead>
               <tr>
-                <th style={{ width: "4%" }}>#</th>
-                <th style={{ width: "28%" }}>Nombre del Insumo / Material</th>
-                <th style={{ width: "18%" }}>Categoría</th>
-                <th style={{ width: "14%", textAlign: "right" }}>Stock Actual</th>
-                <th style={{ width: "14%", textAlign: "right" }}>Stock Mínimo</th>
-                <th style={{ width: "12%" }}>Estado Alerta</th>
+                <th className={rep.w4}>#</th>
+                <th className={rep.w28}>Nombre del Insumo / Material</th>
+                <th className={rep.w18}>Categoría</th>
+                <th className={`${rep.w14} ${rep.printRight}`}>Stock Actual</th>
+                <th className={`${rep.w14} ${rep.printRight}`}>Stock Mínimo</th>
+                <th className={rep.w12}>Estado Alerta</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", padding: "1.5rem" }}>Cargando datos de inventario...</td>
+                  <td colSpan={6} className={rep.printCenter}>Cargando datos de inventario...</td>
                 </tr>
               ) : inventarioFiltrado.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", padding: "1.5rem" }}>No se encontraron insumos por debajo del umbral mínimo.</td>
+                  <td colSpan={6} className={rep.printCenter}>No se encontraron insumos por debajo del umbral mínimo.</td>
                 </tr>
               ) : (
                 inventarioFiltrado.map((item, idx) => (
                   <tr key={`${item.id}-${idx}`}>
-                    <td style={{ textAlign: "center" }}>{idx + 1}</td>
-                    <td style={{ fontWeight: "bold" }}>{item.nombre}</td>
+                    <td className={rep.printCenter}>{idx + 1}</td>
+                    <td className={rep.printStrong}>{item.nombre}</td>
                     <td>{item.categoria}</td>
-                    <td style={{ textAlign: "right", fontWeight: "bold", color: item.estado === "critico" ? "#dc2626" : "inherit" }}>
+                    <td className={`${rep.printRight} ${rep.printStrong}`}>
                       {item.stockActual} {item.unidad}
                     </td>
-                    <td style={{ textAlign: "right" }}>{item.stockMinimo} {item.unidad}</td>
+                    <td className={rep.printRight}>{item.stockMinimo} {item.unidad}</td>
                     <td>{item.estadoLabel}</td>
                   </tr>
                 ))

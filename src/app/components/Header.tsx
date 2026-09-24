@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import styles from "../../styles/components/header.module.css";
-
-import { HeartHandshake, UserRoundArrowLeft, Headset } from "lucide-react";
+import { Headset, HeartHandshake, Menu, UserRoundArrowLeft, X } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/sobre-nosotros", label: "Nosotros" },
@@ -17,11 +16,9 @@ const NAV_LINKS = [
 
 export default function Header() {
   const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
+  // El menú guarda la ruta donde se abrió: al navegar deja de coincidir y se cierra solo
+  const [menuPath, setMenuPath] = useState<string | null>(null);
+  const mobileMenuOpen = menuPath === pathname;
 
   return (
     <header className={styles.header}>
@@ -60,54 +57,35 @@ export default function Header() {
         </div>
 
         <div className={styles.headerActions}>
-          <Link href="/auth/login" className={styles.headerButtonOutline}>
-            <UserRoundArrowLeft width={20} height={20} />
+          <Link
+            href="/auth/login"
+            className="btn-outline-blue btn-sm"
+            aria-label="Iniciar sesión"
+            title="Iniciar sesión"
+          >
+            <UserRoundArrowLeft aria-hidden="true" />
           </Link>
-          <Link href="/contacto" className={styles.headerButton}>
-            <Headset width={20} height={20} />
+          <Link
+            href="/contacto"
+            className="btn-primary btn-sm"
+            aria-label="Contacto"
+            title="Contacto"
+          >
+            <Headset aria-hidden="true" />
           </Link>
-          <Link href="/donar" className={styles.headerButton}>
-            <HeartHandshake width={20} height={20} />
+          <Link href="/donar" className="btn-primary btn-sm">
+            <HeartHandshake aria-hidden="true" />
             Donar
           </Link>
 
           <button
             type="button"
             className={styles.mobileMenuToggle}
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            onClick={() => setMenuPath(mobileMenuOpen ? null : pathname)}
             aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? (
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            ) : (
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            )}
+            {mobileMenuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </button>
         </div>
       </div>
@@ -136,24 +114,24 @@ export default function Header() {
             <div className={styles.mobileNavButtons}>
               <Link
                 href="/auth/login"
-                className={styles.headerButtonOutline}
+                className="btn-outline-blue btn-sm"
                 aria-label="Iniciar sesión"
               >
-                <UserRoundArrowLeft />
+                <UserRoundArrowLeft aria-hidden="true" />
               </Link>
               <Link
                 href="/contacto"
-                className={styles.headerButton}
+                className="btn-primary btn-sm"
                 aria-label="Contacto"
               >
-                <Headset />
+                <Headset aria-hidden="true" />
               </Link>
               <Link
                 href="/donar"
-                className={styles.headerButton}
+                className="btn-primary btn-sm"
                 aria-label="Donar"
               >
-                <HeartHandshake />
+                <HeartHandshake aria-hidden="true" />
               </Link>
             </div>
           </nav>

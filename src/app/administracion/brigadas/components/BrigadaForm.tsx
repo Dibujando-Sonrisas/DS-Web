@@ -4,63 +4,11 @@ import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
 import { generarCodigoBrigada } from "../actions";
+import { CircleAlert, Hash, LoaderCircle } from "lucide-react";
+import AdminModal from "@/app/administracion/components/AdminModal";
+import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import styles from "@/styles/pages/admin.module.css";
-
-// SVG Icons (Sin emojis)
-function CpuIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
-      <rect x="9" y="9" width="6" height="6" />
-      <line x1="9" y1="1" x2="9" y2="4" />
-      <line x1="15" y1="1" x2="15" y2="4" />
-      <line x1="9" y1="20" x2="9" y2="23" />
-      <line x1="15" y1="20" x2="15" y2="23" />
-      <line x1="20" y1="9" x2="23" y2="9" />
-      <line x1="20" y1="15" x2="23" y2="15" />
-      <line x1="1" y1="9" x2="4" y2="9" />
-      <line x1="1" y1="15" x2="4" y2="15" />
-    </svg>
-  );
-}
-
-function AlertTriangleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  );
-}
-
-function AlertCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-
-function SpinnerIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.spinIcon}>
-      <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-      <path d="M12 2 a 10 10 0 0 1 10 10" strokeLinecap="round" />
-    </svg>
-  );
-}
+import brig from "@/styles/pages/admin-brigadas.module.css";
 
 // Lista oficial de Departamentos de Honduras (Prueba 5: Valores válidos)
 const DEPARTAMENTOS_HONDURAS = [
@@ -315,423 +263,358 @@ export default function BrigadaForm({
     onSubmit(formattedData);
   };
 
+  // mensaje de error bajo cada campo
+  const fieldError = (field: keyof BrigadaFormData) =>
+    formErrors[field] && (
+      <span className="form-error">
+        <CircleAlert size={14} aria-hidden="true" />
+        {formErrors[field]}
+      </span>
+    );
+
   return (
     <>
-      <div className={styles.modalOverlay} onClick={handleRequestClose}>
-        <div
-          className={styles.modal}
-          onClick={(e) => e.stopPropagation()}
-          role="dialog"
-          aria-modal="true"
-          style={{ maxWidth: "640px", width: "95%" }}
-        >
-          <div className={styles.modalHeader}>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700" }}>
-                {mode === "create" ? "Registrar Nueva Brigada Médica" : "Editar Brigada Médica"}
-              </h3>
-            </div>
-            <button
-              type="button"
-              className={styles.modalClose}
-              onClick={handleRequestClose}
-              title="Cerrar formulario"
-              aria-label="Cerrar"
-            >
-              <CloseIcon />
-            </button>
-          </div>
-
-          <form onSubmit={handleFormSubmit} className={styles.adminFormSingleColumn}>
+      <AdminModal
+        title={mode === "create" ? "Registrar Nueva Brigada Médica" : "Editar Brigada Médica"}
+        size="lg"
+        onClose={handleRequestClose}
+        busy={isSubmitting}
+      >
+        <form onSubmit={handleFormSubmit} className={styles.modalForm}>
+          <div className={styles.modalBody}>
             {/* Banner de errores de validación (HCI: Error Visible) */}
             {generalError && (
-              <div className={styles.formErrorBanner}>
-                <AlertCircleIcon />
+              <p className="form-error form-alert" role="alert">
+                <CircleAlert aria-hidden="true" />
                 <span>{generalError}</span>
-              </div>
+              </p>
             )}
 
             {/* SECCIÓN 1: Autogeneración de Código (Sección 1) */}
-            <div className={styles.autoCodeCard}>
-              <CpuIcon />
-              <div className={styles.autoCodeInfo}>
-                <span className={styles.autoCodeTitle}>
-                  {mode === "create" ? "Código Asignado Automáticamente" : "Código Identificador de Brigada"}
-                </span>
-                <span className={styles.autoCodeValue}>
+            <p className="notice">
+              <Hash aria-hidden="true" />
+              <span>
+                {mode === "create" ? "Código Asignado Automáticamente" : "Código Identificador de Brigada"}
+                <strong className={brig.codeValue}>
                   {mode === "create" ? codePreview || "Generando..." : brigada?.codigo}
-                </span>
+                </strong>
+              </span>
+            </p>
+
+            {/* SECCIÓN 2: Información General */}
+            <div className={styles.formSection}>
+              <h3 className={styles.formSectionTitle}>1. Información General del Evento</h3>
+              <div className="form-grid">
+                {/* Nombre de Brigada */}
+                <label className="form-field form-field-full">
+                  <span className="form-label">
+                    Nombre de la Brigada <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    name="nombre"
+                    className="form-input"
+                    value={formData.nombre || ""}
+                    onChange={handleInputChange}
+                    placeholder="Ej. Brigada Médica Comunitaria El Hatillo"
+                    maxLength={100}
+                    required
+                  />
+                  {fieldError("nombre")}
+                </label>
+
+                {/* Fecha y Hora del Evento */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Fecha y Hora de la Brigada <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    name="fecha_brigada"
+                    className="form-input"
+                    value={formData.fecha_brigada || ""}
+                    onChange={handleInputChange}
+                    type="datetime-local"
+                    required
+                  />
+                  {fieldError("fecha_brigada")}
+                </label>
+
+                {/* Estado de la Brigada */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Estado de la Brigada <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <select
+                    name="estado"
+                    className="form-input"
+                    value={formData.estado}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="inscripciones_cerradas">
+                      {ESTADO_LABELS.inscripciones_cerradas}
+                    </option>
+                    <option value="inscripciones_abiertas">
+                      {ESTADO_LABELS.inscripciones_abiertas}
+                    </option>
+                    <option value="finalizada">{ESTADO_LABELS.finalizada}</option>
+                    <option value="cancelada">{ESTADO_LABELS.cancelada}</option>
+                  </select>
+                  {fieldError("estado")}
+                </label>
               </div>
             </div>
 
-            {/* SECCIÓN 2: Información General */}
-            <div className={styles.formSectionTitle}>1. Información General del Evento</div>
-
-            {/* Fecha y Hora del Evento */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Fecha y Hora de la Brigada <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <input
-                name="fecha_brigada"
-                value={formData.fecha_brigada || ""}
-                onChange={handleInputChange}
-                type="datetime-local"
-                required
-              />
-              {formErrors.fecha_brigada && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.fecha_brigada}
-                </span>
-              )}
-            </label>
-
-            {/* Nombre de Brigada */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Nombre de la Brigada <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <input
-                name="nombre"
-                value={formData.nombre || ""}
-                onChange={handleInputChange}
-                placeholder="Ej. Brigada Médica Comunitaria El Hatillo"
-                maxLength={100}
-                required
-              />
-              {formErrors.nombre && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.nombre}
-                </span>
-              )}
-            </label>
-
-            {/* Estado de la Brigada */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Estado de la Brigada <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <select name="estado" value={formData.estado} onChange={handleInputChange} required>
-                <option value="inscripciones_cerradas">
-                  {ESTADO_LABELS.inscripciones_cerradas}
-                </option>
-                <option value="inscripciones_abiertas">
-                  {ESTADO_LABELS.inscripciones_abiertas}
-                </option>
-                <option value="finalizada">{ESTADO_LABELS.finalizada}</option>
-                <option value="cancelada">{ESTADO_LABELS.cancelada}</option>
-              </select>
-              {formErrors.estado && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.estado}
-                </span>
-              )}
-            </label>
-
             {/* SECCIÓN 3: Ubicación Geográfica */}
-            <div className={styles.formSectionTitle}>2. Ubicación Geográfica en Honduras</div>
+            <div className={styles.formSection}>
+              <h3 className={styles.formSectionTitle}>2. Ubicación Geográfica en Honduras</h3>
+              <div className="form-grid">
+                {/* Departamento */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Departamento <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <select
+                    name="departamento"
+                    className="form-input"
+                    value={formData.departamento || ""}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Selecciona un departamento...</option>
+                    {DEPARTAMENTOS_HONDURAS.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                  {fieldError("departamento")}
+                </label>
 
-            {/* Departamento */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Departamento <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <select
-                name="departamento"
-                value={formData.departamento || ""}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Selecciona un departamento...</option>
-                {DEPARTAMENTOS_HONDURAS.map((dept) => (
-                  <option key={dept} value={dept}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
-              {formErrors.departamento && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.departamento}
-                </span>
-              )}
-            </label>
+                {/* Municipio */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Municipio <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    name="municipio"
+                    className="form-input"
+                    value={formData.municipio || ""}
+                    onChange={handleInputChange}
+                    placeholder="Ej. Distrito Central / Tegucigalpa"
+                    maxLength={100}
+                    required
+                  />
+                  {fieldError("municipio")}
+                </label>
 
-            {/* Municipio */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Municipio <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <input
-                name="municipio"
-                value={formData.municipio || ""}
-                onChange={handleInputChange}
-                placeholder="Ej. Distrito Central / Tegucigalpa"
-                maxLength={100}
-                required
-              />
-              {formErrors.municipio && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.municipio}
-                </span>
-              )}
-            </label>
-
-            {/* Lugar / Comunidad */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Comunidad o Centro de Atención <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <input
-                name="lugar"
-                value={formData.lugar || ""}
-                onChange={handleInputChange}
-                placeholder="Ej. Escuela Primaria Lempira, Aldea El Hatillo"
-                maxLength={150}
-                required
-              />
-              {formErrors.lugar && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.lugar}
-                </span>
-              )}
-            </label>
+                {/* Lugar / Comunidad */}
+                <label className="form-field form-field-full">
+                  <span className="form-label">
+                    Comunidad o Centro de Atención <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    name="lugar"
+                    className="form-input"
+                    value={formData.lugar || ""}
+                    onChange={handleInputChange}
+                    placeholder="Ej. Escuela Primaria Lempira, Aldea El Hatillo"
+                    maxLength={150}
+                    required
+                  />
+                  {fieldError("lugar")}
+                </label>
+              </div>
+            </div>
 
             {/* SECCIÓN 4: Programación de Fechas */}
-            <div className={styles.formSectionTitle}>3. Programación de Fechas</div>
+            <div className={styles.formSection}>
+              <h3 className={styles.formSectionTitle}>3. Programación de Fechas</h3>
+              <div className="form-grid">
+                {/* Fecha Inicio Inscripción */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Apertura de Inscripciones de Voluntarios <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    name="fecha_inicio_inscripcion"
+                    className="form-input"
+                    value={formData.fecha_inicio_inscripcion || ""}
+                    onChange={handleInputChange}
+                    type="datetime-local"
+                    required
+                  />
+                  {fieldError("fecha_inicio_inscripcion")}
+                </label>
 
-            {/* Fecha Inicio Inscripción */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Apertura de Inscripciones de Voluntarios <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <input
-                name="fecha_inicio_inscripcion"
-                value={formData.fecha_inicio_inscripcion || ""}
-                onChange={handleInputChange}
-                type="datetime-local"
-                required
-              />
-              {formErrors.fecha_inicio_inscripcion && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.fecha_inicio_inscripcion}
-                </span>
-              )}
-            </label>
-
-            {/* Fecha Fin Inscripción */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Cierre de Inscripciones de Voluntarios <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <input
-                name="fecha_fin_inscripcion"
-                value={formData.fecha_fin_inscripcion || ""}
-                onChange={handleInputChange}
-                type="datetime-local"
-                required
-              />
-              {formErrors.fecha_fin_inscripcion && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.fecha_fin_inscripcion}
-                </span>
-              )}
-            </label>
+                {/* Fecha Fin Inscripción */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Cierre de Inscripciones de Voluntarios <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    name="fecha_fin_inscripcion"
+                    className="form-input"
+                    value={formData.fecha_fin_inscripcion || ""}
+                    onChange={handleInputChange}
+                    type="datetime-local"
+                    required
+                  />
+                  {fieldError("fecha_fin_inscripcion")}
+                </label>
+              </div>
+            </div>
 
             {/* SECCIÓN 5: Presupuesto y Capacidad */}
-            <div className={styles.formSectionTitle}>4. Presupuesto y Logística</div>
+            <div className={styles.formSection}>
+              <h3 className={styles.formSectionTitle}>4. Presupuesto y Logística</h3>
+              <div className="form-grid">
+                {/* Presupuesto Estimado */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Presupuesto Estimado (HNL) <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    name="presupuesto_estimado"
+                    className="form-input"
+                    value={formData.presupuesto_estimado ?? ""}
+                    onChange={handleInputChange}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Ej. 25000.00"
+                    required
+                  />
+                  {fieldError("presupuesto_estimado")}
+                </label>
 
-            {/* Presupuesto Estimado */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Presupuesto Estimado (HNL) <strong className={styles.requiredStar}>* (Requerido)</strong>
-              </span>
-              <input
-                name="presupuesto_estimado"
-                value={formData.presupuesto_estimado ?? ""}
-                onChange={handleInputChange}
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Ej. 25000.00"
-                required
-              />
-              {formErrors.presupuesto_estimado && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.presupuesto_estimado}
-                </span>
-              )}
-            </label>
-
-            {/* Capacidad de Voluntarios */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Cupo Máximo de Voluntarios <span className={styles.optionalTag}>(Opcional)</span>
-              </span>
-              <input
-                name="capacidad_voluntarios"
-                value={formData.capacidad_voluntarios ?? ""}
-                onChange={handleInputChange}
-                type="number"
-                min="1"
-                placeholder="Ej. 50"
-              />
-              {formErrors.capacidad_voluntarios && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.capacidad_voluntarios}
-                </span>
-              )}
-            </label>
+                {/* Capacidad de Voluntarios */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Cupo Máximo de Voluntarios <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    name="capacidad_voluntarios"
+                    className="form-input"
+                    value={formData.capacidad_voluntarios ?? ""}
+                    onChange={handleInputChange}
+                    type="number"
+                    min="1"
+                    placeholder="Ej. 50"
+                  />
+                  {fieldError("capacidad_voluntarios")}
+                </label>
+              </div>
+            </div>
 
             {/* SECCIÓN 6: Opciones Adicionales */}
-            <div className={styles.formSectionTitle}>5. Multimedia y Geolocalización GPS</div>
+            <div className={styles.formSection}>
+              <h3 className={styles.formSectionTitle}>5. Multimedia y Geolocalización GPS</h3>
+              <div className="form-grid">
+                {/* Imagen Banner */}
+                <label className="form-field form-field-full">
+                  <span className="form-label">
+                    Enlace de Imagen Banner <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <input
+                    name="imagen_banner"
+                    className="form-input"
+                    value={formData.imagen_banner ?? ""}
+                    onChange={handleInputChange}
+                    placeholder="https://ejemplo.org/fotos/banner-brigada.jpg"
+                  />
+                  {fieldError("imagen_banner")}
+                </label>
 
-            {/* Imagen Banner */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Enlace de Imagen Banner <span className={styles.optionalTag}>(Opcional)</span>
-              </span>
-              <input
-                name="imagen_banner"
-                value={formData.imagen_banner ?? ""}
-                onChange={handleInputChange}
-                placeholder="https://ejemplo.org/fotos/banner-brigada.jpg"
-              />
-              {formErrors.imagen_banner && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.imagen_banner}
-                </span>
-              )}
-            </label>
+                {/* Latitud */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Latitud GPS <span className="form-optional">(Opcional, rango -90 a 90)</span>
+                  </span>
+                  <input
+                    name="latitud"
+                    className="form-input"
+                    value={formData.latitud ?? ""}
+                    onChange={handleInputChange}
+                    type="number"
+                    step="any"
+                    placeholder="Ej. 14.0818"
+                  />
+                  {fieldError("latitud")}
+                </label>
 
-            {/* Latitud */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Latitud GPS <span className={styles.optionalTag}>(Opcional, rango -90 a 90)</span>
-              </span>
-              <input
-                name="latitud"
-                value={formData.latitud ?? ""}
-                onChange={handleInputChange}
-                type="number"
-                step="any"
-                placeholder="Ej. 14.0818"
-              />
-              {formErrors.latitud && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.latitud}
-                </span>
-              )}
-            </label>
+                {/* Longitud */}
+                <label className="form-field">
+                  <span className="form-label">
+                    Longitud GPS <span className="form-optional">(Opcional, rango -180 a 180)</span>
+                  </span>
+                  <input
+                    name="longitud"
+                    className="form-input"
+                    value={formData.longitud ?? ""}
+                    onChange={handleInputChange}
+                    type="number"
+                    step="any"
+                    placeholder="Ej. -87.2068"
+                  />
+                  {fieldError("longitud")}
+                </label>
 
-            {/* Longitud */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Longitud GPS <span className={styles.optionalTag}>(Opcional, rango -180 a 180)</span>
-              </span>
-              <input
-                name="longitud"
-                value={formData.longitud ?? ""}
-                onChange={handleInputChange}
-                type="number"
-                step="any"
-                placeholder="Ej. -87.2068"
-              />
-              {formErrors.longitud && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.longitud}
-                </span>
-              )}
-            </label>
-
-            {/* Descripción */}
-            <label className={styles.formField}>
-              <span className={styles.fieldLabel}>
-                Descripción de la Brigada y Servicios <span className={styles.optionalTag}>(Opcional, máx. 500 caracteres)</span>
-              </span>
-              <textarea
-                name="descripcion"
-                value={formData.descripcion || ""}
-                onChange={handleInputChange}
-                rows={4}
-                maxLength={500}
-                placeholder="Describe la logística de atención médica, medicamentos y actividades preparadas..."
-              />
-              {formErrors.descripcion && (
-                <span className={styles.formFieldError}>
-                  <AlertCircleIcon /> {formErrors.descripcion}
-                </span>
-              )}
-            </label>
-
-            {/* Acciones de formulario (Regla 9: Sin botón reset) */}
-            <div className={styles.modalActions} style={{ marginTop: "1.6rem" }}>
-              <button
-                type="button"
-                className={styles.btnSecondary}
-                onClick={handleRequestClose}
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className={styles.btnPrimary}
-                disabled={isSubmitting}
-                style={{ display: "inline-flex", alignItems: "center", gap: "0.8rem" }}
-              >
-                {isSubmitting && <SpinnerIcon />}
-                <span>
-                  {isSubmitting
-                    ? "Guardando Registros..."
-                    : mode === "create"
-                      ? "Crear Brigada Médica"
-                      : "Guardar Cambios"}
-                </span>
-              </button>
+                {/* Descripción */}
+                <label className="form-field form-field-full">
+                  <span className="form-label">
+                    Descripción de la Brigada y Servicios <span className="form-optional">(Opcional, máx. 500 caracteres)</span>
+                  </span>
+                  <textarea
+                    name="descripcion"
+                    className="form-input"
+                    value={formData.descripcion || ""}
+                    onChange={handleInputChange}
+                    rows={4}
+                    maxLength={500}
+                    placeholder="Describe la logística de atención médica, medicamentos y actividades preparadas..."
+                  />
+                  {fieldError("descripcion")}
+                </label>
+              </div>
             </div>
-          </form>
-        </div>
-      </div>
+          </div>
+
+          {/* Acciones de formulario (Regla 9: Sin botón reset) */}
+          <div className={styles.modalFooter}>
+            <button
+              type="button"
+              className="btn-ghost btn-sm"
+              onClick={handleRequestClose}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </button>
+            <button type="submit" className="btn-primary btn-sm" disabled={isSubmitting}>
+              {isSubmitting && <LoaderCircle className="spin" aria-hidden="true" />}
+              {isSubmitting
+                ? "Guardando Registros..."
+                : mode === "create"
+                  ? "Crear Brigada Médica"
+                  : "Guardar Cambios"}
+            </button>
+          </div>
+        </form>
+      </AdminModal>
 
       {/* Modal de Advertencia HCI (Prevención de pérdida de cambios no guardados) */}
       {showDiscardModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowDiscardModal(false)}>
-          <div
-            className={`${styles.modal} ${styles.modalSm}`}
-            onClick={(e) => e.stopPropagation()}
-            role="alertdialog"
-            aria-labelledby="discard-title"
-          >
-            <div className={styles.modalHeader}>
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem", color: "#dc2626" }}>
-                <AlertTriangleIcon />
-                <h3 id="discard-title">¿Descartar Cambios no Guardados?</h3>
-              </div>
-            </div>
-            <p className={styles.confirmText}>
-              Has introducido modificaciones en el formulario. Si cierras ahora, todos los cambios no guardados se perderán permanentemente.
-            </p>
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                className={styles.btnSecondary}
-                onClick={() => setShowDiscardModal(false)}
-              >
-                Continuar Editando
-              </button>
-              <button
-                type="button"
-                className={styles.btnDanger}
-                onClick={() => {
-                  setShowDiscardModal(false);
-                  onClose();
-                }}
-              >
-                Sí, Descartar
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="¿Descartar Cambios no Guardados?"
+          confirmLabel="Sí, Descartar"
+          cancelLabel="Continuar Editando"
+          onCancel={() => setShowDiscardModal(false)}
+          onConfirm={() => {
+            setShowDiscardModal(false);
+            onClose();
+          }}
+        >
+          Has introducido modificaciones en el formulario. Si cierras ahora, todos los cambios no guardados se perderán permanentemente.
+        </ConfirmDialog>
       )}
     </>
   );

@@ -1,0 +1,173 @@
+/* =====================================================
+   BRIGADA BANNER — brigada-banner.module.css
+   Tarjeta de la próxima brigada (inicio y /voluntariado).
+   Chips, tonos, botones y trazos vienen de globals.css.
+===================================================== */
+
+.banner {
+  width: min(90%, 110rem);
+  margin: clamp(4rem, 7vw, 6rem) auto;
+}
+
+/* invitación "dibujada": blanca, borde punteado de marca */
+.card {
+  border: 3px dashed var(--primaryColor);
+  padding: clamp(1.6rem, 3vw, 2.4rem);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.4rem;
+  align-items: stretch;
+}
+
+@media (min-width: 900px) {
+  .card {
+    grid-template-columns: 1.5fr 1fr;
+  }
+}
+
+.info {
+  padding: clamp(0.8rem, 2vw, 1.6rem);
+}
+
+/* trazos de crayón más pegados al título que en el hero */
+.info :global(.crayons) {
+  margin: 1.2rem 0 1.6rem;
+}
+
+/* ── ETIQUETAS DE ESTADO ── */
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 1.6rem;
+}
+
+.tags:empty {
+  display: none;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--dark);
+  background: color-mix(in srgb, var(--tone) 16%, var(--white));
+  border-radius: 99rem;
+  padding: 0.5rem 1.2rem;
+}
+
+.tag svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--tone-text);
+  flex-shrink: 0;
+}
+
+.tagMuted {
+  background: #eef0f3;
+  color: #4b5563;
+}
+
+.tagMuted svg {
+  color: #4b5563;
+}
+
+.liveDot {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--primaryColor);
+  box-shadow: 0 0 0 0 rgba(10, 140, 136, 0.5);
+  animation: live 1.8s ease-out infinite;
+}
+
+@keyframes live {
+  to {
+    box-shadow: 0 0 0 0.8rem rgba(10, 140, 136, 0);
+  }
+}
+
+/* ── TÍTULO Y DATOS ── */
+.title {
+  color: var(--dark);
+  font-size: clamp(2.8rem, 4.5vw, 3.8rem);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.title span {
+  color: var(--primaryColor);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* sobre la tarjeta blanca los chips van en crema */
+.meta :global(.chip) {
+  background: var(--bg-light);
+}
+
+.description {
+  font-size: 1.6rem;
+  margin-top: 1.6rem;
+  max-width: 60ch;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 2.4rem;
+}
+
+/* en móvil los botones ocupan todo el ancho y caben en una línea */
+@media (max-width: 600px) {
+  .info {
+    padding: 0;
+  }
+
+  .actions > * {
+    width: 100%;
+    padding-inline: 1.6rem;
+  }
+}
+
+/* ── CUENTA REGRESIVA ── */
+.countdownPanel {
+  background: var(--primaryDark);
+  border-radius: var(--radius-md);
+  padding: 2.4rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  /* borde interior punteado en amarillo, como boleto */
+  outline: 2px dashed rgba(247, 203, 112, 0.55);
+  outline-offset: -1rem;
+}
+
+.countdownLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-family: var(--fontHeading);
+  font-size: 2.2rem;
+  color: var(--secondaryColor);
+}
+
+.countdownDate {
+  font-size: 1.4rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+}
+
+.countdownLabel svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}

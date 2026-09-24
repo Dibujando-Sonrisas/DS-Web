@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CircleAlert, LoaderCircle, Pencil } from "lucide-react";
 import styles from "@/styles/pages/admin.module.css";
 import { registrarParticipacion, actualizarParticipacion } from "../actions";
 
@@ -82,134 +83,152 @@ export default function ParticipacionesTable({ perfilId, participaciones }: Part
   };
 
   return (
-    <div className={styles.tableContainer}>
-      <h3 style={{ padding: "1.5rem 1.5rem 0", margin: 0 }}>Historial y Participaciones</h3>
-      
+    <section className={styles.panel} aria-labelledby="historial-participaciones">
+      <div className={styles.panelHeader}>
+        <h2 id="historial-participaciones" className={styles.panelTitle}>
+          Historial y Participaciones <span className={styles.count}>{participaciones.length}</span>
+        </h2>
+      </div>
+
       {error && (
-        <div style={{ padding: "0 1.5rem", color: "var(--red-dark)", marginTop: "1rem" }}>
-          <strong>Error: </strong> {error}
+        <div className={styles.panelBody}>
+          <p className="notice notice-bad" role="alert">
+            <CircleAlert aria-hidden="true" />
+            <span>
+              <strong>Error: </strong> {error}
+            </span>
+          </p>
         </div>
       )}
 
-      <table className={styles.adminTable} style={{ marginTop: "1rem" }}>
-        <thead>
-          <tr>
-            <th>Brigada</th>
-            <th>Fecha</th>
-            <th>Área Asignada</th>
-            <th>Llegada</th>
-            <th>Salida</th>
-            <th>Asistencia</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {participaciones.length === 0 ? (
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
             <tr>
-              <td colSpan={7} style={{ textAlign: "center", padding: "2rem" }}>
-                No se registran participaciones ni asignaciones a brigadas.
-              </td>
+              <th>Brigada</th>
+              <th>Fecha</th>
+              <th>Área Asignada</th>
+              <th>Llegada</th>
+              <th>Salida</th>
+              <th>Asistencia</th>
+              <th className={styles.num}>Acciones</th>
             </tr>
-          ) : (
-            participaciones.map(p => {
-              const isEditing = editingId === p.brigada_id;
+          </thead>
+          <tbody>
+            {participaciones.length === 0 ? (
+              <tr>
+                <td colSpan={7} className={styles.emptyCell}>
+                  No se registran participaciones ni asignaciones a brigadas.
+                </td>
+              </tr>
+            ) : (
+              participaciones.map(p => {
+                const isEditing = editingId === p.brigada_id;
+                const brigadaNombre = p.brigada?.nombre || `ID: ${p.brigada_id.substring(0,8)}...`;
+                const asistenciaClass = p.asistencia
+                  ? styles.badgeSuccess
+                  : p.id
+                  ? styles.badgeDanger
+                  : styles.badgeWarning;
 
-              return (
-                <tr key={p.brigada_id}>
-                  <td style={{ fontWeight: 500 }}>
-                    {p.brigada?.nombre || `ID: ${p.brigada_id.substring(0,8)}...`}
-                  </td>
-                  <td>
-                    {p.brigada?.fecha_brigada ? new Date(p.brigada.fecha_brigada).toLocaleDateString() : "N/A"}
-                  </td>
-                  <td>
-                    {/* El área asignada viene de la tarjeta de asignaciones pero la mostraremos si la pasamos */}
-                    {(p as any).area_asignada || <span style={{ color: "var(--gray)" }}>Sin asignar</span>}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <input 
-                        type="time" 
-                        value={horaLlegada} 
-                        onChange={e => setHoraLlegada(e.target.value)} 
-                        style={{ padding: "0.8rem", borderRadius: "4px", border: "1px solid var(--border-color)", width: "100%" }}
-                      />
-                    ) : (
-                      p.hora_llegada || "--:--"
-                    )}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <input 
-                        type="time" 
-                        value={horaSalida} 
-                        onChange={e => setHoraSalida(e.target.value)} 
-                        style={{ padding: "0.8rem", borderRadius: "4px", border: "1px solid var(--border-color)", width: "100%" }}
-                      />
-                    ) : (
-                      p.hora_salida || "--:--"
-                    )}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
-                        <input 
-                          type="checkbox" 
-                          checked={asistencia}
-                          onChange={e => setAsistencia(e.target.checked)}
-                          style={{ width: "16px", height: "16px" }}
-                        />
-                        Asistió
-                      </label>
-                    ) : (
-                      <span style={{
-                        padding: "0.2rem 0.6rem",
-                        borderRadius: "1rem",
-                        fontSize: "0.85rem",
-                        backgroundColor: p.asistencia ? "var(--green-light, #d1fae5)" : "var(--red-light, #fee2e2)",
-                        color: p.asistencia ? "var(--green-dark, #065f46)" : "var(--red-dark, #991b1b)",
-                        fontWeight: 500,
-                      }}>
-                        {p.asistencia ? "Sí" : (p.id ? "No" : "Pendiente")}
-                      </span>
-                    )}
-                  </td>
-                  <td>
-                    {isEditing ? (
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <button 
-                          className={styles.btnPrimary} 
-                          onClick={() => handleSave(p)}
-                          disabled={loading}
-                          style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
-                        >
-                          {loading ? "..." : "Guardar"}
-                        </button>
-                        <button 
-                          className={styles.btnSecondary} 
-                          onClick={handleCancel}
-                          disabled={loading}
-                          style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
-                        >
-                          Cancelar
-                        </button>
+                return (
+                  <tr key={p.brigada_id}>
+                    <td className={styles.cellMain}>{brigadaNombre}</td>
+                    <td className={styles.nowrap}>
+                      {p.brigada?.fecha_brigada ? new Date(p.brigada.fecha_brigada).toLocaleDateString() : "N/A"}
+                    </td>
+                    <td>
+                      {/* El área asignada viene de la tarjeta de asignaciones pero la mostraremos si la pasamos */}
+                      {(p as any).area_asignada || <span className={styles.muted}>Sin asignar</span>}
+                    </td>
+                    <td className={styles.nowrap}>
+                      {isEditing ? (
+                        <label>
+                          <span className="sr-only">Hora de llegada en {brigadaNombre}</span>
+                          <input 
+                            type="time" 
+                            className="form-input form-input-sm"
+                            value={horaLlegada} 
+                            onChange={e => setHoraLlegada(e.target.value)} 
+                          />
+                        </label>
+                      ) : (
+                        p.hora_llegada || "--:--"
+                      )}
+                    </td>
+                    <td className={styles.nowrap}>
+                      {isEditing ? (
+                        <label>
+                          <span className="sr-only">Hora de salida en {brigadaNombre}</span>
+                          <input 
+                            type="time" 
+                            className="form-input form-input-sm"
+                            value={horaSalida} 
+                            onChange={e => setHoraSalida(e.target.value)} 
+                          />
+                        </label>
+                      ) : (
+                        p.hora_salida || "--:--"
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <label className="form-check">
+                          <input 
+                            type="checkbox" 
+                            checked={asistencia}
+                            onChange={e => setAsistencia(e.target.checked)}
+                          />
+                          Asistió
+                        </label>
+                      ) : (
+                        <span className={`${styles.badge} ${asistenciaClass}`}>
+                          {p.asistencia ? "Sí" : (p.id ? "No" : "Pendiente")}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        {isEditing ? (
+                          <>
+                            <button 
+                              type="button"
+                              className="btn-primary btn-xs"
+                              onClick={() => handleSave(p)}
+                              disabled={loading}
+                            >
+                              {loading && <LoaderCircle className="spin" aria-hidden="true" />}
+                              Guardar
+                            </button>
+                            <button 
+                              type="button"
+                              className="btn-ghost btn-xs"
+                              onClick={handleCancel}
+                              disabled={loading}
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <button 
+                            type="button"
+                            className="btn-ghost btn-xs"
+                            onClick={() => handleEdit(p)}
+                            aria-label={`Editar participación en ${brigadaNombre}`}
+                          >
+                            <Pencil aria-hidden="true" />
+                            Editar Participación
+                          </button>
+                        )}
                       </div>
-                    ) : (
-                      <button 
-                        className={styles.btnSecondary} 
-                        onClick={() => handleEdit(p)}
-                        style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem" }}
-                      >
-                        Editar Participación
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
-    </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

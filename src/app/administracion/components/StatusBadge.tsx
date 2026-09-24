@@ -7,19 +7,10 @@ type StatusBadgeProps = {
 export default function StatusBadge({ activo }: StatusBadgeProps) {
   return (
     <span
-      className={`${styles.badge} ${
-        activo ? styles.badgeSuccess : styles.badgeDanger
+      className={`${styles.badge} ${styles.badgeDot} ${
+        activo ? styles.badgeSuccess : styles.badgeNeutral
       }`}
     >
-      <span
-        style={{
-          width: "6px",
-          height: "6px",
-          borderRadius: "50%",
-          backgroundColor: activo ? "#10b981" : "#f43f5e",
-          display: "inline-block",
-        }}
-      />
       {activo ? "Activo" : "Inactivo"}
     </span>
   );

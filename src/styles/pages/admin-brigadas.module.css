@@ -1,0 +1,370 @@
+/* =====================================================
+   GESTIÓN DE BRIGADAS — admin-brigadas.module.css
+   Solo lo propio del módulo: bloques dentro del panel de
+   la brigada, cifras del presupuesto, galería de fotos y
+   la tarjeta de brigada. Paneles, tablas, pestañas,
+   filtros y modales vienen de admin.module.css.
+===================================================== */
+
+/* ── PANEL DE LA BRIGADA SELECCIONADA ── */
+/* aviso de solo lectura entre el título y las pestañas */
+.detailNotice {
+  margin: 0 2.4rem 2rem;
+}
+
+.subTitleSm {
+  margin: 0;
+  font-family: var(--fontBody);
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--dark);
+}
+
+/* tablas y filtros dentro del cuerpo del panel: de borde a borde, como en un panel */
+.bleed {
+  margin-inline: -2.4rem;
+}
+
+/* dato de apoyo: carpeta, límites de subida */
+.meta {
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.5;
+  color: var(--gray);
+}
+
+/* ── TABLAS ── */
+/* la descripción ocupa hasta dos líneas sin ensanchar la columna */
+.clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* gasto o sobregiro */
+.valueBad {
+  font-weight: 700;
+  color: var(--bad-ink);
+}
+
+/* aviso corto dentro de una celda */
+.cellWarn {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  max-width: 22rem;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  color: var(--warn-ink);
+}
+
+.cellWarn svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+}
+
+/* área asignada a un voluntario */
+.areaSelect {
+  min-width: 18rem;
+}
+
+.areaSelectOn {
+  border-color: var(--ok-ink);
+  background-color: var(--ok-bg);
+}
+
+/* ── PRESUPUESTO ── */
+.figures {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.2rem;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .figures {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 1.6rem 2rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-light);
+}
+
+.figure dt {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+
+.figure dd {
+  margin: 0;
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--dark);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.figureOk dd {
+  color: var(--ok-ink);
+}
+
+.figureBad dd {
+  color: var(--bad-ink);
+}
+
+.budgetForm {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+}
+
+.budgetField {
+  flex: 0 1 28rem;
+}
+
+.progressHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.2rem;
+  font-size: 1.35rem;
+  color: var(--gray);
+}
+
+/* ── FORMULARIO: código autogenerado ── */
+.codeValue {
+  display: block;
+  font-size: 1.8rem;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── SUBIDA DE FOTOS ── */
+/* el input invisible cubre la zona: el foco de teclado se ve en el borde */
+.dropzoneFocus:focus-within {
+  outline: 3px solid var(--primaryDark);
+  outline-offset: 3px;
+}
+
+.dropzoneHint {
+  font-size: 1.3rem;
+  color: var(--gray);
+}
+
+.uploadStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--primaryStrong);
+}
+
+.uploadStatus svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex-shrink: 0;
+}
+
+/* miniatura elegida como portada */
+.photoCover {
+  outline: 0.3rem solid var(--secondaryColor);
+  outline-offset: -0.3rem;
+}
+
+.coverToggle {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  left: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--dark) 72%, transparent);
+  font-family: var(--fontBody);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--white);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.coverToggle:hover:not(:disabled) {
+  background: var(--dark);
+}
+
+.coverToggleOn,
+.coverToggleOn:hover:not(:disabled) {
+  background: var(--secondaryColor);
+  color: var(--dark);
+}
+
+.coverToggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── GALERÍA GUARDADA ── */
+.photoCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.photoCardCover {
+  border-color: var(--secondaryColor);
+  box-shadow: 0 0 0 0.2rem var(--secondaryColor);
+}
+
+.photoMedia {
+  position: relative;
+  aspect-ratio: 1.4;
+  background: var(--muted-bg);
+}
+
+.photoMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coverBadge {
+  position: absolute;
+  top: 0.8rem;
+  left: 0.8rem;
+}
+
+.photoBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem;
+}
+
+.fileName {
+  font-family: monospace;
+  font-size: 1.2rem;
+  color: var(--gray);
+  word-break: break-all;
+}
+
+.photoOrder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.photoOrderNum {
+  min-width: 2.4rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.photoActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+/* ── TARJETA DE BRIGADA ── */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--line-strong);
+}
+
+.cardSelected,
+.cardSelected:hover {
+  border-color: var(--primaryColor);
+  background: var(--info-bg);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.cardCode {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--primaryStrong);
+  font-variant-numeric: tabular-nums;
+}
+
+.cardTitle {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--fontBody);
+  font-size: 1.6rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.5;
+}
+
+.cardMeta svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex-shrink: 0;
+}
+
+/* ── RESPONSIVO ── */
+@media (max-width: 767px) {
+  .detailNotice {
+    margin-inline: 1.6rem;
+  }
+
+  .bleed {
+    margin-inline: -1.6rem;
+  }
+}

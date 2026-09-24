@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Camera, CircleAlert, ClipboardList, Lock, Pencil, Plus, Tent, UserPlus, Wallet } from "lucide-react";
 import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
 import {
   crearBrigada,
@@ -21,37 +22,22 @@ import InscripcionesTable, { InscripcionRow } from "./components/InscripcionesTa
 import AsignacionesTable, { PerfilRow } from "./components/AsignacionesTable";
 import GaleriaUploader from "./components/GaleriaUploader";
 import GaleriaPreview, { BrigadaImagenRow } from "./components/GaleriaPreview";
+import AdminToast, { type ToastState } from "@/app/administracion/components/AdminToast";
+import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
+import EmptyState from "@/app/administracion/components/EmptyState";
+import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 import styles from "@/styles/pages/admin.module.css";
-
-function LockIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-  );
-}
-
-function CheckCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function AlertCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  );
-}
+import brig from "@/styles/pages/admin-brigadas.module.css";
 
 type TabName = "finanzas" | "inscripciones" | "asignaciones" | "galeria";
+
+const TABS: { id: TabName; label: string; icon: ReactNode }[] = [
+  { id: "finanzas", label: "Finanzas", icon: <Wallet aria-hidden="true" /> },
+  { id: "inscripciones", label: "Solicitudes", icon: <ClipboardList aria-hidden="true" /> },
+  { id: "asignaciones", label: "Asignar Personal", icon: <UserPlus aria-hidden="true" /> },
+  { id: "galeria", label: "Fotografías", icon: <Camera aria-hidden="true" /> },
+];
 
 type BrigadasAdminClientProps = {
   initialBrigadas: Brigada[];
@@ -63,9 +49,6 @@ type BrigadasAdminClientProps = {
   initialImages: BrigadaImagenRow[];
   fetchError: string | null;
 };
-
-import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { PERMISSIONS } from "@/lib/auth/permissions";
 
 export default function BrigadasAdminClient({
   initialBrigadas,
@@ -93,10 +76,7 @@ export default function BrigadasAdminClient({
   const [isPending, startActionTransition] = useTransition();
 
   // Toast notifications
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -288,50 +268,41 @@ export default function BrigadasAdminClient({
 
   const ESTADO_CLASSES: Record<EstadoBrigada, string> = {
     inscripciones_abiertas: styles.badgeInfo,
-    inscripciones_cerradas: styles.badgeSecondary,
-    finalizada: styles.badgeDanger,
-    cancelada: styles.badgeSecondary,
+    inscripciones_cerradas: styles.badgeNeutral,
+    finalizada: styles.badgeNeutral,
+    cancelada: styles.badgeDanger,
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
-      {toast && (
-        <div
-          className={`${styles.toast} ${toast.type === "success" ? styles.toastSuccess : styles.toastError}`}
-          style={{ zIndex: 1000, display: "flex", alignItems: "center", gap: "0.8rem" }}
-        >
-          {toast.type === "success" ? <CheckCircleIcon /> : <AlertCircleIcon />}
-          <span>{toast.message}</span>
-        </div>
-      )}
+    <div className={styles.stack}>
+      <AdminToast toast={toast} />
 
       {fetchError && (
-        <div className={styles.tableError} style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}>
-          <AlertCircleIcon />
+        <p className="notice notice-bad" role="alert">
+          <CircleAlert aria-hidden="true" />
           <span>
             <strong>Error de Carga:</strong> {fetchError}
           </span>
-        </div>
+        </p>
       )}
 
       {/* 1. Tabla de listado y filtros */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ fontSize: "1.8rem", fontWeight: "bold" }}>Planificación de Brigadas</h3>
-        {can(PERMISSIONS.BRIGADAS_CREATE) && (
-          <button
-            type="button"
-            className={styles.btnPrimary}
-            onClick={() => {
-              setEditingBrigada(null);
-              setModalMode("create");
-            }}
-          >
-            + Nueva Brigada
-          </button>
-        )}
-      </div>
-
       <BrigadasTable
+        actions={
+          can(PERMISSIONS.BRIGADAS_CREATE) && (
+            <button
+              type="button"
+              className="btn-primary btn-sm"
+              onClick={() => {
+                setEditingBrigada(null);
+                setModalMode("create");
+              }}
+            >
+              <Plus aria-hidden="true" />
+              Nueva Brigada
+            </button>
+          )
+        }
         brigadas={initialBrigadas}
         budgets={budgetsMap}
         spent={spentMap}
@@ -347,120 +318,58 @@ export default function BrigadasAdminClient({
 
       {/* 2. Sección de Detalles y Gestión del Evento Seleccionado */}
       {activeBrigada ? (
-        <div
-          className={styles.tableContainer}
-          style={{ padding: "2.4rem", display: "flex", flexDirection: "column", gap: "2rem", marginTop: "2rem" }}
-        >
-          {/* Header de Gestión */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              borderBottom: "1px solid var(--border-color)",
-              paddingBottom: "1.6rem",
-              flexWrap: "wrap",
-              gap: "1.2rem",
-            }}
-          >
-            <div>
-              <span
-                style={{
-                  fontSize: "1.2rem",
-                  fontWeight: "bold",
-                  color: "var(--primary)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                Panel de Administración
-              </span>
-              <h2 style={{ fontSize: "2.2rem", fontWeight: "bold", color: "var(--text-color)", marginTop: "0.4rem" }}>
-                {activeBrigada.nombre} ({activeBrigada.codigo})
-              </h2>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "1.2rem" }}>
+        <section className={styles.panel} aria-labelledby="brigada-detalle">
+          <div className={styles.panelHeader}>
+            <h2 id="brigada-detalle" className={styles.panelTitle}>
+              {activeBrigada.nombre} ({activeBrigada.codigo})
+            </h2>
+            <div className={styles.panelActions}>
               <span className={`${styles.badge} ${ESTADO_CLASSES[activeBrigada.estado]}`}>
                 {ESTADO_LABELS[activeBrigada.estado]}
               </span>
               <button
                 type="button"
-                className={styles.btnSecondary}
+                className="btn-ghost btn-sm"
                 onClick={() => {
                   setEditingBrigada(activeBrigada);
                   setModalMode("edit");
                 }}
-                style={{ padding: "0.8rem 1.6rem" }}
               >
+                <Pencil aria-hidden="true" />
                 Editar Información
               </button>
             </div>
           </div>
 
-          {/* Warning read only */}
+          {/* Aviso de solo lectura */}
           {isReadOnly && (
-            <div
-              style={{
-                padding: "1.2rem 1.6rem",
-                background: "rgba(239, 68, 68, 0.05)",
-                border: "1px solid rgba(239, 68, 68, 0.2)",
-                borderRadius: "8px",
-                color: "var(--danger)",
-                fontSize: "1.3rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.8rem",
-              }}
-            >
-              <LockIcon />
+            <p className={`notice notice-warn ${brig.detailNotice}`}>
+              <Lock aria-hidden="true" />
               <span>
                 <strong>Brigada Finalizada:</strong> Esta brigada se encuentra en modo de consulta. No se pueden realizar modificaciones en finanzas, voluntarios, galería ni permitir inscripciones.
               </span>
-            </div>
+            </p>
           )}
 
-          {/* Tabs Navigation */}
-          <div
-            style={{
-              display: "flex",
-              borderBottom: "2px solid var(--border-color)",
-              gap: "2rem",
-              overflowX: "auto",
-            }}
-          >
-            {(["finanzas", "inscripciones", "asignaciones", "galeria"] as TabName[]).map((tab) => (
+          <div className={styles.tabs} role="tablist" aria-label="Gestión de la brigada">
+            {TABS.map((tab) => (
               <button
-                key={tab}
+                key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  padding: "1rem 0.4rem",
-                  border: "none",
-                  background: "none",
-                  fontSize: "1.5rem",
-                  fontWeight: activeTab === tab ? "bold" : "normal",
-                  color: activeTab === tab ? "var(--primary)" : "var(--gray)",
-                  borderBottom: activeTab === tab ? "3px solid var(--primary)" : "3px solid transparent",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  textTransform: "capitalize",
-                }}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={styles.tab}
+                onClick={() => setActiveTab(tab.id)}
               >
-                {tab === "inscripciones"
-                  ? "Solicitudes"
-                  : tab === "asignaciones"
-                    ? "Asignar Personal"
-                    : tab === "galeria"
-                      ? "Fotografías"
-                      : tab}
+                {tab.icon}
+                {tab.label}
               </button>
             ))}
           </div>
 
-          {/* Tab Content */}
-          <div style={{ marginTop: "1rem" }}>
+          <div className={styles.panelBody}>
             {activeTab === "finanzas" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
+              <div className={styles.stack}>
                 <PresupuestoCard
                   presupuestoEstimado={budgetsMap[activeBrigada.id] ?? 0}
                   presupuestoEjecutado={spentMap[activeBrigada.id] ?? 0}
@@ -498,7 +407,7 @@ export default function BrigadasAdminClient({
             )}
 
             {activeTab === "galeria" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
+              <div className={styles.stack}>
                 <GaleriaUploader
                   brigadaId={activeBrigada.id}
                   brigadaCodigo={activeBrigada.codigo}
@@ -516,13 +425,11 @@ export default function BrigadasAdminClient({
               </div>
             )}
           </div>
-        </div>
+        </section>
       ) : (
-        <div style={{ padding: "4rem", textAlign: "center", border: "1px dashed var(--border-color)", borderRadius: "12px" }}>
-          <p style={{ color: "var(--gray)", fontSize: "1.5rem" }}>
-            No hay brigadas registradas. Haz clic en &quot;+ Nueva Brigada&quot; para registrar la primera.
-          </p>
-        </div>
+        <EmptyState dashed icon={<Tent />} title="No hay brigadas registradas">
+          Haz clic en &quot;+ Nueva Brigada&quot; para registrar la primera.
+        </EmptyState>
       )}
 
       {/* 3. Form Modal */}
@@ -539,44 +446,21 @@ export default function BrigadasAdminClient({
 
       {/* 4. Delete Confirmation Dialog */}
       {deleteTarget && (
-        <div className={styles.modalOverlay} onClick={() => !isPending && setDeleteTarget(null)}>
-          <div
-            className={`${styles.modal} ${styles.modalSm}`}
-            onClick={(e) => e.stopPropagation()}
-            role="alertdialog"
-            aria-labelledby="delete-brigada-title"
-          >
-            <div className={styles.modalHeader}>
-              <h3 id="delete-brigada-title">¿Eliminar Brigada?</h3>
-            </div>
-            <p className={styles.confirmText}>
-              ¿Estás seguro de que deseas eliminar la brigada{" "}
-              <strong>
-                {deleteTarget.codigo} — {deleteTarget.nombre}
-              </strong>
-              ? Se eliminarán todos los presupuestos, gastos, solicitudes y asignaciones relacionadas. Esta acción
-              no se puede deshacer.
-            </p>
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                className={styles.btnSecondary}
-                onClick={() => setDeleteTarget(null)}
-                disabled={isPending}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className={styles.btnDanger}
-                onClick={handleDeleteBrigada}
-                disabled={isPending}
-              >
-                {isPending ? "Eliminando..." : "Sí, eliminar"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="¿Eliminar Brigada?"
+          confirmLabel="Sí, eliminar"
+          busyLabel="Eliminando..."
+          busy={isPending}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteBrigada}
+        >
+          ¿Estás seguro de que deseas eliminar la brigada{" "}
+          <strong>
+            {deleteTarget.codigo} — {deleteTarget.nombre}
+          </strong>
+          ? Se eliminarán todos los presupuestos, gastos, solicitudes y asignaciones relacionadas. Esta acción
+          no se puede deshacer.
+        </ConfirmDialog>
       )}
     </div>
   );

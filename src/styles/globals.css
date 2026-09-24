@@ -2,7 +2,7 @@
 
 :root {
   --fontHeading: "Sriracha", sans-serif;
-  --fontBody: "Valley Sans", sans-serif;
+  --fontBody: "Valley Sans", "Inter", sans-serif;
   --fontMain: "Inter", sans-serif;
 
   --white: #ffffff;
@@ -12,8 +12,16 @@
   --primaryLight: #2ab2ad;
   --secondaryColor: #f7cb70ff;
   --tertiaryColor: #cd463aff;
+  /* Variante oscura del amarillo para TEXTO: el amarillo de marca no llega a
+     contraste legible sobre fondos claros, úsalo solo en bordes y rellenos. */
+  --secondaryDark: #9a6200;
+  /* Verde y rojo con contraste AA para texto pequeño y fondos de botón
+     (el verde de marca queda en 4.1:1 con blanco). */
+  --primaryStrong: #087a76;
+  --tertiaryDark: #b03a30;
   --accentColor: #1abc9c;
-  --gray: #6b7280;
+  /* texto secundario: 5.7:1 sobre el crema (#6b7280 quedaba en 4.4:1) */
+  --gray: #596170;
   --grayLight: #9ca3af;
   --darkWhite: #dfe9f3;
   --black: #000000;
@@ -21,6 +29,23 @@
   --text-light: #64748b;
   --bg-light: #f5f5f1;
   --bg-section: #ffffff;
+
+  /* líneas y superficies cálidas, derivadas del crema */
+  --line: #e7e4da;
+  --line-strong: #d6d2c4;
+  --surface-muted: #faf9f5;
+
+  /* estados: cada tinta pasa AA sobre su fondo */
+  --ok-bg: #e3f5e9;
+  --ok-ink: #166534;
+  --warn-bg: #fdf0d0;
+  --warn-ink: #7a4d00;
+  --bad-bg: #fdecea;
+  --bad-ink: #b03a30;
+  --info-bg: #e3f3f2;
+  --info-ink: #075c58;
+  --muted-bg: #efede6;
+  --muted-ink: #596170;
 
   --circle-size: 56px;
   --radius-sm: 0.6rem;
@@ -33,6 +58,9 @@
 }
 
 html {
+  accent-color: var(--primaryStrong);
+  caret-color: var(--primaryStrong);
+  scrollbar-color: var(--primaryColor) var(--bg-light);
   font-size: 62.5%;
   box-sizing: border-box;
   scroll-behavior: smooth;
@@ -70,6 +98,13 @@ p {
 a {
   text-decoration: none;
   color: inherit;
+  text-underline-offset: 0.25em;
+  text-decoration-thickness: 2px;
+}
+
+::selection {
+  background: var(--secondaryColor);
+  color: var(--dark);
 }
 
 h1,
@@ -118,64 +153,577 @@ ul {
   margin: 0 auto;
 }
 
-.btn-primary {
-  display: flex;
-  gap: 1rem;
+/* ── BOTONES ── */
+.btn-primary,
+.btn-outline,
+.btn-outline-blue,
+.btn-ghost,
+.btn-danger {
+  display: inline-flex;
   align-items: center;
-  background-color: var(--primaryColor);
-  color: var(--white);
+  justify-content: center;
+  gap: 1rem;
+  width: fit-content;
   font-size: 1.6rem;
   font-weight: 600;
   font-family: var(--fontBody);
   border-radius: var(--radius-sm);
   padding: 1.2rem 2.8rem;
-  border: 2px solid var(--primaryColor);
-  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--primaryStrong);
+  background-color: transparent;
+  color: var(--primaryStrong);
   transition: all 0.3s ease;
   cursor: pointer;
-  width: fit-content;
 }
-.btn-primary:hover {
+
+.btn-sm {
+  font-size: 1.5rem;
+  padding: 0.7rem 2rem;
+}
+
+/* extra chico: acciones dentro de una fila de tabla */
+.btn-xs {
+  gap: 0.6rem;
+  font-size: 1.35rem;
+  padding: 0.45rem 1.2rem;
+  white-space: nowrap;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-primary svg,
+.btn-outline svg,
+.btn-outline-blue svg,
+.btn-ghost svg,
+.btn-danger svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex-shrink: 0;
+}
+.btn-xs svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.btn-primary {
+  background-color: var(--primaryStrong);
+  color: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover:not(:disabled) {
   background-color: var(--primaryDark);
   border-color: var(--primaryDark);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-.btn-outline {
-  display: inline-block;
-  background-color: transparent;
+/* neutro: Cancelar, filtros y acciones secundarias sobre blanco o crema */
+.btn-ghost {
+  border-color: var(--line-strong);
+  background-color: var(--white);
+  color: var(--dark);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--primaryStrong);
+  color: var(--primaryStrong);
+}
+
+/* destructivo: eliminar, rechazar */
+.btn-danger {
+  border-color: var(--tertiaryDark);
+  background-color: var(--tertiaryDark);
   color: var(--white);
-  font-size: 1.6rem;
-  font-weight: 600;
-  font-family: var(--fontBody);
+}
+.btn-danger:hover:not(:disabled) {
+  border-color: #8f2f27;
+  background-color: #8f2f27;
+}
+
+:is(.btn-primary, .btn-outline, .btn-outline-blue, .btn-ghost, .btn-danger):disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* los botones chicos viven en barras y tablas: no saltan al pasar el cursor */
+:is(.btn-sm, .btn-xs):is(.btn-primary, .btn-outline, .btn-outline-blue, .btn-ghost, .btn-danger):hover {
+  transform: none;
+}
+
+/* solo ícono (editar, eliminar, cerrar): siempre con aria-label */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 3.8rem;
+  height: 3.8rem;
+  border: 0;
   border-radius: var(--radius-sm);
-  padding: 1.2rem 2.8rem;
-  border: 2px solid var(--white);
-  transition: all 0.3s ease;
+  background-color: transparent;
+  color: var(--gray);
   cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+.btn-icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+.btn-icon:hover:not(:disabled) {
+  background-color: var(--bg-light);
+  color: var(--primaryStrong);
+}
+.btn-icon-danger:hover:not(:disabled) {
+  background-color: var(--bad-bg);
+  color: var(--bad-ink);
+}
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+@media (pointer: coarse) {
+  .btn-icon {
+    width: 4.4rem;
+    height: 4.4rem;
+  }
+}
+
+/* estado no disponible (cupo lleno, inscripciones cerradas) */
+.btn-disabled,
+.btn-disabled:hover:not(:disabled) {
+  opacity: 0.85;
+  cursor: not-allowed;
+  color: var(--white);
+  background-color: #64748b;
+  border-color: #64748b;
+  transform: none;
+  box-shadow: none;
+}
+
+/* sobre fondos oscuros (hero, bandas de color) */
+.btn-outline {
+  color: var(--white);
+  border-color: var(--white);
 }
 .btn-outline:hover {
   background-color: var(--white);
-  color: var(--primaryColor);
+  color: var(--primaryStrong);
   transform: translateY(-2px);
 }
 
-.btn-outline-blue {
-  display: inline-block;
-  background-color: transparent;
-  color: var(--primaryColor);
-  font-size: 1.6rem;
-  font-weight: 600;
-  font-family: var(--fontBody);
-  border-radius: var(--radius-sm);
-  padding: 1.2rem 2.8rem;
-  border: 2px solid var(--primaryColor);
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
 .btn-outline-blue:hover {
-  background-color: var(--primaryColor);
+  background-color: var(--primaryStrong);
   color: var(--white);
   transform: translateY(-2px);
+}
+
+/* ── MARCA ── */
+/* "Dibujando Son·ri·sas": cada sílaba en un color de marca */
+.wordmark span:nth-child(1) {
+  color: var(--primaryColor);
+}
+.wordmark span:nth-child(2) {
+  color: var(--secondaryColor);
+}
+.wordmark span:nth-child(3) {
+  color: var(--tertiaryColor);
+}
+
+/* ── TONOS DE MARCA ──
+   Cada componente pinta con --tone (bordes, rellenos), --tone-text (títulos
+   sobre claro), --tone-ink (texto pequeño, AA) y --tone-on (contenido sobre
+   el relleno).
+   .tone-rotate reparte los tres colores entre sus hijos, como "Son·ri·sas". */
+:root,
+.tone-primary,
+.tone-rotate > :nth-child(3n + 1) {
+  --tone: var(--primaryColor);
+  --tone-text: var(--primaryColor);
+  --tone-ink: var(--primaryStrong);
+  --tone-on: var(--white);
+}
+.tone-secondary,
+.tone-rotate > :nth-child(3n + 2) {
+  --tone: var(--secondaryColor);
+  --tone-text: var(--secondaryDark);
+  --tone-ink: var(--secondaryDark);
+  --tone-on: var(--dark);
+}
+.tone-tertiary,
+.tone-rotate > :nth-child(3n) {
+  --tone: var(--tertiaryColor);
+  --tone-text: var(--tertiaryColor);
+  --tone-ink: var(--tertiaryDark);
+  --tone-on: var(--white);
+}
+
+.tone-text {
+  color: var(--tone-text);
+}
+
+/* ── COMPONENTES DE MARCA ── */
+/* Tarjeta de borde punteado, como dibujada a mano */
+.card-drawn {
+  border: 3px dashed var(--tone);
+  border-radius: var(--radius-lg);
+  padding: clamp(2.4rem, 4vw, 3.2rem) clamp(1.8rem, 3vw, 2.5rem);
+}
+
+/* Tarjeta blanca lisa sobre el fondo crema */
+.card-soft {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+}
+
+/* Ícono lucide dentro de un círculo de color */
+.icon-circle {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: var(--tone);
+  color: var(--tone-on);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.icon-circle svg {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+.icon-circle-sm {
+  width: 4.8rem;
+  height: 4.8rem;
+}
+.icon-circle-sm svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+/* Etiqueta blanca con ícono de color */
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: fit-content;
+  max-width: 100%;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 0.6rem 1.8rem;
+  font-size: 1.5rem;
+  color: var(--tone-ink);
+}
+.chip svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--tone);
+  flex-shrink: 0;
+}
+
+/* Tres trazos de crayón con los colores de marca */
+.crayons {
+  display: flex;
+  gap: 0.6rem;
+  margin: 2rem 0;
+  transform: rotate(-2deg);
+}
+
+.crayons span {
+  height: 0.6rem;
+  border-radius: 99rem;
+}
+
+.crayons span:nth-child(1) {
+  width: 4.8rem;
+  background: var(--primaryColor);
+}
+.crayons span:nth-child(2) {
+  width: 3rem;
+  background: var(--secondaryColor);
+}
+.crayons span:nth-child(3) {
+  width: 1.6rem;
+  background: var(--tertiaryColor);
+}
+
+.lift {
+  transition: transform 0.3s ease;
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-4px);
+  }
+}
+
+.section-y {
+  padding-block: clamp(5rem, 9vw, 8rem);
+}
+
+/* ícono girando (p. ej. LoaderCircle mientras se envía) */
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── FORMULARIOS ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+@media (min-width: 600px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* tres columnas en pantallas anchas (formularios largos del panel) */
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+@media (min-width: 600px) {
+  .form-grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 900px) {
+  .form-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* sirve como <div> con <label htmlFor> o como <label> que envuelve el campo */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.form-field > label,
+.form-label {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--dark);
+}
+.form-field > .form-error {
+  margin-top: 0;
+}
+.form-field-full {
+  grid-column: 1 / -1;
+}
+
+.form-optional {
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--gray);
+}
+
+.form-hint {
+  font-size: 1.3rem;
+  line-height: 1.5;
+  color: var(--gray);
+  margin: 0;
+}
+
+.form-input {
+  width: 100%;
+  padding: 1.2rem 1.6rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 1.6rem;
+  font-family: var(--fontBody);
+  color: var(--dark);
+  background-color: var(--bg-light);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.form-input::placeholder {
+  color: var(--gray);
+}
+/* el autocompletado del navegador pinta azul por defecto: lo llevamos al crema */
+.form-input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 100rem var(--bg-light) inset;
+  -webkit-text-fill-color: var(--dark);
+  caret-color: var(--primaryStrong);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primaryColor);
+  background-color: var(--white);
+}
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.form-input[aria-invalid="true"] {
+  border-color: var(--tertiaryDark);
+}
+
+/* la flecha del select, con el mismo trazo de los íconos lucide */
+select.form-input:not([multiple]) {
+  appearance: none;
+  padding-right: 4.4rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23596170' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.4rem center;
+  background-size: 1.8rem;
+  cursor: pointer;
+}
+
+/* compacto: filtros, barras de herramientas y celdas de tabla */
+.form-input-sm {
+  padding: 0.8rem 1.2rem;
+  font-size: 1.45rem;
+  border-radius: var(--radius-sm);
+}
+select.form-input-sm:not([multiple]) {
+  padding-right: 3.6rem;
+  background-position: right 1rem center;
+}
+
+/* :where() deja que cada módulo ajuste la altura */
+:where(textarea.form-input) {
+  min-height: 14rem;
+  resize: vertical;
+}
+:where(textarea.form-input[rows]) {
+  min-height: 0;
+}
+
+/* casilla o radio con su texto al lado */
+.form-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 1.45rem;
+  color: var(--dark);
+  cursor: pointer;
+}
+.form-check input {
+  width: 1.8rem;
+  height: 1.8rem;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.form-error {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #c53030;
+  font-size: 1.4rem;
+  margin-top: 1rem;
+}
+
+/* aviso de error general, arriba del formulario */
+.form-alert {
+  background: #fdecea;
+  border-radius: var(--radius-sm);
+  padding: 1.2rem 1.6rem;
+  margin: 0 0 2rem;
+}
+
+.form-alert svg {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+}
+
+/* asterisco de campo obligatorio (el input ya lleva required) */
+.form-required {
+  color: var(--tertiaryDark);
+}
+
+.form-success {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #dcfce7;
+  color: #166534;
+  padding: 1.6rem 2rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #bbf7d0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* ── AVISOS ── */
+/* franja informativa dentro de la página: error de carga, solo lectura, éxito */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.2rem 1.6rem;
+  border-radius: var(--radius-md);
+  font-size: 1.45rem;
+  line-height: 1.5;
+  background: var(--info-bg);
+  color: var(--info-ink);
+}
+.notice svg {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+.notice-ok {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+.notice-warn {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+.notice-bad {
+  background: var(--bad-bg);
+  color: var(--bad-ink);
+}
+
+/* texto solo para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── ACCESIBILIDAD ── */
+:focus-visible {
+  outline: 3px solid var(--primaryDark);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
