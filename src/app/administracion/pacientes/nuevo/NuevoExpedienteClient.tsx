@@ -1,11 +1,40 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
 import { getMedicamentosAction as getMedicamentos } from "@/app/administracion/inventario/actions";
 import { supabase } from "@/lib/supabase";
-import { createExpedienteCompletoAction as createExpedienteCompleto } from "../actions";
+import {
+  getPacienteDetalleAction as getPacienteDetalle,
+  liberarConsultaAction as liberarConsulta,
+  registrarConsultaAction as registrarConsulta,
+  registrarPacienteAction as registrarPaciente,
+  registrarPreclinicaAction as registrarPreclinica,
+  tomarConsultaAction as tomarConsulta,
+} from "../actions";
+import { ESTADOS } from "../PacientesClient";
+import {
+  CampoDiagnosticos,
+  CamposConsulta,
+  CamposPaciente,
+  CamposSignos,
+  FieldError,
+  useFieldFocus,
+} from "../components/CamposExpediente";
+import { FichaPaciente } from "../components/FichaPaciente";
+import {
+  CAMPOS_CONSULTA,
+  CAMPOS_PACIENTE,
+  CAMPOS_SIGNOS,
+  sinNulos,
+  validarConsulta,
+  validarDiagnosticos,
+  validarPaciente,
+  validarSignos,
+  type Errores,
+} from "@/lib/validation/expediente";
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,9 +42,12 @@ import {
   CircleAlert,
   CircleCheck,
   LoaderCircle,
+  Lock,
+  LogOut,
   Plus,
   Save,
   Trash2,
+  UserX,
 } from "lucide-react";
 import styles from "@/styles/pages/admin.module.css";
 import pac from "@/styles/pages/admin-pacientes.module.css";
@@ -29,19 +61,18 @@ const STEPS = [
   { id: 5, label: "Receta Médica" },
 ];
 
-/** Mensaje de error bajo un campo. */
-function FieldError({ msg }: { msg?: string }) {
-  if (!msg) return null;
-  return (
-    <span className="form-error">
-      <CircleAlert size={14} aria-hidden="true" />
-      {msg}
-    </span>
-  );
-}
-
-export function NuevoExpedienteClient() {
+export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacienteId?: string }) {
   const router = useRouter();
+
+  // El expediente se llena por etapas, cada una puede hacerla otro usuario:
+  // 1 ingresado (datos del paciente), 2 preclínica (signos), 3 finalizada (consulta, diagnósticos y receta).
+  // savedStep es la última etapa guardada; sus pasos quedan de solo lectura.
+  // Entre la preclínica y el final, quien abre la consulta toma al paciente (estado "consulta").
+  const [pacienteId, setPacienteId] = useState<string | null>(pacienteInicial ?? null);
+  const [savedStep, setSavedStep] = useState(0);
+  const [tomada, setTomada] = useState(false);
+  const [ocupadoPor, setOcupadoPor] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   // Data sources
   const [brigadas, setBrigadas] = useState<any[]>([]);
@@ -60,11 +91,7 @@ export function NuevoExpedienteClient() {
   const [backendError, setBackendError] = useState<string>("");
   const [successMsg, setSuccessMsg] = useState<string>("");
 
-  // Refs for element focus
-  const fieldRefs = useRef<Record<string, HTMLElement | null>>({});
-  const registerRef = (name: string) => (el: HTMLElement | null) => {
-    fieldRefs.current[name] = el;
-  };
+  const { registerRef, focusFirstError } = useFieldFocus();
 
   // 1. Paciente
   const [paciente, setPaciente] = useState<any>({
@@ -117,15 +144,29 @@ export function NuevoExpedienteClient() {
     const fetchAll = async () => {
       setIsLoading(true);
       try {
-        const [bRes, mRes, pRes] = await Promise.all([
+        const [bRes, mRes, pRes, det] = await Promise.all([
           getBrigadas(),
           getMedicamentos(),
           supabase
             .from("perfiles")
             .select("*, especialidades:especialidad_id(id, nombre)")
             .order("nombre_completo", { ascending: true }),
+          pacienteInicial ? getPacienteDetalle(pacienteInicial) : null,
         ]);
+        const etapa = det ? (det.consultas.length > 0 ? 3 : det.signos ? 2 : 1) : 0;
+        // abrir la consulta toma al paciente; si ya lo tiene otro usuario, se avisa quién
+        const ocupado = etapa === 2 ? await tomarConsulta(pacienteInicial!) : null;
         if (mounted) {
+          // expediente ya ingresado: se cargan sus etapas y se abre la que sigue
+          if (det) {
+            setPaciente((prev: Record<string, unknown>) => ({ ...prev, ...sinNulos(det.paciente) }));
+            if (det.signos) setSignos((prev: Record<string, unknown>) => ({ ...prev, ...sinNulos(det.signos) }));
+            setSavedStep(etapa);
+            setActiveTab(etapa + 1);
+            setTomada(etapa === 2 && !ocupado);
+            setOcupadoPor(ocupado);
+          }
+
           const activeBrigadas =
             bRes.data?.filter((b: any) => b.estado !== "finalizada" && b.estado !== "cancelada") || [];
           setBrigadas(activeBrigadas);
@@ -145,6 +186,7 @@ export function NuevoExpedienteClient() {
         }
       } catch (e) {
         console.error(e);
+        if (mounted && pacienteInicial) setLoadError(true);
       } finally {
         if (mounted) setIsLoading(false);
       }
@@ -153,294 +195,108 @@ export function NuevoExpedienteClient() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [pacienteInicial]);
 
-  // Helper focus function
-  const focusFirstError = (errs: Record<string, string>, fieldOrder: string[]) => {
-    for (const name of fieldOrder) {
-      if (errs[name]) {
-        const el = fieldRefs.current[name];
-        if (el) {
-          el.focus();
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        break;
-      }
+  // muestra los errores de un paso y lleva el foco al primero; true si el paso es válido
+  const aplicar = (errs: Errores, orden: string[]) => {
+    setErrors(errs);
+    focusFirstError(errs, orden);
+    return Object.keys(errs).length === 0;
+  };
+
+  const validateStep1 = () =>
+    aplicar(
+      {
+        ...(paciente.brigada_id ? {} : { brigada_id: "Debe seleccionar una brigada activa obligatoriamente." }),
+        ...validarPaciente(paciente),
+      },
+      ["brigada_id", ...CAMPOS_PACIENTE]
+    );
+  const validateStep2 = () => aplicar(validarSignos(signos), CAMPOS_SIGNOS);
+  const validateStep3 = () => aplicar(validarConsulta(consulta), CAMPOS_CONSULTA);
+  const validateStep4 = () => aplicar(validarDiagnosticos(diagnosticosStr), ["diagnosticosStr"]);
+
+  const validators = [validateStep1, validateStep2, validateStep3, validateStep4];
+
+  // Etapa 1: guarda el paciente y devuelve su id
+  const guardarPaciente = async (): Promise<string> => {
+    const nuevo = await registrarPaciente(paciente);
+    setPacienteId(nuevo.id);
+    setPaciente((prev: Record<string, unknown>) => ({ ...prev, codigo: nuevo.codigo }));
+    setSavedStep(1);
+    // si se recarga la página, continúa este expediente en lugar de ingresar al paciente otra vez
+    window.history.replaceState(null, "", `?paciente=${nuevo.id}`);
+    return nuevo.id;
+  };
+
+  // Etapa 2: guarda los signos vitales (vacíos también: marcan la preclínica como hecha)
+  const guardarPreclinica = async (id: string) => {
+    await registrarPreclinica(id, signos);
+    setSavedStep(2);
+  };
+
+  // Guarda la etapa que cierra el paso 1 o 2; devuelve el id del paciente, o null si falló
+  const guardarEtapa = async (step: number, id: string | null): Promise<string | null> => {
+    setBackendError("");
+    setIsSubmitting(true);
+    try {
+      if (step === 1) return await guardarPaciente();
+      await guardarPreclinica(id!);
+      return id;
+    } catch (e) {
+      console.error("Error técnico al guardar la etapa del expediente:", e);
+      setBackendError("No fue posible guardar la información. Verifique los datos e intente nuevamente.");
+      return null;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Step 1 Validation
-  const validateStep1 = (): boolean => {
-    const newErrors: Record<string, string> = {};
+  const salir = (msg: string) => {
+    setIsSubmitting(true); // el formulario queda bloqueado mientras redirige
+    setSuccessMsg(msg);
+    setTimeout(() => {
+      router.push("/administracion/pacientes");
+    }, 1500);
+  };
 
-    // Brigada
-    if (!paciente.brigada_id) {
-      newErrors.brigada_id = "Debe seleccionar una brigada activa obligatoriamente.";
-    }
-
-    // Nombres
-    const cleanedNombres = paciente.nombres.replace(/\s+/g, " ").trim();
-    const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-    if (!cleanedNombres) {
-      newErrors.nombres = "El nombre es obligatorio.";
-    } else if (cleanedNombres.length < 3 || cleanedNombres.length > 100) {
-      newErrors.nombres = "Los nombres deben tener entre 3 y 100 caracteres.";
-    } else if (!nameRegex.test(cleanedNombres)) {
-      newErrors.nombres = "Los nombres solo deben contener letras, espacios y acentos.";
-    }
-
-    // Apellidos
-    const cleanedApellidos = paciente.apellidos.replace(/\s+/g, " ").trim();
-    if (!cleanedApellidos) {
-      newErrors.apellidos = "Los apellidos son obligatorios.";
-    } else if (cleanedApellidos.length < 3 || cleanedApellidos.length > 100) {
-      newErrors.apellidos = "Los apellidos deben tener entre 3 y 100 caracteres.";
-    } else if (!nameRegex.test(cleanedApellidos)) {
-      newErrors.apellidos = "Los apellidos solo deben contener letras, espacios y acentos.";
-    }
-
-    // Sexo
-    if (!paciente.sexo) {
-      newErrors.sexo = "El sexo es obligatorio.";
-    }
-
-    // Edad
-    if (paciente.edad === "" || paciente.edad === null || paciente.edad === undefined) {
-      newErrors.edad = "La edad es obligatoria.";
-    } else {
-      const numEdad = Number(paciente.edad);
-      if (isNaN(numEdad) || !Number.isInteger(numEdad) || numEdad < 0 || numEdad > 120) {
-        newErrors.edad = "La edad debe ser un número entero entre 0 y 120.";
+  // Entrar a la consulta toma al paciente para que otro usuario no lo atienda a la vez
+  const tomar = async (id: string): Promise<boolean> => {
+    setBackendError("");
+    setIsSubmitting(true);
+    try {
+      const otro = await tomarConsulta(id);
+      if (otro) {
+        setOcupadoPor(otro);
+        return false;
       }
-    }
-
-    // Teléfono (Opcional, 8 dígitos si se ingresa)
-    if (paciente.telefono) {
-      const phoneClean = paciente.telefono.trim();
-      if (!/^\d{8}$/.test(phoneClean)) {
-        newErrors.telefono = "El teléfono debe contener exactamente 8 números (formato Honduras).";
-      }
-    }
-
-    // Comunidad (Opcional, mínimo 3 caracteres)
-    if (paciente.comunidad) {
-      const comClean = paciente.comunidad.replace(/\s+/g, " ").trim();
-      if (comClean.length < 3) {
-        newErrors.comunidad = "La comunidad debe contener al menos 3 caracteres.";
-      }
-    }
-
-    // Responsable (Obligatorio si edad < 18)
-    const numEdad = Number(paciente.edad);
-    if (paciente.edad !== "" && !isNaN(numEdad) && numEdad < 18) {
-      const respClean = (paciente.responsable || "").replace(/\s+/g, " ").trim();
-      if (!respClean) {
-        newErrors.responsable = "El responsable es obligatorio para pacientes menores de 18 años.";
-      } else if (respClean.length < 3) {
-        newErrors.responsable = "El nombre del responsable debe tener al menos 3 caracteres.";
-      }
-    }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      focusFirstError(newErrors, [
-        "brigada_id",
-        "nombres",
-        "apellidos",
-        "sexo",
-        "edad",
-        "telefono",
-        "comunidad",
-        "responsable",
-      ]);
+      setTomada(true);
+      return true;
+    } catch (e) {
+      console.error("Error técnico al tomar al paciente para la consulta:", e);
+      setBackendError("No fue posible iniciar la consulta. Intente nuevamente.");
       return false;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    return true;
   };
 
-  // Step 2 Validation
-  const validateStep2 = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    // Peso: 0.5 - 400 kg
-    if (signos.peso !== "" && signos.peso !== null && signos.peso !== undefined) {
-      const val = Number(signos.peso);
-      if (isNaN(val) || val < 0.5 || val > 400) {
-        newErrors.peso = "El peso debe estar entre 0.5 y 400 kg.";
-      }
+  // Salir sin terminar la consulta: el paciente vuelve a esperar y otro usuario puede tomarlo
+  const liberar = async () => {
+    setBackendError("");
+    setIsSubmitting(true);
+    try {
+      await liberarConsulta(pacienteId!);
+      salir("Paciente liberado: vuelve a quedar en espera de consulta. Redirigiendo a la lista de pacientes...");
+    } catch (e) {
+      console.error("Error técnico al liberar al paciente:", e);
+      setBackendError("No fue posible liberar al paciente. Intente nuevamente.");
+      setIsSubmitting(false);
     }
-
-    // Talla: 30 - 250 cm
-    if (signos.talla !== "" && signos.talla !== null && signos.talla !== undefined) {
-      const val = Number(signos.talla);
-      if (isNaN(val) || val < 30 || val > 250) {
-        newErrors.talla = "La talla debe estar entre 30 y 250 cm.";
-      }
-    }
-
-    // Temperatura: 30 - 45 °C
-    if (signos.temperatura !== "" && signos.temperatura !== null && signos.temperatura !== undefined) {
-      const val = Number(signos.temperatura);
-      if (isNaN(val) || val < 30 || val > 45) {
-        newErrors.temperatura = "La temperatura debe estar entre 30 y 45 °C.";
-      }
-    }
-
-    // Frecuencia cardíaca: 20 - 250 lpm
-    if (signos.frecuencia_cardiaca !== "" && signos.frecuencia_cardiaca !== null && signos.frecuencia_cardiaca !== undefined) {
-      const val = Number(signos.frecuencia_cardiaca);
-      if (isNaN(val) || !Number.isInteger(val) || val < 20 || val > 250) {
-        newErrors.frecuencia_cardiaca = "La frecuencia cardíaca debe ser un número entero entre 20 y 250 lpm.";
-      }
-    }
-
-    // Frecuencia respiratoria: 5 - 80 rpm
-    if (signos.frecuencia_respiratoria !== "" && signos.frecuencia_respiratoria !== null && signos.frecuencia_respiratoria !== undefined) {
-      const val = Number(signos.frecuencia_respiratoria);
-      if (isNaN(val) || !Number.isInteger(val) || val < 5 || val > 80) {
-        newErrors.frecuencia_respiratoria = "La frecuencia respiratoria debe ser un número entero entre 5 y 80 rpm.";
-      }
-    }
-
-    // Presión arterial: 120/80 format
-    if (signos.presion_arterial) {
-      const paClean = signos.presion_arterial.trim();
-      if (!/^\d{2,3}\/\d{2,3}$/.test(paClean)) {
-        newErrors.presion_arterial = "La presión arterial debe tener el formato Sistólica/Diastólica (ej. 120/80).";
-      }
-    }
-
-    // Saturación: 0 - 100 %
-    if (signos.saturacion !== "" && signos.saturacion !== null && signos.saturacion !== undefined) {
-      const val = Number(signos.saturacion);
-      if (isNaN(val) || val < 0 || val > 100) {
-        newErrors.saturacion = "La saturación debe estar entre 0 y 100 %.";
-      }
-    }
-
-    // Glucosa: 20 - 700 mg/dL
-    if (signos.glucosa !== "" && signos.glucosa !== null && signos.glucosa !== undefined) {
-      const val = Number(signos.glucosa);
-      if (isNaN(val) || val < 20 || val > 700) {
-        newErrors.glucosa = "La glucosa debe estar entre 20 y 700 mg/dL.";
-      }
-    }
-
-    // Observaciones: Max 1000 caracteres
-    if (signos.observaciones && signos.observaciones.length > 1000) {
-      newErrors.observaciones = "Las observaciones no deben exceder 1000 caracteres.";
-    }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      focusFirstError(newErrors, [
-        "peso",
-        "talla",
-        "temperatura",
-        "frecuencia_cardiaca",
-        "frecuencia_respiratoria",
-        "presion_arterial",
-        "saturacion",
-        "glucosa",
-        "observaciones",
-      ]);
-      return false;
-    }
-
-    return true;
   };
 
-  // Step 3 Validation
-  const validateStep3 = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!consulta.tipo_consulta) {
-      newErrors.tipo_consulta = "El tipo de consulta es obligatorio.";
-    }
-
-    if (!consulta.medico_id) {
-      newErrors.medico_id = "Debe seleccionar un médico u odontólogo obligatoriamente.";
-    }
-
-    const motivoClean = (consulta.motivo_consulta || "").trim();
-    if (!motivoClean) {
-      newErrors.motivo_consulta = "El motivo de consulta es obligatorio.";
-    } else if (motivoClean.length < 10 || motivoClean.length > 1000) {
-      newErrors.motivo_consulta = "El motivo de consulta debe tener entre 10 y 1000 caracteres.";
-    }
-
-    const enfClean = (consulta.enfermedad_actual || "").trim();
-    if (!enfClean) {
-      newErrors.enfermedad_actual = "La enfermedad actual es obligatoria.";
-    } else if (enfClean.length < 10 || enfClean.length > 1000) {
-      newErrors.enfermedad_actual = "La enfermedad actual debe tener entre 10 y 1000 caracteres.";
-    }
-
-    const tratClean = (consulta.tratamiento || "").trim();
-    if (!tratClean) {
-      newErrors.tratamiento = "El plan de tratamiento es obligatorio.";
-    } else if (tratClean.length < 10 || tratClean.length > 1000) {
-      newErrors.tratamiento = "El plan de tratamiento debe tener entre 10 y 1000 caracteres.";
-    }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      focusFirstError(newErrors, [
-        "tipo_consulta",
-        "medico_id",
-        "motivo_consulta",
-        "enfermedad_actual",
-        "tratamiento",
-      ]);
-      return false;
-    }
-
-    return true;
-  };
-
-  // Step 4 Validation
-  const validateStep4 = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    const rawStr = diagnosticosStr.trim();
-    if (!rawStr) {
-      newErrors.diagnosticosStr = "Debe ingresar al menos un diagnóstico.";
-    } else {
-      const cleanOnlyLetters = rawStr.replace(/,/g, "").trim();
-      if (!cleanOnlyLetters) {
-        newErrors.diagnosticosStr = "No se permiten únicamente comas o espacios.";
-      } else {
-        const items = rawStr
-          .split(",")
-          .map((d) => d.replace(/\s+/g, " ").trim())
-          .filter(Boolean);
-        if (items.length === 0) {
-          newErrors.diagnosticosStr = "Debe ingresar al menos un diagnóstico válido.";
-        } else {
-          const invalidItem = items.find((d) => d.length < 3);
-          if (invalidItem) {
-            newErrors.diagnosticosStr = `Cada diagnóstico debe contener al menos 3 caracteres (ej. "${invalidItem}" es muy corto).`;
-          }
-        }
-      }
-    }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      focusFirstError(newErrors, ["diagnosticosStr"]);
-      return false;
-    }
-
-    return true;
-  };
-
-  // Tab Navigation Rule: validates before switching forward
-  const goToTab = (targetTab: number) => {
+  // Avanzar valida cada paso pendiente y guarda al cerrar una etapa; los pasos ya guardados solo se revisan
+  const goToTab = async (targetTab: number) => {
     if (targetTab === activeTab) return;
 
     if (targetTab < activeTab) {
@@ -449,32 +305,37 @@ export function NuevoExpedienteClient() {
       return;
     }
 
-    if (activeTab === 1 && !validateStep1()) return;
-    if (activeTab === 2 && !validateStep2()) return;
-    if (activeTab === 3 && !validateStep3()) return;
-    if (activeTab === 4 && !validateStep4()) return;
-
-    if (targetTab > activeTab + 1) {
-      if (!validateStep1()) {
-        setActiveTab(1);
+    let id = pacienteId;
+    for (let step = activeTab; step < targetTab; step++) {
+      if (step <= savedStep) continue;
+      if (!validators[step - 1]()) {
+        setActiveTab(step);
         return;
       }
-      if (!validateStep2()) {
-        setActiveTab(2);
-        return;
-      }
-      if (!validateStep3()) {
-        setActiveTab(3);
-        return;
-      }
-      if (!validateStep4()) {
-        setActiveTab(4);
-        return;
+      if (step <= 2) {
+        id = await guardarEtapa(step, id);
+        if (!id) {
+          setActiveTab(step);
+          return;
+        }
       }
     }
 
+    if (targetTab >= 3 && !tomada && !(await tomar(id!))) return;
+
     setErrors({});
     setActiveTab(targetTab);
+  };
+
+  // Cierra la etapa del paso actual y vuelve al listado, donde otro usuario la continúa
+  const guardarYSalir = async () => {
+    if (!validators[activeTab - 1]()) return;
+    if (!(await guardarEtapa(activeTab, pacienteId))) return;
+    salir(
+      activeTab === 1
+        ? "Paciente ingresado. Queda pendiente la preclínica; redirigiendo a la lista de pacientes..."
+        : "Preclínica guardada. Queda pendiente la consulta; redirigiendo a la lista de pacientes..."
+    );
   };
 
   const handleAddMed = () => {
@@ -538,20 +399,13 @@ export function NuevoExpedienteClient() {
     setMedsRecetados((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  // Etapa 3: guarda la consulta con sus diagnósticos y la receta; cierra el expediente
   const handleSubmit = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || !pacienteId) return;
 
     setBackendError("");
     setSuccessMsg("");
 
-    if (!validateStep1()) {
-      setActiveTab(1);
-      return;
-    }
-    if (!validateStep2()) {
-      setActiveTab(2);
-      return;
-    }
     if (!validateStep3()) {
       setActiveTab(3);
       return;
@@ -564,75 +418,15 @@ export function NuevoExpedienteClient() {
     try {
       setIsSubmitting(true);
 
-      const p = { ...paciente };
-      p.nombres = (p.nombres || "").replace(/\s+/g, " ").trim();
-      p.apellidos = (p.apellidos || "").replace(/\s+/g, " ").trim();
-      p.codigo = "TEMP-CODE";
-      if (p.edad !== "" && p.edad !== null && p.edad !== undefined) {
-        p.edad = Number(p.edad);
-      } else {
-        delete p.edad;
-      }
-
-      // Explicitly send NULL for optional date fields if empty (never send "")
-      if (!p.fecha_nacimiento || typeof p.fecha_nacimiento !== "string" || !p.fecha_nacimiento.trim()) {
-        p.fecha_nacimiento = null;
-      } else {
-        p.fecha_nacimiento = p.fecha_nacimiento.trim();
-      }
-
-      if (p.telefono && p.telefono.trim()) p.telefono = p.telefono.trim();
-      else p.telefono = null;
-
-      if (p.comunidad && p.comunidad.trim()) p.comunidad = p.comunidad.replace(/\s+/g, " ").trim();
-      else p.comunidad = null;
-
-      if (p.responsable && p.responsable.trim()) p.responsable = p.responsable.replace(/\s+/g, " ").trim();
-      else p.responsable = null;
-
-      const s = { ...signos };
-      ["peso", "talla", "temperatura", "frecuencia_cardiaca", "frecuencia_respiratoria", "saturacion", "glucosa"].forEach(
-        (k) => {
-          if (s[k] !== "" && s[k] !== null && s[k] !== undefined) {
-            const num = Number(s[k]);
-            if (!isNaN(num)) s[k] = num;
-            else delete s[k];
-          } else {
-            delete s[k];
-          }
-        }
-      );
-      if (!s.presion_arterial || !s.presion_arterial.trim()) delete s.presion_arterial;
-      else s.presion_arterial = s.presion_arterial.trim();
-      if (!s.observaciones || !s.observaciones.trim()) delete s.observaciones;
-      else s.observaciones = s.observaciones.trim();
-
-      const c = { ...consulta, brigada_id: p.brigada_id };
-      c.motivo_consulta = (c.motivo_consulta || "").trim();
-      c.enfermedad_actual = (c.enfermedad_actual || "").trim();
-      c.tratamiento = (c.tratamiento || "").trim();
-
-      if (!c.fecha_consulta || typeof c.fecha_consulta !== "string" || !c.fecha_consulta.trim()) {
-        delete c.fecha_consulta;
-      }
-
-      const dList = diagnosticosStr
-        .split(",")
-        .map((d) => d.replace(/\s+/g, " ").trim())
-        .filter(Boolean);
-
       const mList = medsRecetados.map((m) => ({
         medicamento_id: m.medicamento_id,
         cantidad: m.cantidad,
         indicaciones: m.indicaciones,
       }));
 
-      await createExpedienteCompleto(p, s, c, dList, mList);
+      await registrarConsulta(pacienteId, consulta, diagnosticosStr, mList);
 
-      setSuccessMsg("¡Expediente guardado correctamente! Redirigiendo a la lista de pacientes...");
-      setTimeout(() => {
-        router.push("/administracion/pacientes");
-      }, 1500);
+      salir("¡Expediente guardado correctamente! Redirigiendo a la lista de pacientes...");
     } catch (e: any) {
       console.error("Error técnico al guardar el expediente en Supabase:", e);
       setIsSubmitting(false);
@@ -648,20 +442,48 @@ export function NuevoExpedienteClient() {
     );
   }
 
-  // menor de 18 años: el responsable pasa a ser obligatorio
-  const esMenor = paciente.edad !== "" && !isNaN(Number(paciente.edad)) && Number(paciente.edad) < 18;
+  if (loadError || ocupadoPor || savedStep === 3) {
+    const finalizado = !loadError && !ocupadoPor;
+    return (
+      <div className={styles.stackSm}>
+        <p className={`notice ${loadError ? "notice-bad" : ocupadoPor ? "notice-warn" : "notice-ok"}`} role="status">
+          {finalizado ? <CircleCheck aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}
+          <span>
+            {loadError
+              ? "No fue posible cargar el expediente."
+              : ocupadoPor
+                ? `Este paciente ya está en consulta con ${ocupadoPor}.`
+                : "Este expediente ya está finalizado: no tiene etapas pendientes."}
+          </span>
+        </p>
+        <Link href="/administracion/pacientes" className="btn-ghost btn-sm">
+          <ArrowLeft aria-hidden="true" />
+          Volver a la lista de pacientes
+        </Link>
+      </div>
+    );
+  }
 
-  // la consulta médica la atiende un médico; la odontológica, un odontólogo
-  const esMedica = consulta.tipo_consulta === "Medica";
-  const profesionales = esMedica ? medicos : odontologos;
+  // paso de una etapa ya guardada: se muestra solo para revisar
+  const locked = activeTab <= savedStep;
+  const estado = ESTADOS[tomada ? "consulta" : savedStep === 2 ? "preclinica" : "ingresado"];
 
   return (
     <div className={styles.stack}>
+      {pacienteId && (
+        <FichaPaciente
+          paciente={paciente}
+          signos={savedStep >= 2 ? signos : null}
+          brigada={brigadas.find((b) => b.id === paciente.brigada_id)?.nombre}
+          estado={estado}
+        />
+      )}
+
       {/* Tabs navigation */}
       <ol className={styles.steps} aria-label="Pasos del expediente">
         {STEPS.map((t) => {
           const current = activeTab === t.id;
-          const done = t.id < activeTab;
+          const done = t.id < activeTab || t.id <= savedStep;
           return (
             <li key={t.id}>
               <button
@@ -680,7 +502,15 @@ export function NuevoExpedienteClient() {
       </ol>
 
       <section className={styles.panel}>
-        <div className={styles.panelBody}>
+        <div className={`${styles.panelBody} ${styles.stack}`}>
+          {locked && (
+            <p className="notice">
+              <Lock aria-hidden="true" />
+              <span>Esta etapa ya fue guardada; se muestra solo para consulta.</span>
+            </p>
+          )}
+
+          <fieldset className={pac.fieldset} disabled={locked}>
           {/* TAB 1: PACIENTE */}
           {activeTab === 1 && (
             <div className={styles.formSection}>
@@ -711,155 +541,13 @@ export function NuevoExpedienteClient() {
                 <FieldError msg={errors.brigada_id} />
               </label>
 
-              <div className="form-grid">
-                <label className="form-field">
-                  <span className="form-label">
-                    Nombres <span className="form-required" aria-hidden="true">*</span>
-                  </span>
-                  <input
-                    ref={registerRef("nombres")}
-                    className="form-input"
-                    aria-required="true"
-                    aria-invalid={!!errors.nombres}
-                    placeholder="Ej. Juan Carlos"
-                    value={paciente.nombres}
-                    onChange={(e) => {
-                      setPaciente({ ...paciente, nombres: e.target.value });
-                      if (errors.nombres) setErrors((prev) => ({ ...prev, nombres: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.nombres} />
-                </label>
-                <label className="form-field">
-                  <span className="form-label">
-                    Apellidos <span className="form-required" aria-hidden="true">*</span>
-                  </span>
-                  <input
-                    ref={registerRef("apellidos")}
-                    className="form-input"
-                    aria-required="true"
-                    aria-invalid={!!errors.apellidos}
-                    placeholder="Ej. Pérez Rodríguez"
-                    value={paciente.apellidos}
-                    onChange={(e) => {
-                      setPaciente({ ...paciente, apellidos: e.target.value });
-                      if (errors.apellidos) setErrors((prev) => ({ ...prev, apellidos: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.apellidos} />
-                </label>
-              </div>
-
-              <div className="form-grid-3">
-                <label className="form-field">
-                  <span className="form-label">
-                    Sexo <span className="form-required" aria-hidden="true">*</span>
-                  </span>
-                  <select
-                    ref={registerRef("sexo")}
-                    className="form-input"
-                    aria-required="true"
-                    aria-invalid={!!errors.sexo}
-                    value={paciente.sexo}
-                    onChange={(e) => {
-                      setPaciente({ ...paciente, sexo: e.target.value });
-                      if (errors.sexo) setErrors((prev) => ({ ...prev, sexo: "" }));
-                    }}
-                  >
-                    <option value="Masculino">Masculino</option>
-                    <option value="Femenino">Femenino</option>
-                  </select>
-                  <FieldError msg={errors.sexo} />
-                </label>
-                <label className="form-field">
-                  <span className="form-label">
-                    Edad (Años) <span className="form-required" aria-hidden="true">*</span>
-                  </span>
-                  <input
-                    ref={registerRef("edad")}
-                    className="form-input"
-                    aria-required="true"
-                    aria-invalid={!!errors.edad}
-                    type="number"
-                    min="0"
-                    max="120"
-                    placeholder="Ej. 25"
-                    value={paciente.edad}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setPaciente({ ...paciente, edad: val });
-                      if (errors.edad) setErrors((prev) => ({ ...prev, edad: "" }));
-                      if (errors.responsable && Number(val) >= 18) {
-                        setErrors((prev) => ({ ...prev, responsable: "" }));
-                      }
-                    }}
-                  />
-                  <FieldError msg={errors.edad} />
-                </label>
-                <label className="form-field">
-                  <span className="form-label">
-                    Teléfono <span className="form-optional">(Opcional)</span>
-                  </span>
-                  <input
-                    ref={registerRef("telefono")}
-                    className="form-input"
-                    aria-invalid={!!errors.telefono}
-                    placeholder="Ej. 99887766 (8 dígitos)"
-                    value={paciente.telefono}
-                    onChange={(e) => {
-                      setPaciente({ ...paciente, telefono: e.target.value });
-                      if (errors.telefono) setErrors((prev) => ({ ...prev, telefono: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.telefono} />
-                </label>
-              </div>
-
-              <label className="form-field">
-                <span className="form-label">
-                  Comunidad <span className="form-optional">(Opcional)</span>
-                </span>
-                <input
-                  ref={registerRef("comunidad")}
-                  className="form-input"
-                  aria-invalid={!!errors.comunidad}
-                  placeholder="Ej. Aldea El Cacao"
-                  value={paciente.comunidad}
-                  onChange={(e) => {
-                    setPaciente({ ...paciente, comunidad: e.target.value });
-                    if (errors.comunidad) setErrors((prev) => ({ ...prev, comunidad: "" }));
-                  }}
-                />
-                <FieldError msg={errors.comunidad} />
-              </label>
-
-              <label className="form-field">
-                <span className="form-label">
-                  Responsable (Padre/Tutor){" "}
-                  {esMenor ? (
-                    <span className="form-required" aria-hidden="true">*</span>
-                  ) : (
-                    <span className="form-optional">(Opcional)</span>
-                  )}
-                </span>
-                <input
-                  ref={registerRef("responsable")}
-                  className="form-input"
-                  aria-required={esMenor}
-                  aria-invalid={!!errors.responsable}
-                  placeholder={
-                    esMenor
-                      ? "Obligatorio para menores de 18 años"
-                      : "Nombre del padre, madre o tutor legal"
-                  }
-                  value={paciente.responsable}
-                  onChange={(e) => {
-                    setPaciente({ ...paciente, responsable: e.target.value });
-                    if (errors.responsable) setErrors((prev) => ({ ...prev, responsable: "" }));
-                  }}
-                />
-                <FieldError msg={errors.responsable} />
-              </label>
+              <CamposPaciente
+                value={paciente}
+                setValue={setPaciente}
+                errors={errors}
+                setErrors={setErrors}
+                registerRef={registerRef}
+              />
             </div>
           )}
 
@@ -867,184 +555,13 @@ export function NuevoExpedienteClient() {
           {activeTab === 2 && (
             <div className={styles.formSection}>
               <h2 className={styles.formSectionTitle}>2. Signos Vitales del Paciente</h2>
-              <p className="form-hint">
-                Todos los campos son opcionales. Si ingresas datos, se verificarán sus rangos normales.
-              </p>
-
-              <div className="form-grid-3">
-                <label className="form-field">
-                  <span className="form-label">
-                    Peso (kg) <span className="form-optional">(Opcional)</span>
-                  </span>
-                  <input
-                    ref={registerRef("peso")}
-                    className="form-input"
-                    aria-invalid={!!errors.peso}
-                    type="number"
-                    step="0.01"
-                    placeholder="0.5 - 400"
-                    value={signos.peso}
-                    onChange={(e) => {
-                      setSignos({ ...signos, peso: e.target.value });
-                      if (errors.peso) setErrors((prev) => ({ ...prev, peso: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.peso} />
-                </label>
-                <label className="form-field">
-                  <span className="form-label">
-                    Talla (cm) <span className="form-optional">(Opcional)</span>
-                  </span>
-                  <input
-                    ref={registerRef("talla")}
-                    className="form-input"
-                    aria-invalid={!!errors.talla}
-                    type="number"
-                    step="0.01"
-                    placeholder="30 - 250"
-                    value={signos.talla}
-                    onChange={(e) => {
-                      setSignos({ ...signos, talla: e.target.value });
-                      if (errors.talla) setErrors((prev) => ({ ...prev, talla: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.talla} />
-                </label>
-                <label className="form-field">
-                  <span className="form-label">
-                    Temperatura (°C) <span className="form-optional">(Opcional)</span>
-                  </span>
-                  <input
-                    ref={registerRef("temperatura")}
-                    className="form-input"
-                    aria-invalid={!!errors.temperatura}
-                    type="number"
-                    step="0.1"
-                    placeholder="30 - 45"
-                    value={signos.temperatura}
-                    onChange={(e) => {
-                      setSignos({ ...signos, temperatura: e.target.value });
-                      if (errors.temperatura) setErrors((prev) => ({ ...prev, temperatura: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.temperatura} />
-                </label>
-              </div>
-
-              <div className="form-grid">
-                <label className="form-field">
-                  <span className="form-label">
-                    Frecuencia Cardíaca (lpm) <span className="form-optional">(Opcional)</span>
-                  </span>
-                  <input
-                    ref={registerRef("frecuencia_cardiaca")}
-                    className="form-input"
-                    aria-invalid={!!errors.frecuencia_cardiaca}
-                    type="number"
-                    placeholder="20 - 250"
-                    value={signos.frecuencia_cardiaca}
-                    onChange={(e) => {
-                      setSignos({ ...signos, frecuencia_cardiaca: e.target.value });
-                      if (errors.frecuencia_cardiaca) setErrors((prev) => ({ ...prev, frecuencia_cardiaca: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.frecuencia_cardiaca} />
-                </label>
-                <label className="form-field">
-                  <span className="form-label">
-                    Frecuencia Respiratoria (rpm) <span className="form-optional">(Opcional)</span>
-                  </span>
-                  <input
-                    ref={registerRef("frecuencia_respiratoria")}
-                    className="form-input"
-                    aria-invalid={!!errors.frecuencia_respiratoria}
-                    type="number"
-                    placeholder="5 - 80"
-                    value={signos.frecuencia_respiratoria}
-                    onChange={(e) => {
-                      setSignos({ ...signos, frecuencia_respiratoria: e.target.value });
-                      if (errors.frecuencia_respiratoria) setErrors((prev) => ({ ...prev, frecuencia_respiratoria: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.frecuencia_respiratoria} />
-                </label>
-              </div>
-
-              <div className="form-grid-3">
-                <label className="form-field">
-                  <span className="form-label">
-                    Presión Arterial <span className="form-optional">(Opcional, ej. 120/80)</span>
-                  </span>
-                  <input
-                    ref={registerRef("presion_arterial")}
-                    className="form-input"
-                    aria-invalid={!!errors.presion_arterial}
-                    placeholder="120/80"
-                    value={signos.presion_arterial}
-                    onChange={(e) => {
-                      setSignos({ ...signos, presion_arterial: e.target.value });
-                      if (errors.presion_arterial) setErrors((prev) => ({ ...prev, presion_arterial: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.presion_arterial} />
-                </label>
-                <label className="form-field">
-                  <span className="form-label">
-                    Saturación O2 (%) <span className="form-optional">(Opcional)</span>
-                  </span>
-                  <input
-                    ref={registerRef("saturacion")}
-                    className="form-input"
-                    aria-invalid={!!errors.saturacion}
-                    type="number"
-                    placeholder="0 - 100"
-                    value={signos.saturacion}
-                    onChange={(e) => {
-                      setSignos({ ...signos, saturacion: e.target.value });
-                      if (errors.saturacion) setErrors((prev) => ({ ...prev, saturacion: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.saturacion} />
-                </label>
-                <label className="form-field">
-                  <span className="form-label">
-                    Glucosa (mg/dL) <span className="form-optional">(Opcional)</span>
-                  </span>
-                  <input
-                    ref={registerRef("glucosa")}
-                    className="form-input"
-                    aria-invalid={!!errors.glucosa}
-                    type="number"
-                    step="0.01"
-                    placeholder="20 - 700"
-                    value={signos.glucosa}
-                    onChange={(e) => {
-                      setSignos({ ...signos, glucosa: e.target.value });
-                      if (errors.glucosa) setErrors((prev) => ({ ...prev, glucosa: "" }));
-                    }}
-                  />
-                  <FieldError msg={errors.glucosa} />
-                </label>
-              </div>
-
-              <label className="form-field">
-                <span className="form-label">
-                  Observaciones de Preclínica <span className="form-optional">(Opcional, máx. 1000 caracteres)</span>
-                </span>
-                <textarea
-                  ref={registerRef("observaciones")}
-                  className="form-input"
-                  aria-invalid={!!errors.observaciones}
-                  rows={3}
-                  placeholder="Ej. Paciente llega con acompañante, refiere alergias a penicilina..."
-                  value={signos.observaciones}
-                  onChange={(e) => {
-                    setSignos({ ...signos, observaciones: e.target.value });
-                    if (errors.observaciones) setErrors((prev) => ({ ...prev, observaciones: "" }));
-                  }}
-                />
-                <FieldError msg={errors.observaciones} />
-              </label>
+              <CamposSignos
+                value={signos}
+                setValue={setSignos}
+                errors={errors}
+                setErrors={setErrors}
+                registerRef={registerRef}
+              />
             </div>
           )}
 
@@ -1053,131 +570,15 @@ export function NuevoExpedienteClient() {
             <div className={styles.formSection}>
               <h2 className={styles.formSectionTitle}>3. Consulta Médica / Odontológica</h2>
 
-              <div className="form-grid">
-                <label className="form-field">
-                  <span className="form-label">
-                    Tipo de Consulta <span className="form-required" aria-hidden="true">*</span>
-                  </span>
-                  <select
-                    ref={registerRef("tipo_consulta")}
-                    className="form-input"
-                    aria-required="true"
-                    aria-invalid={!!errors.tipo_consulta}
-                    value={consulta.tipo_consulta}
-                    onChange={(e) => {
-                      // el profesional depende del tipo de consulta: se vuelve a elegir
-                      setConsulta({ ...consulta, tipo_consulta: e.target.value, medico_id: "" });
-                      if (errors.tipo_consulta) setErrors((prev) => ({ ...prev, tipo_consulta: "" }));
-                    }}
-                  >
-                    <option value="Medica">Médica</option>
-                    <option value="Odontologica">Odontológica</option>
-                  </select>
-                  <FieldError msg={errors.tipo_consulta} />
-                </label>
-                <label className="form-field">
-                  <span className="form-label">
-                    Médico / Odontólogo que atendió <span className="form-required" aria-hidden="true">*</span>
-                  </span>
-                  <select
-                    ref={registerRef("medico_id")}
-                    className="form-input"
-                    aria-required="true"
-                    aria-invalid={!!errors.medico_id}
-                    value={consulta.medico_id}
-                    disabled={profesionales.length === 0 || isSubmitting}
-                    onChange={(e) => {
-                      setConsulta({ ...consulta, medico_id: e.target.value });
-                      if (errors.medico_id) setErrors((prev) => ({ ...prev, medico_id: "" }));
-                    }}
-                  >
-                    {profesionales.length === 0 ? (
-                      <option value="">
-                        No hay {esMedica ? "médicos" : "odontólogos"} disponibles
-                      </option>
-                    ) : (
-                      <>
-                        <option value="">-- Seleccionar --</option>
-                        {profesionales.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.nombre_completo || "Sin Nombre"}
-                          </option>
-                        ))}
-                      </>
-                    )}
-                  </select>
-                  <FieldError msg={errors.medico_id} />
-                </label>
-              </div>
-
-              <label className="form-field">
-                <span className="form-label">
-                  Motivo de Consulta <span className="form-required" aria-hidden="true">*</span>
-                </span>
-                <textarea
-                  ref={registerRef("motivo_consulta")}
-                  className="form-input"
-                  aria-required="true"
-                  aria-invalid={!!errors.motivo_consulta}
-                  rows={2}
-                  placeholder="Mínimo 10 caracteres. Ej. Dolor de cabeza frecuente y fiebre desde hace 2 días."
-                  value={consulta.motivo_consulta}
-                  onChange={(e) => {
-                    setConsulta({ ...consulta, motivo_consulta: e.target.value });
-                    if (errors.motivo_consulta) setErrors((prev) => ({ ...prev, motivo_consulta: "" }));
-                  }}
-                />
-                <FieldError msg={errors.motivo_consulta} />
-              </label>
-
-              <label className="form-field">
-                <span className="form-label">
-                  Enfermedad Actual <span className="form-required" aria-hidden="true">*</span>
-                </span>
-                <textarea
-                  ref={registerRef("enfermedad_actual")}
-                  className="form-input"
-                  aria-required="true"
-                  aria-invalid={!!errors.enfermedad_actual}
-                  rows={2}
-                  placeholder="Mínimo 10 caracteres. Ej. Paciente refiere síntomas de inicio súbito..."
-                  value={consulta.enfermedad_actual}
-                  onChange={(e) => {
-                    setConsulta({ ...consulta, enfermedad_actual: e.target.value });
-                    if (errors.enfermedad_actual) setErrors((prev) => ({ ...prev, enfermedad_actual: "" }));
-                  }}
-                />
-                <FieldError msg={errors.enfermedad_actual} />
-              </label>
-
-              <label className="form-field">
-                <span className="form-label">
-                  Plan de Tratamiento <span className="form-required" aria-hidden="true">*</span>
-                </span>
-                <textarea
-                  ref={registerRef("tratamiento")}
-                  className="form-input"
-                  aria-required="true"
-                  aria-invalid={!!errors.tratamiento}
-                  rows={3}
-                  placeholder="Mínimo 10 caracteres. Ej. Hidratación oral, reposo y administración de analgésicos."
-                  value={consulta.tratamiento}
-                  onChange={(e) => {
-                    setConsulta({ ...consulta, tratamiento: e.target.value });
-                    if (errors.tratamiento) setErrors((prev) => ({ ...prev, tratamiento: "" }));
-                  }}
-                />
-                <FieldError msg={errors.tratamiento} />
-              </label>
-
-              <label className="form-check">
-                <input
-                  type="checkbox"
-                  checked={consulta.requiere_postclinica}
-                  onChange={(e) => setConsulta({ ...consulta, requiere_postclinica: e.target.checked })}
-                />
-                Requiere Postclínica
-              </label>
+              <CamposConsulta
+                value={consulta}
+                setValue={setConsulta}
+                errors={errors}
+                setErrors={setErrors}
+                registerRef={registerRef}
+                medicos={medicos}
+                odontologos={odontologos}
+              />
             </div>
           )}
 
@@ -1185,29 +586,13 @@ export function NuevoExpedienteClient() {
           {activeTab === 4 && (
             <div className={styles.formSection}>
               <h2 className={styles.formSectionTitle}>4. Diagnósticos Clínicos</h2>
-              <p className="form-hint">
-                Ingresa los diagnósticos separados por coma (,). Cada diagnóstico debe tener al menos 3 caracteres.
-              </p>
-
-              <label className="form-field">
-                <span className="form-label">
-                  Diagnósticos <span className="form-required" aria-hidden="true">*</span>
-                </span>
-                <textarea
-                  ref={registerRef("diagnosticosStr")}
-                  className="form-input"
-                  aria-required="true"
-                  aria-invalid={!!errors.diagnosticosStr}
-                  rows={4}
-                  placeholder="Ej. Faringitis Aguda, Anemia, Cefalea Tensional"
-                  value={diagnosticosStr}
-                  onChange={(e) => {
-                    setDiagnosticosStr(e.target.value);
-                    if (errors.diagnosticosStr) setErrors((prev) => ({ ...prev, diagnosticosStr: "" }));
-                  }}
-                />
-                <FieldError msg={errors.diagnosticosStr} />
-              </label>
+              <CampoDiagnosticos
+                value={diagnosticosStr}
+                setValue={setDiagnosticosStr}
+                errors={errors}
+                setErrors={setErrors}
+                registerRef={registerRef}
+              />
             </div>
           )}
 
@@ -1343,21 +728,22 @@ export function NuevoExpedienteClient() {
                   </table>
                 </div>
               </div>
-
-              {backendError && (
-                <p className="form-error form-alert" role="alert">
-                  <CircleAlert aria-hidden="true" />
-                  <span>{backendError}</span>
-                </p>
-              )}
-
-              {successMsg && (
-                <p className="notice notice-ok" role="status">
-                  <CircleCheck aria-hidden="true" />
-                  <span>{successMsg}</span>
-                </p>
-              )}
             </div>
+          )}
+          </fieldset>
+
+          {backendError && (
+            <p className="form-error form-alert" role="alert">
+              <CircleAlert aria-hidden="true" />
+              <span>{backendError}</span>
+            </p>
+          )}
+
+          {successMsg && (
+            <p className="notice notice-ok" role="status">
+              <CircleCheck aria-hidden="true" />
+              <span>{successMsg}</span>
+            </p>
           )}
         </div>
 
@@ -1374,31 +760,50 @@ export function NuevoExpedienteClient() {
               Atrás
             </button>
           )}
-          {activeTab < STEPS.length ? (
-            <button
-              type="button"
-              className={`btn-primary btn-sm ${pac.next}`}
-              onClick={() => goToTab(activeTab + 1)}
-              disabled={isSubmitting}
-            >
-              {STEPS[activeTab - 1].next}
-              <ArrowRight aria-hidden="true" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              className={`btn-primary btn-sm ${pac.next}`}
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <LoaderCircle className="spin" aria-hidden="true" />
-              ) : (
-                <Save aria-hidden="true" />
-              )}
-              {isSubmitting ? "Guardando expediente..." : "Guardar Expediente"}
-            </button>
-          )}
+          <div className={`${styles.row} ${pac.next}`}>
+            {/* cierra la etapa y deja el expediente listo para que otro usuario lo continúe */}
+            {activeTab <= 2 && !locked && (
+              <button type="button" className="btn-ghost btn-sm" onClick={guardarYSalir} disabled={isSubmitting}>
+                <LogOut aria-hidden="true" />
+                Guardar y salir
+              </button>
+            )}
+            {activeTab >= 3 && tomada && (
+              <button type="button" className="btn-ghost btn-sm" onClick={liberar} disabled={isSubmitting}>
+                <UserX aria-hidden="true" />
+                Liberar paciente
+              </button>
+            )}
+            {activeTab < STEPS.length ? (
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={() => goToTab(activeTab + 1)}
+                disabled={isSubmitting}
+              >
+                {STEPS[activeTab - 1].next}
+                {isSubmitting ? (
+                  <LoaderCircle className="spin" aria-hidden="true" />
+                ) : (
+                  <ArrowRight aria-hidden="true" />
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <LoaderCircle className="spin" aria-hidden="true" />
+                ) : (
+                  <Save aria-hidden="true" />
+                )}
+                {isSubmitting ? "Guardando expediente..." : "Guardar Expediente"}
+              </button>
+            )}
+          </div>
         </div>
       </section>
     </div>

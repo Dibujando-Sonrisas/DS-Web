@@ -12,6 +12,275 @@
   margin-left: auto;
 }
 
+/* envuelve el paso activo; queda deshabilitado cuando su etapa ya se guardó */
+.fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* ── EXPEDIENTE ── */
+/* título de cada tarjeta con su ícono de marca */
+.tarjetaTitulo {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  min-width: 0;
+}
+
+/* ficha del paciente sobre el asistente: borde punteado de marca, como dibujada */
+.ficha {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+  min-width: 0;
+  padding: 2rem 2.4rem;
+  background: var(--white);
+  border: 2px dashed var(--primaryColor);
+  border-radius: var(--radius-lg);
+}
+
+.fichaSignos {
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--line);
+}
+
+/* signos de preclínica en etiquetas compactas; .tone-rotate reparte los colores */
+.signosResumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.signosResumen li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid color-mix(in srgb, var(--tone) 28%, var(--white));
+  border-radius: 99rem;
+  background: color-mix(in srgb, var(--tone) 8%, var(--white));
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+
+.signosResumen svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+  color: var(--tone-ink);
+}
+
+.signosResumen strong {
+  color: var(--dark);
+  font-variant-numeric: tabular-nums;
+}
+
+/* resumen: avatar, código, edad y sexo; estado y acciones a la derecha */
+.resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.2rem 1.6rem;
+}
+
+.resumenId {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.resumenId p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.resumenCodigo {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--dark);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.resumenAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+/* datos de contacto y registro, cada uno con su ícono */
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  gap: 1.6rem 2rem;
+  margin: 0;
+  padding: 1.6rem 0;
+  border-block: 1px solid var(--line);
+}
+
+.meta > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.meta svg {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  color: var(--primaryStrong);
+}
+
+.meta dt {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+
+.meta dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--dark);
+  overflow-wrap: anywhere;
+}
+
+/* signos vitales en fichas; .tone-rotate reparte los colores de marca */
+.vitales {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: 1.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vital {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 1.4rem 1.6rem;
+  border: 1px solid color-mix(in srgb, var(--tone) 28%, var(--white));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--tone) 7%, var(--white));
+}
+
+.vitalLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+
+.vitalLabel svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex-shrink: 0;
+  color: var(--tone-ink);
+}
+
+.vitalValor {
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--dark);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.vitalValor small {
+  margin-left: 0.4rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+
+.vitalVacio {
+  font-size: 1.4rem;
+  color: var(--gray);
+}
+
+/* etiqueta de un bloque de texto (motivo, observaciones, diagnósticos) */
+.etiqueta {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0 0 0.8rem;
+  font-family: var(--fontBody);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+
+/* texto clínico: línea de acento a la izquierda y ancho de lectura cómodo */
+.nota {
+  max-width: 75ch;
+  margin: 0;
+  padding-left: 1.4rem;
+  border-left: 3px solid var(--primaryLight);
+  font-size: 1.5rem;
+  line-height: 1.65;
+  color: var(--dark);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.narrativa {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr));
+  gap: 2rem 2.4rem;
+}
+
+.diagnosticos {
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--line);
+}
+
+/* diagnósticos como etiquetas */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1.2rem;
+  border-radius: 99rem;
+  background: var(--info-bg);
+  color: var(--info-ink);
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.chips svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+}
+
 /* ── FARMACIA ── */
 /* cantidad a entregar, editable dentro de la tabla de lotes */
 .qty input {
