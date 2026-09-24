@@ -39,46 +39,32 @@ export default function AdminLayoutClient({
     });
   };
 
-  const handleToggleMobile = () => {
-    setIsMobileOpen((prev) => !prev);
-  };
-
-  const handleCloseMobile = () => {
-    setIsMobileOpen(false);
-  };
-
   return (
     <div className={styles.adminLayoutWrapper}>
-      {/* HEADER SUPERIOR (100% Ancho) */}
-      <AdminHeader
+      {/* Barra lateral a todo lo alto; en móvil es un cajón */}
+      <SideBar
+        isCollapsed={isCollapsed}
+        isMobileOpen={isMobileOpen}
+        onCloseMobile={() => setIsMobileOpen(false)}
         displayName={displayName}
         roleLabel={roleLabel}
         avatarUrl={avatarUrl}
         email={email}
-        isCollapsed={isCollapsed}
-        onToggleSidebar={handleToggleSidebar}
-        onToggleMobile={handleToggleMobile}
       />
 
-      {/* CUERPO INFERIOR (Sidebar + Contenido Principal) */}
-      <div className={styles.adminLayoutBody}>
-        <SideBar
-          isCollapsed={isCollapsed}
-          isMobileOpen={isMobileOpen}
-          onCloseMobile={handleCloseMobile}
+      {/* Encabezado + contenido de cada módulo */}
+      <div className={styles.mainContent}>
+        <AdminHeader
           displayName={displayName}
           roleLabel={roleLabel}
           avatarUrl={avatarUrl}
           email={email}
+          isCollapsed={isCollapsed}
+          onToggleSidebar={handleToggleSidebar}
+          onToggleMobile={() => setIsMobileOpen((prev) => !prev)}
         />
 
-        <main
-          className={`${styles.mainContent} ${
-            isCollapsed ? styles.mainContentCollapsed : ""
-          }`}
-        >
-          <div className={styles.contentArea}>{children}</div>
-        </main>
+        <main className={styles.contentArea}>{children}</main>
       </div>
     </div>
   );

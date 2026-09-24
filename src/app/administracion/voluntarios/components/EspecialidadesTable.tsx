@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Ban, CircleAlert, CircleCheck, LoaderCircle, Pencil, Plus } from "lucide-react";
 import styles from "@/styles/pages/admin.module.css";
 import { 
   crearEspecialidad, 
@@ -87,85 +88,98 @@ export default function EspecialidadesTable({
   };
 
   return (
-    <div className={styles.tableContainer}>
-      <div style={{ padding: "1rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ margin: 0 }}>Listado de Especialidades</h3>
-        <button className={styles.btnPrimary} onClick={handleCreate}>
-          + Nueva Especialidad
-        </button>
-      </div>
-
+    <>
       {error && (
-        <div style={{ color: "red", padding: "1rem" }}>
-          <strong>Error:</strong> {error}
-        </div>
+        <p className="notice notice-bad" role="alert">
+          <CircleAlert aria-hidden="true" />
+          <span>
+            <strong>Error:</strong> {error}
+          </span>
+        </p>
       )}
 
-      <table className={styles.adminTable}>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {specialties.length === 0 ? (
-            <tr>
-              <td colSpan={3} style={{ textAlign: "center", padding: "2rem" }}>
-                No hay especialidades registradas.
-              </td>
-            </tr>
-          ) : (
-            specialties.map((sp) => {
-              const active = isActiva(sp);
-              return (
-                <tr key={sp.id}>
-                  <td>{sp.nombre}</td>
-                  <td>
-                    <span
-                      style={{
-                        padding: "0.2rem 0.6rem",
-                        borderRadius: "1rem",
-                        fontSize: "0.85rem",
-                        backgroundColor: active ? "var(--green-light, #d1fae5)" : "var(--red-light, #fee2e2)",
-                        color: active ? "var(--green-dark, #065f46)" : "var(--red-dark, #991b1b)",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {active ? "Activa" : "Inactiva"}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <button
-                        className={styles.btnSecondary}
-                        onClick={() => handleEdit(sp)}
-                        disabled={loadingId === sp.id}
-                        style={{ padding: "0.4rem 0.8rem", fontSize: "0.9rem" }}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className={active ? styles.btnDanger : styles.btnSuccess}
-                        onClick={() => handleToggleStatus(sp)}
-                        disabled={loadingId === sp.id}
-                        style={{ padding: "0.4rem 0.8rem", fontSize: "0.9rem" }}
-                      >
-                        {loadingId === sp.id
-                          ? "Procesando..."
-                          : active
-                          ? "Desactivar"
-                          : "Activar"}
-                      </button>
-                    </div>
+      <section className={styles.panel} aria-labelledby="listado-especialidades">
+        <div className={styles.panelHeader}>
+          <h2 id="listado-especialidades" className={styles.panelTitle}>
+            Listado de Especialidades <span className={styles.count}>{specialties.length}</span>
+          </h2>
+          <button type="button" className="btn-primary btn-sm" onClick={handleCreate}>
+            <Plus aria-hidden="true" />
+            Nueva Especialidad
+          </button>
+        </div>
+
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Estado</th>
+                <th className={styles.num}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {specialties.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className={styles.emptyCell}>
+                    No hay especialidades registradas.
                   </td>
                 </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+              ) : (
+                specialties.map((sp) => {
+                  const active = isActiva(sp);
+                  const busy = loadingId === sp.id;
+                  const toggleLabel = busy ? "Procesando..." : active ? "Desactivar" : "Activar";
+                  return (
+                    <tr key={sp.id}>
+                      <td className={styles.cellMain}>{sp.nombre}</td>
+                      <td>
+                        <span
+                          className={`${styles.badge} ${styles.badgeDot} ${
+                            active ? styles.badgeSuccess : styles.badgeNeutral
+                          }`}
+                        >
+                          {active ? "Activa" : "Inactiva"}
+                        </span>
+                      </td>
+                      <td>
+                        <div className={styles.rowActions}>
+                          <button
+                            type="button"
+                            className="btn-icon"
+                            onClick={() => handleEdit(sp)}
+                            disabled={busy}
+                            aria-label={`Editar ${sp.nombre}`}
+                            title="Editar"
+                          >
+                            <Pencil aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-ghost btn-xs"
+                            onClick={() => handleToggleStatus(sp)}
+                            disabled={busy}
+                            aria-label={`${toggleLabel} ${sp.nombre}`}
+                          >
+                            {busy ? (
+                              <LoaderCircle className="spin" aria-hidden="true" />
+                            ) : active ? (
+                              <Ban aria-hidden="true" />
+                            ) : (
+                              <CircleCheck aria-hidden="true" />
+                            )}
+                            {toggleLabel}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       {showModal && (
         <EspecialidadForm
@@ -174,6 +188,6 @@ export default function EspecialidadesTable({
           onSave={handleSave}
         />
       )}
-    </div>
+    </>
   );
 }

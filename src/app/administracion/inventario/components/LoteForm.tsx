@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 import type { LoteMedicamento } from "@/lib/db/inventario";
 import styles from "@/styles/pages/admin.module.css";
 
@@ -15,9 +16,13 @@ interface LoteFormProps {
   initialData?: Partial<LoteMedicamento> | null;
   onSubmit: (data: LoteFormValues) => void;
   isLoading?: boolean;
+  /** "Volver a Lotes" en el pie del modal */
+  onCancel?: () => void;
+  /** avisos y título que van sobre los campos */
+  children?: React.ReactNode;
 }
 
-export function LoteForm({ initialData, onSubmit, isLoading }: LoteFormProps) {
+export function LoteForm({ initialData, onSubmit, isLoading, onCancel, children }: LoteFormProps) {
   const [formData, setFormData] = useState<LoteFormValues>({
     numero_lote: "",
     fabricante: "",
@@ -53,54 +58,80 @@ export function LoteForm({ initialData, onSubmit, isLoading }: LoteFormProps) {
     onSubmit(formData);
   };
 
+  // se muestra dentro de AdminModal: cuerpo con los campos + pie con los botones
   return (
-    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.6rem" }}>
-      <div className={styles.formField}>
-        <label>Número de Lote *</label>
-        <input 
-          name="numero_lote"
-          value={formData.numero_lote}
-          onChange={handleChange}
-          placeholder="Ej. L-2023-001"
-          required
-        />
-      </div>
-      
-      <div className={styles.formField}>
-        <label>Fabricante (Opcional)</label>
-        <input 
-          name="fabricante"
-          value={formData.fabricante}
-          onChange={handleChange}
-          placeholder="Ej. Bayer"
-        />
+    <form onSubmit={handleSubmit} className={styles.modalForm}>
+      <div className={styles.modalBody}>
+        {children}
+
+        <div className="form-grid">
+          <label className="form-field">
+            <span className="form-label">
+              Número de Lote <span className="form-required" aria-hidden="true">*</span>
+            </span>
+            <input
+              className="form-input"
+              name="numero_lote"
+              value={formData.numero_lote}
+              onChange={handleChange}
+              placeholder="Ej. L-2023-001"
+              required
+            />
+          </label>
+
+          <label className="form-field">
+            <span className="form-label">
+              Fabricante <span className="form-optional">(Opcional)</span>
+            </span>
+            <input
+              className="form-input"
+              name="fabricante"
+              value={formData.fabricante}
+              onChange={handleChange}
+              placeholder="Ej. Bayer"
+            />
+          </label>
+
+          <label className="form-field">
+            <span className="form-label">
+              Fecha de Vencimiento <span className="form-required" aria-hidden="true">*</span>
+            </span>
+            <input
+              className="form-input"
+              type="date"
+              name="fecha_vencimiento"
+              value={formData.fecha_vencimiento}
+              onChange={handleChange}
+              required
+            />
+          </label>
+
+          <label className="form-field">
+            <span className="form-label">
+              Cantidad Actual <span className="form-required" aria-hidden="true">*</span>
+            </span>
+            <input
+              className="form-input"
+              type="number"
+              min="0"
+              name="cantidad_actual"
+              value={formData.cantidad_actual}
+              onChange={handleChange}
+              required
+            />
+          </label>
+        </div>
       </div>
 
-      <div className={styles.formField}>
-        <label>Fecha de Vencimiento *</label>
-        <input 
-          type="date"
-          name="fecha_vencimiento"
-          value={formData.fecha_vencimiento}
-          onChange={handleChange}
-          required
-        />
-      </div>
-
-      <div className={styles.formField}>
-        <label>Cantidad Actual *</label>
-        <input 
-          type="number"
-          min="0"
-          name="cantidad_actual"
-          value={formData.cantidad_actual}
-          onChange={handleChange}
-          required
-        />
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "2rem" }}>
-        <button type="submit" className={styles.btnPrimary} disabled={isLoading}>
+      <div className={styles.modalFooter}>
+        {onCancel && (
+          <button type="button" className="btn-ghost btn-sm" onClick={onCancel}>
+            <ArrowLeft aria-hidden="true" />
+            Volver a Lotes
+          </button>
+        )}
+        <button type="submit" className="btn-primary btn-sm" disabled={isLoading}>
+          {isLoading && <LoaderCircle className="spin" aria-hidden="true" />}
           {isLoading ? "Guardando..." : "Guardar Lote"}
         </button>
       </div>

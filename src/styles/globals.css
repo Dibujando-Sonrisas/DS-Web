@@ -30,6 +30,23 @@
   --bg-light: #f5f5f1;
   --bg-section: #ffffff;
 
+  /* líneas y superficies cálidas, derivadas del crema */
+  --line: #e7e4da;
+  --line-strong: #d6d2c4;
+  --surface-muted: #faf9f5;
+
+  /* estados: cada tinta pasa AA sobre su fondo */
+  --ok-bg: #e3f5e9;
+  --ok-ink: #166534;
+  --warn-bg: #fdf0d0;
+  --warn-ink: #7a4d00;
+  --bad-bg: #fdecea;
+  --bad-ink: #b03a30;
+  --info-bg: #e3f3f2;
+  --info-ink: #075c58;
+  --muted-bg: #efede6;
+  --muted-ink: #596170;
+
   --circle-size: 56px;
   --radius-sm: 0.6rem;
   --radius-md: 1rem;
@@ -139,7 +156,9 @@ ul {
 /* ── BOTONES ── */
 .btn-primary,
 .btn-outline,
-.btn-outline-blue {
+.btn-outline-blue,
+.btn-ghost,
+.btn-danger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -162,12 +181,30 @@ ul {
   padding: 0.7rem 2rem;
 }
 
+/* extra chico: acciones dentro de una fila de tabla */
+.btn-xs {
+  gap: 0.6rem;
+  font-size: 1.35rem;
+  padding: 0.45rem 1.2rem;
+  white-space: nowrap;
+}
+
+.btn-block {
+  width: 100%;
+}
+
 .btn-primary svg,
 .btn-outline svg,
-.btn-outline-blue svg {
+.btn-outline-blue svg,
+.btn-ghost svg,
+.btn-danger svg {
   width: 1.8rem;
   height: 1.8rem;
   flex-shrink: 0;
+}
+.btn-xs svg {
+  width: 1.6rem;
+  height: 1.6rem;
 }
 
 .btn-primary {
@@ -181,9 +218,77 @@ ul {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
-.btn-primary:disabled {
+
+/* neutro: Cancelar, filtros y acciones secundarias sobre blanco o crema */
+.btn-ghost {
+  border-color: var(--line-strong);
+  background-color: var(--white);
+  color: var(--dark);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--primaryStrong);
+  color: var(--primaryStrong);
+}
+
+/* destructivo: eliminar, rechazar */
+.btn-danger {
+  border-color: var(--tertiaryDark);
+  background-color: var(--tertiaryDark);
+  color: var(--white);
+}
+.btn-danger:hover:not(:disabled) {
+  border-color: #8f2f27;
+  background-color: #8f2f27;
+}
+
+:is(.btn-primary, .btn-outline, .btn-outline-blue, .btn-ghost, .btn-danger):disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* los botones chicos viven en barras y tablas: no saltan al pasar el cursor */
+:is(.btn-sm, .btn-xs):is(.btn-primary, .btn-outline, .btn-outline-blue, .btn-ghost, .btn-danger):hover {
+  transform: none;
+}
+
+/* solo ícono (editar, eliminar, cerrar): siempre con aria-label */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 3.8rem;
+  height: 3.8rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--gray);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+.btn-icon svg {
+  width: 2rem;
+  height: 2rem;
+}
+.btn-icon:hover:not(:disabled) {
+  background-color: var(--bg-light);
+  color: var(--primaryStrong);
+}
+.btn-icon-danger:hover:not(:disabled) {
+  background-color: var(--bad-bg);
+  color: var(--bad-ink);
+}
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+@media (pointer: coarse) {
+  .btn-icon {
+    width: 4.4rem;
+    height: 4.4rem;
+  }
 }
 
 /* estado no disponible (cupo lleno, inscripciones cerradas) */
@@ -379,15 +484,55 @@ ul {
   }
 }
 
-.form-field label {
+/* tres columnas en pantallas anchas (formularios largos del panel) */
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+@media (min-width: 600px) {
+  .form-grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 900px) {
+  .form-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* sirve como <div> con <label htmlFor> o como <label> que envuelve el campo */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.form-field > label,
+.form-label {
   display: block;
   font-size: 1.4rem;
   font-weight: 600;
   color: var(--dark);
-  margin-bottom: 0.6rem;
+}
+.form-field > .form-error {
+  margin-top: 0;
 }
 .form-field-full {
   grid-column: 1 / -1;
+}
+
+.form-optional {
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--gray);
+}
+
+.form-hint {
+  font-size: 1.3rem;
+  line-height: 1.5;
+  color: var(--gray);
+  margin: 0;
 }
 
 .form-input {
@@ -398,7 +543,7 @@ ul {
   font-size: 1.6rem;
   font-family: var(--fontBody);
   color: var(--dark);
-  background: var(--bg-light);
+  background-color: var(--bg-light);
   transition:
     border-color 0.2s ease,
     background-color 0.2s ease;
@@ -416,11 +561,62 @@ ul {
 .form-input:focus {
   outline: none;
   border-color: var(--primaryColor);
-  background: var(--white);
+  background-color: var(--white);
 }
-textarea.form-input {
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.form-input[aria-invalid="true"] {
+  border-color: var(--tertiaryDark);
+}
+
+/* la flecha del select, con el mismo trazo de los íconos lucide */
+select.form-input:not([multiple]) {
+  appearance: none;
+  padding-right: 4.4rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23596170' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.4rem center;
+  background-size: 1.8rem;
+  cursor: pointer;
+}
+
+/* compacto: filtros, barras de herramientas y celdas de tabla */
+.form-input-sm {
+  padding: 0.8rem 1.2rem;
+  font-size: 1.45rem;
+  border-radius: var(--radius-sm);
+}
+select.form-input-sm:not([multiple]) {
+  padding-right: 3.6rem;
+  background-position: right 1rem center;
+}
+
+/* :where() deja que cada módulo ajuste la altura */
+:where(textarea.form-input) {
   min-height: 14rem;
   resize: vertical;
+}
+:where(textarea.form-input[rows]) {
+  min-height: 0;
+}
+
+/* casilla o radio con su texto al lado */
+.form-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 1.45rem;
+  color: var(--dark);
+  cursor: pointer;
+}
+.form-check input {
+  width: 1.8rem;
+  height: 1.8rem;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .form-actions {
@@ -468,6 +664,51 @@ textarea.form-input {
   border: 1px solid #bbf7d0;
   font-size: 1.5rem;
   font-weight: 600;
+}
+
+/* ── AVISOS ── */
+/* franja informativa dentro de la página: error de carga, solo lectura, éxito */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.2rem 1.6rem;
+  border-radius: var(--radius-md);
+  font-size: 1.45rem;
+  line-height: 1.5;
+  background: var(--info-bg);
+  color: var(--info-ink);
+}
+.notice svg {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+.notice-ok {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+.notice-warn {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+.notice-bad {
+  background: var(--bad-bg);
+  color: var(--bad-ink);
+}
+
+/* texto solo para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ── ACCESIBILIDAD ── */

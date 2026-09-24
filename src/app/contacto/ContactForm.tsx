@@ -129,7 +129,7 @@ export default function ContactForm() {
             id="mensaje"
             name="mensaje"
             placeholder="Escribe tu mensaje aquí..."
-            rows={5}
+            rows={6}
             required
           />
         </div>

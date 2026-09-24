@@ -5,10 +5,14 @@ import { z } from "zod";
 import type { Perfil } from "@/lib/auth/session";
 import { updateProfileAction, updateAvatarAction } from "../usuarios/actions";
 import { supabase } from "@/lib/supabase";
+import { Camera, CircleAlert, LoaderCircle } from "lucide-react";
+import PageHeader from "../components/PageHeader";
+import AdminToast, { type ToastState } from "../components/AdminToast";
 import UserAvatar from "../components/UserAvatar";
 import RoleBadge from "../components/RoleBadge";
 import StatusBadge from "../components/StatusBadge";
 import styles from "@/styles/pages/admin.module.css";
+import personas from "@/styles/pages/admin-personas.module.css";
 
 import { phoneHondurasSchema } from "@/lib/validation/validationUtils";
 
@@ -51,10 +55,7 @@ export default function PerfilClient({
   const [formErrors, setFormErrors] = useState<
     Partial<Record<keyof ProfileFormValues, string>>
   >({});
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const [toast, setToast] = useState<ToastState>(null);
   const [isPending, startTransition] = useTransition();
 
   // Avatar Upload State
@@ -169,117 +170,131 @@ export default function PerfilClient({
   };
 
   return (
-    <div>
-      <div className={styles.pageIntro}>
-        <h2>Mi Perfil</h2>
-        <p>
-          Configura tus datos personales y fotografía de perfil en la
-          plataforma.
-        </p>
-      </div>
+    <div className={styles.page}>
+      <PageHeader
+        title="Mi Perfil"
+        description="Configura tus datos personales y fotografía de perfil en la plataforma."
+      />
 
-      <div className={styles.usersGrid}>
+      <div className={styles.layoutAside}>
         {/* Formulario Principal */}
-        <div className={styles.tableContainer}>
-          <div className={styles.tableHeader}>
-            <h3>Información Personal</h3>
+        <section className={styles.panel} aria-labelledby="perfil-informacion">
+          <div className={styles.panelHeader}>
+            <h2 id="perfil-informacion" className={styles.panelTitle}>
+              Información Personal
+            </h2>
           </div>
 
-          <form onSubmit={handleSubmit} className={styles.adminForm}>
-            <div className={styles.formRow}>
-              <label className={styles.formField}>
-                <span>Nombre Completo *</span>
+          <form onSubmit={handleSubmit} className={`${styles.panelBody} ${styles.stack}`}>
+            <div className="form-grid">
+              <label className="form-field form-field-full">
+                <span className="form-label">
+                  Nombre Completo <span className="form-required" aria-hidden="true">*</span>
+                </span>
                 <input
                   name="nombre_completo"
+                  className="form-input"
                   value={formData.nombre_completo}
                   onChange={handleInputChange}
                   placeholder="Tu nombre completo"
                   required
                   disabled={isPending}
+                  aria-invalid={!!formErrors.nombre_completo}
                 />
                 {formErrors.nombre_completo && (
-                  <span className={styles.formError}>{formErrors.nombre_completo}</span>
+                  <span className="form-error">
+                    <CircleAlert size={14} aria-hidden="true" />
+                    {formErrors.nombre_completo}
+                  </span>
                 )}
               </label>
-            </div>
 
-            <div className={styles.formRow}>
-              <label className={styles.formField}>
-                <span>Número de Teléfono</span>
+              <label className="form-field">
+                <span className="form-label">Número de Teléfono</span>
                 <input
                   name="telefono"
+                  className="form-input"
                   value={formData.telefono}
                   onChange={handleInputChange}
                   placeholder="Ej: +504 9999-9999"
                   disabled={isPending}
+                  aria-invalid={!!formErrors.telefono}
                 />
                 {formErrors.telefono && (
-                  <span className={styles.formError}>
+                  <span className="form-error">
+                    <CircleAlert size={14} aria-hidden="true" />
                     {formErrors.telefono}
                   </span>
                 )}
               </label>
 
-              <label className={styles.formField}>
-                <span>Fecha de Nacimiento</span>
+              <label className="form-field">
+                <span className="form-label">Fecha de Nacimiento</span>
                 <input
                   type="date"
                   name="fecha_nacimiento"
+                  className="form-input"
                   value={formData.fecha_nacimiento}
                   onChange={handleInputChange}
                   disabled={isPending}
+                  aria-invalid={!!formErrors.fecha_nacimiento}
                 />
                 {formErrors.fecha_nacimiento && (
-                  <span className={styles.formError}>
+                  <span className="form-error">
+                    <CircleAlert size={14} aria-hidden="true" />
                     {formErrors.fecha_nacimiento}
+                  </span>
+                )}
+              </label>
+
+              <label className="form-field">
+                <span className="form-label">Sexo</span>
+                <select
+                  name="sexo"
+                  className="form-input"
+                  value={formData.sexo}
+                  onChange={handleInputChange}
+                  disabled={isPending}
+                  aria-invalid={!!formErrors.sexo}
+                >
+                  <option value="">Selecciona una opción</option>
+                  <option value="M">Masculino</option>
+                  <option value="F">Femenino</option>
+                </select>
+                {formErrors.sexo && (
+                  <span className="form-error">
+                    <CircleAlert size={14} aria-hidden="true" />
+                    {formErrors.sexo}
                   </span>
                 )}
               </label>
             </div>
 
-            <label className={styles.formField}>
-              <span>Sexo</span>
-              <select
-                name="sexo"
-                value={formData.sexo}
-                onChange={handleInputChange}
-                disabled={isPending}
-              >
-                <option value="">Selecciona una opción</option>
-                <option value="M">Masculino</option>
-                <option value="F">Femenino</option>
-              </select>
-              {formErrors.sexo && (
-                <span className={styles.formError}>{formErrors.sexo}</span>
-              )}
-            </label>
-
-            <div
-              style={{ marginTop: "1.2rem", display: "flex", gap: "1.2rem" }}
+            <button
+              type="submit"
+              className="btn-primary btn-sm"
+              disabled={isPending || uploadingAvatar}
             >
-              <button
-                type="submit"
-                className={styles.btnPrimary}
-                disabled={isPending || uploadingAvatar}
-              >
-                {isPending ? "Guardando..." : "Guardar Cambios"}
-              </button>
-            </div>
+              {isPending && <LoaderCircle className="spin" aria-hidden="true" />}
+              {isPending ? "Guardando..." : "Guardar Cambios"}
+            </button>
           </form>
-        </div>
+        </section>
 
         {/* Tarjeta Lateral de Avatar y Roles */}
-        <div className={styles.tableContainer}>
-          <div className={styles.tableHeader}>
-            <h3>Fotografía y Roles</h3>
+        <section
+          className={`${styles.panel} ${styles.sticky}`}
+          aria-labelledby="perfil-foto-roles"
+        >
+          <div className={styles.panelHeader}>
+            <h2 id="perfil-foto-roles" className={styles.panelTitle}>
+              Fotografía y Roles
+            </h2>
           </div>
 
-          <div
-            className={styles.adminForm}
-            style={{ alignItems: "center", textAlign: "center" }}
-          >
+          <div className={`${styles.panelBody} ${styles.stack}`}>
             {/* Foto de Perfil */}
-            <div style={{ position: "relative", marginBottom: "1.2rem" }}>
+            <div className={personas.avatarRing}>
               <UserAvatar
                 avatarUrl={localPreview || profile.avatar_url}
                 nombres={formData.nombre_completo || profile.nombre_completo}
@@ -287,28 +302,14 @@ export default function PerfilClient({
                 size={120}
               />
               {uploadingAvatar && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    backgroundColor: "rgba(255, 255, 255, 0.7)",
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span className={styles.spinner} />
-                </div>
+                <span className={personas.avatarBusy}>
+                  <LoaderCircle className="spin" aria-hidden="true" />
+                </span>
               )}
             </div>
 
-            {/* Dropzone de Carga */}
-            <div
-              className={styles.dropzone}
-              style={{ width: "100%", boxSizing: "border-box" }}
-              onClick={() => fileInputRef.current?.click()}
-            >
+            {/* Dropzone de Carga: el input invisible cubre toda la zona */}
+            <label className={styles.dropzone}>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -316,169 +317,41 @@ export default function PerfilClient({
                 className={styles.dropzoneInput}
                 onChange={handleAvatarChange}
                 disabled={uploadingAvatar}
-                style={{ display: "none" }}
               />
-              <svg
-                className={styles.dropzoneIcon}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z"
-                />
-              </svg>
-              <p className={styles.dropzoneText}>
+              <Camera aria-hidden="true" />
+              <span className={styles.dropzoneText}>
                 <strong>Sube una foto</strong> o arrástrala aquí.
-              </p>
-              <p className={styles.formHint}>PNG, JPG o WEBP (máx. 2MB)</p>
-            </div>
-
-            <hr
-              style={{
-                width: "100%",
-                border: "none",
-                borderTop: "1px solid var(--border-color)",
-                margin: "1.2rem 0",
-              }}
-            />
+              </span>
+              <span className="form-hint">PNG, JPG o WEBP (máx. 2MB)</span>
+            </label>
 
             {/* Detalles de Cuenta (Read Only) */}
-            <div
-              style={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.2rem",
-                textAlign: "left",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--dark)",
-                    fontSize: "1.4rem",
-                  }}
-                >
-                  Correo:
-                </span>
-                <span style={{ color: "var(--gray)", fontSize: "1.4rem" }}>
-                  {email}
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--dark)",
-                    fontSize: "1.4rem",
-                  }}
-                >
-                  Rol:
-                </span>
+            <dl className={styles.kv}>
+              <dt>Correo</dt>
+              <dd>{email}</dd>
+              <dt>Rol</dt>
+              <dd>
                 {profile.rol ? (
                   <RoleBadge role={profile.rol} />
                 ) : (
-                  <span style={{ fontSize: "1.2rem", padding: "0.2rem 0.8rem", borderRadius: "1.2rem", background: "#fef3c7", color: "#92400e", fontWeight: 600 }}>
-                    Pendiente
-                  </span>
+                  <span className={`${styles.badge} ${styles.badgeWarning}`}>Pendiente</span>
                 )}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--dark)",
-                    fontSize: "1.4rem",
-                  }}
-                >
-                  Especialidad:
-                </span>
-                <span style={{ color: "var(--gray)", fontSize: "1.4rem" }}>
-                  {specialtyName}
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--dark)",
-                    fontSize: "1.4rem",
-                  }}
-                >
-                  Cargo:
-                </span>
-                <span style={{ color: "var(--gray)", fontSize: "1.4rem" }}>
-                  {profile.cargo || "Ninguno"}
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    fontWeight: 600,
-                    color: "var(--dark)",
-                    fontSize: "1.4rem",
-                  }}
-                >
-                  Estado:
-                </span>
+              </dd>
+              <dt>Especialidad</dt>
+              <dd>{specialtyName}</dd>
+              <dt>Cargo</dt>
+              <dd>{profile.cargo || "Ninguno"}</dd>
+              <dt>Estado</dt>
+              <dd>
                 <StatusBadge activo={profile.activo} />
-              </div>
-            </div>
+              </dd>
+            </dl>
           </div>
-        </div>
+        </section>
       </div>
 
       {/* Toast de Notificaciones */}
-      {toast && (
-        <div
-          className={`${styles.toast} ${
-            toast.type === "success" ? styles.toastSuccess : styles.toastError
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
+      <AdminToast toast={toast} />
     </div>
   );
 }

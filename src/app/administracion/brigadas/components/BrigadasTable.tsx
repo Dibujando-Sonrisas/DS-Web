@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
+import { Pencil, Search, Trash2 } from "lucide-react";
 import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
 import styles from "@/styles/pages/admin.module.css";
+import brig from "@/styles/pages/admin-brigadas.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 
@@ -15,13 +17,14 @@ type BrigadasTableProps = {
   onSelect: (id: string) => void;
   onEdit: (b: Brigada) => void;
   onDelete: (b: Brigada) => void;
+  actions?: ReactNode; // botones que van en la cabecera del panel (p. ej. "Nueva Brigada")
 };
 
 const ESTADO_CLASSES: Record<EstadoBrigada, string> = {
   inscripciones_abiertas: styles.badgeInfo,
-  inscripciones_cerradas: styles.badgeSecondary,
-  finalizada: styles.badgeDanger,
-  cancelada: styles.badgeSecondary,
+  inscripciones_cerradas: styles.badgeNeutral,
+  finalizada: styles.badgeNeutral,
+  cancelada: styles.badgeDanger,
 };
 
 const ESTADO_LABELS: Record<EstadoBrigada, string> = {
@@ -40,6 +43,7 @@ export default function BrigadasTable({
   onSelect,
   onEdit,
   onDelete,
+  actions,
 }: BrigadasTableProps) {
   const { can } = usePermissions();
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,12 +95,12 @@ export default function BrigadasTable({
     return brigadas.filter((b) => {
       const matchesSearch = b.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.codigo.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       const matchesStatus = statusFilter === "all" || b.estado === statusFilter;
-      
+
       const bYear = b.fecha_brigada ? new Date(b.fecha_brigada).getFullYear().toString() : "";
       const matchesYear = yearFilter === "all" || bYear === yearFilter;
-      
+
       const matchesPlace = placeFilter === "all" || b.lugar === placeFilter;
 
       return matchesSearch && matchesStatus && matchesYear && matchesPlace;
@@ -104,190 +108,184 @@ export default function BrigadasTable({
   }, [brigadas, searchTerm, statusFilter, yearFilter, placeFilter]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+    <section className={styles.panel} aria-labelledby="listado-brigadas">
+      <div className={styles.panelHeader}>
+        <h2 id="listado-brigadas" className={styles.panelTitle}>
+          Listado de Brigadas <span className={styles.count}>{filteredBrigadas.length}</span>
+        </h2>
+        {actions && <div className={styles.panelActions}>{actions}</div>}
+      </div>
+
       {/* Filtros */}
-      <div
-        className={styles.tableContainer}
-        style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1.6rem" }}
-      >
-        <h3 style={{ fontSize: "1.6rem", fontWeight: "bold" }}>Filtros y Búsqueda</h3>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "1.6rem",
-          }}
-        >
-          {/* Buscador */}
-          <div className={styles.formField}>
-            <span>Buscar por nombre o código</span>
+      <div className={styles.toolbar}>
+        {/* Buscador */}
+        <div className={`${styles.filter} ${styles.filterWide}`}>
+          <label className={styles.filterLabel} htmlFor="brigadas-buscar">
+            Buscar por nombre o código
+          </label>
+          <div className={styles.search}>
+            <Search aria-hidden="true" />
             <input
+              id="brigadas-buscar"
               type="text"
+              className="form-input form-input-sm"
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+        </div>
 
-          {/* Estado */}
-          <div className={styles.formField}>
-            <span>Filtrar por Estado</span>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">Todos los estados</option>
-              <option value="inscripciones_abiertas">Inscripciones Abiertas</option>
-              <option value="inscripciones_cerradas">Inscripciones Cerradas</option>
-              <option value="finalizada">Finalizada</option>
-              <option value="cancelada">Cancelada</option>
-            </select>
-          </div>
+        {/* Estado */}
+        <div className={styles.filter}>
+          <label className={styles.filterLabel} htmlFor="brigadas-estado">
+            Filtrar por Estado
+          </label>
+          <select
+            id="brigadas-estado"
+            className="form-input form-input-sm"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">Todos los estados</option>
+            <option value="inscripciones_abiertas">Inscripciones Abiertas</option>
+            <option value="inscripciones_cerradas">Inscripciones Cerradas</option>
+            <option value="finalizada">Finalizada</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
 
-          {/* Año */}
-          <div className={styles.formField}>
-            <span>Filtrar por Año</span>
-            <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
-              <option value="all">Todos los años</option>
-              {uniqueYears.map((yr) => (
-                <option key={yr} value={yr}>
-                  {yr}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Año */}
+        <div className={styles.filter}>
+          <label className={styles.filterLabel} htmlFor="brigadas-anio">
+            Filtrar por Año
+          </label>
+          <select
+            id="brigadas-anio"
+            className="form-input form-input-sm"
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
+          >
+            <option value="all">Todos los años</option>
+            {uniqueYears.map((yr) => (
+              <option key={yr} value={yr}>
+                {yr}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          {/* Lugar */}
-          <div className={styles.formField}>
-            <span>Filtrar por Comunidad</span>
-            <select value={placeFilter} onChange={(e) => setPlaceFilter(e.target.value)}>
-              <option value="all">Todas las comunidades</option>
-              {uniquePlaces.map((pl) => (
-                <option key={pl} value={pl}>
-                  {pl}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Lugar */}
+        <div className={styles.filter}>
+          <label className={styles.filterLabel} htmlFor="brigadas-comunidad">
+            Filtrar por Comunidad
+          </label>
+          <select
+            id="brigadas-comunidad"
+            className="form-input form-input-sm"
+            value={placeFilter}
+            onChange={(e) => setPlaceFilter(e.target.value)}
+          >
+            <option value="all">Todas las comunidades</option>
+            {uniquePlaces.map((pl) => (
+              <option key={pl} value={pl}>
+                {pl}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
       {/* Tabla */}
-      <div className={styles.tableContainer}>
-        <div className={styles.tableHeader}>
-          <h3>Listado de Brigadas ({filteredBrigadas.length})</h3>
-        </div>
-
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.adminTable}>
-            <thead>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Brigada</th>
+              <th>Lugar</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th className={styles.num}>P. Estimado</th>
+              <th className={styles.num}>P. Ejecutado</th>
+              <th className={styles.num}>Inscritos</th>
+              <th className={styles.num}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredBrigadas.length === 0 ? (
               <tr>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Lugar</th>
-                <th>Fecha</th>
-                <th>Estado</th>
-                <th>P. Estimado</th>
-                <th>P. Ejecutado</th>
-                <th>Inscritos</th>
-                <th>Acciones</th>
+                <td colSpan={8} className={styles.emptyCell}>
+                  No se encontraron brigadas con los filtros seleccionados.
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredBrigadas.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className={styles.emptyCell}>
-                    No se encontraron brigadas con los filtros seleccionados.
-                  </td>
-                </tr>
-              ) : (
-                filteredBrigadas.map((b) => {
-                  const estBudget = budgets[b.id] ?? 0;
-                  const execBudget = spent[b.id] ?? 0;
-                  const inscCount = registrationsCount[b.id] ?? 0;
-                  const isSelected = selectedBrigadaId === b.id;
+            ) : (
+              filteredBrigadas.map((b) => {
+                const estBudget = budgets[b.id] ?? 0;
+                const execBudget = spent[b.id] ?? 0;
+                const inscCount = registrationsCount[b.id] ?? 0;
+                const isSelected = selectedBrigadaId === b.id;
 
-                  return (
-                    <tr
-                      key={b.id}
-                      style={{
-                        backgroundColor: isSelected ? "rgba(var(--primary-rgb), 0.05)" : undefined,
-                        cursor: "pointer",
-                      }}
-                      onClick={() => onSelect(b.id)}
-                    >
-                      <td>
-                        <strong style={{ color: "var(--primary)" }}>{b.codigo}</strong>
-                      </td>
-                      <td>
-                        <strong>{b.nombre}</strong>
-                        {b.descripcion && (
-                          <p
-                            style={{
-                              fontSize: "1.2rem",
-                              color: "var(--gray)",
-                              marginTop: "0.2rem",
-                              maxWidth: "250px",
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
+                return (
+                  <tr
+                    key={b.id}
+                    className={`${styles.rowClickable} ${isSelected ? styles.rowSelected : ""}`}
+                    onClick={() => onSelect(b.id)}
+                  >
+                    {/* el código va bajo el nombre para que la tabla quepa sin desplazamiento */}
+                    <td>
+                      <span className={styles.cellMain}>{b.nombre}</span>
+                      <span className={`${styles.cellSub} ${styles.nowrap}`}>{b.codigo}</span>
+                      {b.descripcion && (
+                        <span className={styles.cellSub}>
+                          <span className={brig.clamp}>{b.descripcion}</span>
+                        </span>
+                      )}
+                    </td>
+                    <td>{b.lugar || "—"}</td>
+                    <td className={styles.nowrap}>{formatDate(b.fecha_brigada)}</td>
+                    <td>
+                      <span className={`${styles.badge} ${ESTADO_CLASSES[b.estado]}`}>
+                        {ESTADO_LABELS[b.estado]}
+                      </span>
+                    </td>
+                    <td className={styles.num}>{formatCurrency(estBudget)}</td>
+                    <td className={`${styles.num} ${execBudget > estBudget ? brig.valueBad : ""}`}>
+                      {formatCurrency(execBudget)}
+                    </td>
+                    <td className={styles.num}>{inscCount}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div className={styles.rowActions}>
+                        {can(PERMISSIONS.BRIGADAS_UPDATE) && (
+                          <button
+                            type="button"
+                            className="btn-icon"
+                            onClick={() => onEdit(b)}
+                            aria-label={`Editar ${b.nombre}`}
+                            title="Editar"
                           >
-                            {b.descripcion}
-                          </p>
+                            <Pencil aria-hidden="true" />
+                          </button>
                         )}
-                      </td>
-                      <td>{b.lugar || "—"}</td>
-                      <td>{formatDate(b.fecha_brigada)}</td>
-                      <td>
-                        <span className={`${styles.badge} ${ESTADO_CLASSES[b.estado]}`}>
-                          {ESTADO_LABELS[b.estado]}
-                        </span>
-                      </td>
-                      <td>{formatCurrency(estBudget)}</td>
-                      <td style={{ color: execBudget > estBudget ? "var(--danger)" : "inherit" }}>
-                        {formatCurrency(execBudget)}
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <span
-                          style={{
-                            background: "var(--bg-light)",
-                            padding: "0.2rem 0.8rem",
-                            borderRadius: "12px",
-                            fontWeight: "bold",
-                            fontSize: "1.2rem",
-                          }}
-                        >
-                          {inscCount}
-                        </span>
-                      </td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <div className={styles.tableActions}>
-                          {can(PERMISSIONS.BRIGADAS_UPDATE) && (
-                            <button
-                              type="button"
-                              className={styles.linkBtn}
-                              onClick={() => onEdit(b)}
-                            >
-                              Editar
-                            </button>
-                          )}
-                          {can(PERMISSIONS.BRIGADAS_DELETE) && (
-                            <button
-                              type="button"
-                              className={styles.linkBtnDanger}
-                              onClick={() => onDelete(b)}
-                            >
-                              Eliminar
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {can(PERMISSIONS.BRIGADAS_DELETE) && (
+                          <button
+                            type="button"
+                            className="btn-icon btn-icon-danger"
+                            onClick={() => onDelete(b)}
+                            aria-label={`Eliminar ${b.nombre}`}
+                            title="Eliminar"
+                          >
+                            <Trash2 aria-hidden="true" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </section>
   );
 }

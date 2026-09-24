@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Banknote, Gift, PackagePlus, Plus, UserPlus } from "lucide-react";
 import styles from "@/styles/pages/admin.module.css";
+import dash from "@/styles/pages/admin-dashboard.module.css";
 import { AppRole } from "@/lib/auth/roles";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 
@@ -8,51 +10,31 @@ export default function QuickActions({ role }: { role: AppRole }) {
     {
       label: "Nueva Brigada",
       href: "/administracion/brigadas",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: "2rem", height: "2rem" }}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-      ),
+      icon: <Plus />,
       perm: PERMISSIONS.BRIGADAS_CREATE,
     },
     {
       label: "Registrar Paciente",
       href: "/administracion/pacientes/nuevo",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: "2rem", height: "2rem" }}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-        </svg>
-      ),
+      icon: <UserPlus />,
       perm: PERMISSIONS.PACIENTES_CREATE,
     },
     {
       label: "Agregar Inventario",
       href: "/administracion/inventario",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: "2rem", height: "2rem" }}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-        </svg>
-      ),
+      icon: <PackagePlus />,
       perm: PERMISSIONS.INVENTARIO_CREATE,
     },
     {
       label: "Registrar Venta",
       href: "/administracion/ventas",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: "2rem", height: "2rem" }}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5h16.5a1.5 1.5 0 0 1 1.5 1.5v9.75a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5V6a1.5 1.5 0 0 1 1.5-1.5Zm13.5 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM6 7.5h1.5v1.5H6V7.5Z" />
-        </svg>
-      ),
+      icon: <Banknote />,
       perm: PERMISSIONS.VENTAS_CREATE,
     },
     {
       label: "Registrar Donación",
       href: "/administracion/donaciones",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: "2rem", height: "2rem" }}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H4.5a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m-6 3.75h12v9.75H6v-9.75Z" />
-        </svg>
-      ),
+      icon: <Gift />,
       perm: PERMISSIONS.DONACIONES_CREATE,
     },
   ];
@@ -62,45 +44,21 @@ export default function QuickActions({ role }: { role: AppRole }) {
   if (visibleActions.length === 0) return null;
 
   return (
-    <div style={{ marginBottom: "3rem" }}>
-      <h3
-        style={{
-          fontFamily: "var(--fontMain)",
-          fontSize: "1.7rem",
-          fontWeight: 700,
-          color: "var(--dark)",
-          marginBottom: "1.4rem",
-          letterSpacing: "-0.01em",
-        }}
-      >
+    <section className={styles.stackSm} aria-labelledby="accesos-rapidos">
+      <h2 id="accesos-rapidos" className={styles.sectionTitle}>
         Accesos Rápidos
-      </h3>
-      <div style={{ display: "flex", gap: "1.2rem", flexWrap: "wrap" }}>
-        {visibleActions.map((action, i) => (
-          <Link key={i} href={action.href} style={{ textDecoration: "none" }}>
-            <div className={styles.quickActionCard}>
-              <div
-                style={{
-                  width: "3.4rem",
-                  height: "3.4rem",
-                  borderRadius: "1rem",
-                  backgroundColor: "#f0fdfa",
-                  color: "var(--primaryColor)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                {action.icon}
-              </div>
-              <span style={{ fontSize: "1.35rem", fontWeight: 600 }}>
-                {action.label}
-              </span>
-            </div>
+      </h2>
+      {/* cada acción toma un color de marca, como "Son·ri·sas" */}
+      <div className={`${dash.quickActions} tone-rotate`}>
+        {visibleActions.map((action) => (
+          <Link key={action.label} href={action.href} className={dash.quickAction}>
+            <span className={dash.quickIcon} aria-hidden="true">
+              {action.icon}
+            </span>
+            {action.label}
           </Link>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

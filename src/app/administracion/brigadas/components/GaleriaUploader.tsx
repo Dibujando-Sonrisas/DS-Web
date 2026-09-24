@@ -1,56 +1,10 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import { useState } from "react";
+import { CircleAlert, CircleCheck, ImagePlus, LoaderCircle, X } from "lucide-react";
 import { subirImagenBrigadaStorageAction } from "../actions";
 import styles from "@/styles/pages/admin.module.css";
-
-// SVG Icons (Sin emojis)
-function UploadCloudIcon() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  );
-}
-
-function SpinnerIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.spinIcon}>
-      <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-      <path d="M12 2 a 10 10 0 0 1 10 10" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CheckCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-function AlertCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
+import brig from "@/styles/pages/admin-brigadas.module.css";
 
 type GaleriaUploaderProps = {
   brigadaId: string;
@@ -95,7 +49,6 @@ export default function GaleriaUploader({
   const [uploadStatusMsg, setUploadStatusMsg] = useState<string>("");
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /**
    * Convierte cualquier formato de imagen (incluyendo HEIC / HEIF de iPhone, PNG, WEBP, etc.)
@@ -339,35 +292,32 @@ export default function GaleriaUploader({
   };
 
   return (
-    <div
-      className={styles.tableContainer}
-      style={{ padding: "2.4rem", display: "flex", flexDirection: "column", gap: "1.8rem" }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h3 style={{ fontSize: "1.6rem", fontWeight: "700" }}>Cargar Fotografías a la Galería</h3>
-        <span style={{ fontSize: "1.2rem", color: "var(--gray)" }}>
+    <section className={styles.stackSm}>
+      <div className={styles.rowBetween}>
+        <h3 className={styles.subTitle}>Cargar Fotografías a la Galería</h3>
+        <p className={brig.meta}>
           Bucket: <strong>brigadas</strong> | Máx: <strong>15 MB por foto</strong>
-        </span>
+        </p>
       </div>
 
       {/* Mensajes de retroalimentación HCI */}
       {successMsg && (
-        <div className={styles.toastSuccess} style={{ padding: "1.2rem 1.6rem", borderRadius: "8px", display: "flex", alignItems: "center", gap: "0.8rem" }}>
-          <CheckCircleIcon />
+        <p className="notice notice-ok" role="status">
+          <CircleCheck aria-hidden="true" />
           <span>{successMsg}</span>
-        </div>
+        </p>
       )}
 
       {errorMsg && (
-        <div className={styles.tableError} style={{ padding: "1.2rem 1.6rem", borderRadius: "8px", display: "flex", alignItems: "center", gap: "0.8rem" }}>
-          <AlertCircleIcon />
+        <p className="notice notice-bad" role="alert">
+          <CircleAlert aria-hidden="true" />
           <span>{errorMsg}</span>
-        </div>
+        </p>
       )}
 
       {!isReadOnly && (
         <div
-          className={`${styles.dropzone} ${dragOver ? styles.dropzoneDragOver : ""}`}
+          className={`${styles.dropzone} ${brig.dropzoneFocus} ${dragOver ? styles.dropzoneActive : ""}`}
           onDragOver={(e) => {
             e.preventDefault();
             setDragOver(true);
@@ -378,113 +328,62 @@ export default function GaleriaUploader({
             setDragOver(false);
             if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
           }}
-          onClick={() => fileInputRef.current?.click()}
-          style={{ borderStyle: "dashed", cursor: "pointer", padding: "3rem 2rem" }}
         >
-          <div className={styles.dropzoneIcon} style={{ display: "flex", justifyContent: "center" }}>
-            <UploadCloudIcon />
-          </div>
-          <p className={styles.dropzoneText} style={{ marginTop: "1rem" }}>
+          <ImagePlus aria-hidden="true" />
+          <p className={styles.dropzoneText}>
             <strong>Haz clic aquí o arrastra imágenes (JPG, PNG, HEIC de iPhone)</strong>
             <br />
-            <span style={{ fontSize: "1.2rem", color: "var(--gray)" }}>
+            <span className={brig.dropzoneHint}>
               Procesamiento secuencial seguro para <strong>HEIC / HEIF de iPhone</strong>, PNG y JPG (máx. 15 MB por imagen). Se guardarán en <strong>formato JPG (.jpg)</strong>.
             </span>
           </p>
+          {/* el input invisible cubre toda la zona: clic y teclado abren el selector */}
           <input
-            ref={fileInputRef}
             type="file"
             multiple
             accept="image/*,.heic,.heif,.HEIC,.HEIF"
             className={styles.dropzoneInput}
+            aria-label="Seleccionar fotografías para la galería"
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) handleFiles(e.target.files);
               e.target.value = "";
             }}
-            onClick={(e) => e.stopPropagation()}
-            style={{ display: "none" }}
           />
         </div>
       )}
 
       {selectedImages.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.6rem" }}>
-          <h4 style={{ fontSize: "1.4rem", fontWeight: "600", margin: 0 }}>
-            Previsualización de Selección ({selectedImages.length} fotos listas)
+        <div className={styles.stackSm}>
+          <h4 className={brig.subTitleSm}>
+            Previsualización de Selección{" "}
+            <span className={styles.count}>{selectedImages.length} fotos listas</span>
           </h4>
 
           {/* Cuadrícula de miniaturas previsualizadas */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))",
-              gap: "1.2rem",
-            }}
-          >
+          <div className={styles.photoGrid}>
             {selectedImages.map((img) => (
-              <div
-                key={img.id}
-                style={{
-                  position: "relative",
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                  border: img.isCover ? "3px solid #16a34a" : "1px solid var(--border-color)",
-                  aspectRatio: "1",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
-                }}
-              >
-                <img
-                  src={img.previewUrl}
-                  alt="Vista previa"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+              <div key={img.id} className={`${styles.photoItem} ${img.isCover ? brig.photoCover : ""}`}>
+                <img src={img.previewUrl} alt="Vista previa" />
 
                 {/* Botón de quitar selección individual */}
                 <button
                   type="button"
+                  className={styles.photoRemove}
                   onClick={() => removeSelectedImage(img.id)}
                   disabled={uploading}
                   title="Remover de la selección"
                   aria-label="Remover"
-                  style={{
-                    position: "absolute",
-                    top: "6px",
-                    right: "6px",
-                    width: "24px",
-                    height: "24px",
-                    borderRadius: "50%",
-                    background: "rgba(0,0,0,0.65)",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
                 >
-                  <CloseIcon />
+                  <X aria-hidden="true" />
                 </button>
 
                 {/* Botón Fijar Portada */}
                 <button
                   type="button"
+                  className={`${brig.coverToggle} ${img.isCover ? brig.coverToggleOn : ""}`}
                   onClick={() => toggleCover(img.id)}
                   disabled={uploading}
-                  style={{
-                    position: "absolute",
-                    bottom: "6px",
-                    left: "6px",
-                    right: "6px",
-                    padding: "0.3rem 0.4rem",
-                    borderRadius: "4px",
-                    background: img.isCover ? "#16a34a" : "rgba(0,0,0,0.65)",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: "1.1rem",
-                    fontWeight: "600",
-                    textAlign: "center",
-                  }}
+                  aria-pressed={img.isCover}
                 >
                   {img.isCover ? "Portada Principal" : "Marcar Portada"}
                 </button>
@@ -493,33 +392,30 @@ export default function GaleriaUploader({
           </div>
 
           {/* Fila de acciones y estado del sistema (HCI) */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginTop: "1rem" }}>
-            <div>
-              {uploading || uploadStatusMsg ? (
-                <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", color: "var(--primaryColor)", fontWeight: "600", fontSize: "1.4rem" }}>
-                  <SpinnerIcon />
-                  <span>{uploadStatusMsg || "Subiendo imágenes secuencialmente..."}</span>
-                </div>
-              ) : (
-                <span style={{ fontSize: "1.3rem", color: "var(--gray)" }}>
-                  Los archivos se guardarán uno a uno en <code>brigadas/{brigadaCodigo}/</code>
-                </span>
-              )}
-            </div>
+          <div className={styles.rowBetween}>
+            {uploading || uploadStatusMsg ? (
+              <p className={brig.uploadStatus} role="status">
+                <LoaderCircle className="spin" aria-hidden="true" />
+                <span>{uploadStatusMsg || "Subiendo imágenes secuencialmente..."}</span>
+              </p>
+            ) : (
+              <p className={brig.meta}>
+                Los archivos se guardarán uno a uno en <code>brigadas/{brigadaCodigo}/</code>
+              </p>
+            )}
 
             <button
               type="button"
-              className={styles.btnPrimary}
+              className="btn-primary btn-sm"
               onClick={handleUpload}
               disabled={uploading || selectedImages.length === 0}
-              style={{ display: "inline-flex", alignItems: "center", gap: "0.8rem", padding: "0.8rem 2rem" }}
             >
-              {uploading && <SpinnerIcon />}
-              <span>{uploading ? "Subiendo 1 a 1..." : "Guardar en Galería"}</span>
+              {uploading && <LoaderCircle className="spin" aria-hidden="true" />}
+              {uploading ? "Subiendo 1 a 1..." : "Guardar en Galería"}
             </button>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
