@@ -25,6 +25,7 @@ import {
 } from "../components/CamposExpediente";
 import { FichaPaciente } from "../components/FichaPaciente";
 import Combobox from "@/app/components/Combobox";
+import { useToast } from "@/app/administracion/components/AdminToast";
 import {
   CAMPOS_CONSULTA,
   CAMPOS_PACIENTE,
@@ -86,11 +87,8 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState(1); // 1 to 5
 
-  // Errors & Messaging
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [recetaError, setRecetaError] = useState<string>("");
-  const [backendError, setBackendError] = useState<string>("");
-  const [successMsg, setSuccessMsg] = useState<string>("");
+  const { showToast } = useToast();
 
   const { registerRef, focusFirstError } = useFieldFocus();
 
@@ -238,7 +236,6 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
 
   // Guarda la etapa que cierra el paso 1 o 2; devuelve el id del paciente, o null si falló
   const guardarEtapa = async (step: number, id: string | null): Promise<string | null> => {
-    setBackendError("");
     setIsSubmitting(true);
     try {
       if (step === 1) return await guardarPaciente();
@@ -246,24 +243,22 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
       return id;
     } catch (e) {
       console.error("Error técnico al guardar la etapa del expediente:", e);
-      setBackendError("No fue posible guardar la información. Verifique los datos e intente nuevamente.");
+      showToast("No fue posible guardar la información. Verifique los datos e intente nuevamente.", "error");
       return null;
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // el aviso sigue visible en la lista de pacientes
   const salir = (msg: string) => {
     setIsSubmitting(true); // el formulario queda bloqueado mientras redirige
-    setSuccessMsg(msg);
-    setTimeout(() => {
-      router.push("/administracion/pacientes");
-    }, 1500);
+    showToast(msg);
+    router.push("/administracion/pacientes");
   };
 
   // Entrar a la consulta toma al paciente para que otro usuario no lo atienda a la vez
   const tomar = async (id: string): Promise<boolean> => {
-    setBackendError("");
     setIsSubmitting(true);
     try {
       const otro = await tomarConsulta(id);
@@ -275,7 +270,7 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
       return true;
     } catch (e) {
       console.error("Error técnico al tomar al paciente para la consulta:", e);
-      setBackendError("No fue posible iniciar la consulta. Intente nuevamente.");
+      showToast("No fue posible iniciar la consulta. Intente nuevamente.", "error");
       return false;
     } finally {
       setIsSubmitting(false);
@@ -284,14 +279,13 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
 
   // Salir sin terminar la consulta: el paciente vuelve a esperar y otro usuario puede tomarlo
   const liberar = async () => {
-    setBackendError("");
     setIsSubmitting(true);
     try {
       await liberarConsulta(pacienteId!);
-      salir("Paciente liberado: vuelve a quedar en espera de consulta. Redirigiendo a la lista de pacientes...");
+      salir("Paciente liberado: vuelve a quedar en espera de consulta.");
     } catch (e) {
       console.error("Error técnico al liberar al paciente:", e);
-      setBackendError("No fue posible liberar al paciente. Intente nuevamente.");
+      showToast("No fue posible liberar al paciente. Intente nuevamente.", "error");
       setIsSubmitting(false);
     }
   };
@@ -319,6 +313,7 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
           setActiveTab(step);
           return;
         }
+        showToast(step === 1 ? "Paciente ingresado." : "Preclínica guardada.");
       }
     }
 
@@ -334,13 +329,12 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
     if (!(await guardarEtapa(activeTab, pacienteId))) return;
     salir(
       activeTab === 1
-        ? "Paciente ingresado. Queda pendiente la preclínica; redirigiendo a la lista de pacientes..."
-        : "Preclínica guardada. Queda pendiente la consulta; redirigiendo a la lista de pacientes..."
+        ? "Paciente ingresado. Queda pendiente la preclínica."
+        : "Preclínica guardada. Queda pendiente la consulta."
     );
   };
 
   const handleAddMed = () => {
-    setRecetaError("");
     const medErrorObj: Record<string, string> = {};
 
     if (!newMedId) {
@@ -370,7 +364,9 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
     const isDuplicate = medsRecetados.some((x) => x.medicamento_id === targetId);
 
     if (isDuplicate) {
-      setRecetaError(`El medicamento "${m.nombre}" ya fue agregado a la receta.`);
+      const dup = { newMedId: `El medicamento "${m.nombre}" ya fue agregado a la receta.` };
+      setErrors((prev) => ({ ...prev, ...dup }));
+      focusFirstError(dup, ["newMedId"]);
       return;
     }
 
@@ -404,9 +400,6 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
   const handleSubmit = async () => {
     if (isSubmitting || !pacienteId) return;
 
-    setBackendError("");
-    setSuccessMsg("");
-
     if (!validateStep3()) {
       setActiveTab(3);
       return;
@@ -427,11 +420,11 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
 
       await registrarConsulta(pacienteId, consulta, diagnosticosStr, mList);
 
-      salir("¡Expediente guardado correctamente! Redirigiendo a la lista de pacientes...");
+      salir("Expediente guardado correctamente.");
     } catch (e: any) {
       console.error("Error técnico al guardar el expediente en Supabase:", e);
       setIsSubmitting(false);
-      setBackendError("No fue posible guardar el expediente. Verifique la información ingresada e intente nuevamente.");
+      showToast("No fue posible guardar el expediente. Verifique la información ingresada e intente nuevamente.", "error");
     }
   };
 
@@ -603,13 +596,6 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
               <div className={styles.formSection}>
                 <h2 className={styles.formSectionTitle}>5. Receta de Medicamentos</h2>
 
-                {recetaError && (
-                  <p className="form-error form-alert" role="alert">
-                    <CircleAlert aria-hidden="true" />
-                    <span>{recetaError}</span>
-                  </p>
-                )}
-
                 <h3 className={styles.subTitle}>Añadir Medicamento a la Receta</h3>
                 <div className="form-grid">
                   <div className="form-field">
@@ -631,7 +617,6 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
                       value={newMedId}
                       onChange={(v) => {
                         setNewMedId(v);
-                        setRecetaError("");
                         if (errors.newMedId) setErrors((prev) => ({ ...prev, newMedId: "" }));
                       }}
                     />
@@ -732,20 +717,6 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
             </div>
           )}
           </fieldset>
-
-          {backendError && (
-            <p className="form-error form-alert" role="alert">
-              <CircleAlert aria-hidden="true" />
-              <span>{backendError}</span>
-            </p>
-          )}
-
-          {successMsg && (
-            <p className="notice notice-ok" role="status">
-              <CircleCheck aria-hidden="true" />
-              <span>{successMsg}</span>
-            </p>
-          )}
         </div>
 
         {/* key: los botones se montan de nuevo en cada paso, como antes; así un Enter repetido no avanza ni guarda de más */}

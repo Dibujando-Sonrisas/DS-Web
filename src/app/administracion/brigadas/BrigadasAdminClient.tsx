@@ -22,7 +22,7 @@ import InscripcionesTable, { InscripcionRow } from "./components/InscripcionesTa
 import AsignacionesTable, { PerfilRow } from "./components/AsignacionesTable";
 import GaleriaUploader from "./components/GaleriaUploader";
 import GaleriaPreview, { BrigadaImagenRow } from "./components/GaleriaPreview";
-import AdminToast, { type ToastState } from "@/app/administracion/components/AdminToast";
+import { useToast } from "@/app/administracion/components/AdminToast";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import EmptyState from "@/app/administracion/components/EmptyState";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
@@ -75,13 +75,7 @@ export default function BrigadasAdminClient({
   // Transitions
   const [isPending, startActionTransition] = useTransition();
 
-  // Toast notifications
-  const [toast, setToast] = useState<ToastState>(null);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  const { showToast } = useToast();
 
   // Maps / Memoized values for summary calculations
   const budgetsMap = useMemo(() => {
@@ -275,7 +269,6 @@ export default function BrigadasAdminClient({
 
   return (
     <div className={styles.stack}>
-      <AdminToast toast={toast} />
 
       {fetchError && (
         <p className="notice notice-bad" role="alert">

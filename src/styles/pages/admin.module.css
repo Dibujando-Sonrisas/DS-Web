@@ -1580,17 +1580,29 @@ button.step {
   color: var(--primaryStrong);
 }
 
-/* ── AVISO FLOTANTE (usa AdminToast) ── */
-.toast {
+/* ── AVISOS FLOTANTES (usa ToastProvider / useToast) ── */
+/* la región vacía no bloquea clics; cada aviso sí los recibe */
+.toasts {
   position: fixed;
   top: 1.6rem;
   right: 1.6rem;
   z-index: 300;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
+  width: min(42rem, calc(100vw - 3.2rem));
+  pointer-events: none;
+}
+
+/* margin en vez de gap: al salir, el espacio se cierra junto con el aviso */
+.toast {
+  display: flex;
+  align-items: flex-start;
   gap: 1rem;
-  max-width: min(42rem, calc(100vw - 3.2rem));
-  padding: 1.2rem 1.8rem 1.2rem 1.4rem;
+  max-width: 100%;
+  margin-bottom: 1rem;
+  padding: 1.2rem 0.8rem 1.2rem 1.4rem;
+  overflow: hidden;
   border-radius: var(--radius-md);
   background: var(--primaryDark);
   color: var(--white);
@@ -1598,28 +1610,95 @@ button.step {
   font-size: 1.45rem;
   font-weight: 600;
   line-height: 1.4;
-  animation: toastIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: auto;
+  animation: toastIn 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.toast[data-leaving] {
+  animation: toastOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* entra desde el borde derecho, donde vive */
 @keyframes toastIn {
   from {
     opacity: 0;
-    translate: 0 -0.8rem;
+    translate: 3.2rem 0;
+    scale: 0.96;
   }
 }
 
-.toast svg {
+/* primero se desvanece hacia la derecha, luego cierra su hueco para que el resto suba sin salto */
+@keyframes toastOut {
+  0% {
+    max-height: 12rem;
+  }
+  55% {
+    opacity: 0;
+    translate: 3.2rem 0;
+    max-height: 12rem;
+    margin-bottom: 1rem;
+    padding-block: 1.2rem;
+  }
+  100% {
+    opacity: 0;
+    translate: 3.2rem 0;
+    max-height: 0;
+    margin-bottom: 0;
+    padding-block: 0;
+  }
+}
+
+.toast > svg {
   width: 2rem;
   height: 2rem;
   flex-shrink: 0;
   color: var(--secondaryColor);
 }
 
+.toastMessage {
+  flex: 1;
+  min-width: 0;
+  padding-right: 0.4rem;
+}
+
+.toastClose {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.8rem;
+  height: 2.8rem;
+  margin: -0.4rem 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.toastClose svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.toastClose:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--white);
+}
+
+/* el contorno global es verde oscuro: sobre el aviso no se vería */
+.toastClose:focus-visible {
+  outline-color: var(--white);
+  outline-offset: 1px;
+}
+
 .toastError {
   background: var(--tertiaryDark);
 }
 
-.toastError svg {
+.toastError > svg {
   color: var(--white);
 }
 

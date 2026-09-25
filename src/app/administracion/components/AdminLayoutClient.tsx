@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import AdminHeader from "./AdminHeader";
 import SideBar from "./SideBar";
+import { ToastProvider } from "./AdminToast";
 import styles from "@/styles/pages/admin.module.css";
 
 interface AdminLayoutClientProps {
@@ -40,32 +41,34 @@ export default function AdminLayoutClient({
   };
 
   return (
-    <div className={styles.adminLayoutWrapper}>
-      {/* Barra lateral a todo lo alto; en móvil es un cajón */}
-      <SideBar
-        isCollapsed={isCollapsed}
-        isMobileOpen={isMobileOpen}
-        onCloseMobile={() => setIsMobileOpen(false)}
-        displayName={displayName}
-        roleLabel={roleLabel}
-        avatarUrl={avatarUrl}
-        email={email}
-      />
-
-      {/* Encabezado + contenido de cada módulo */}
-      <div className={styles.mainContent}>
-        <AdminHeader
+    <ToastProvider>
+      <div className={styles.adminLayoutWrapper}>
+        {/* Barra lateral a todo lo alto; en móvil es un cajón */}
+        <SideBar
+          isCollapsed={isCollapsed}
+          isMobileOpen={isMobileOpen}
+          onCloseMobile={() => setIsMobileOpen(false)}
           displayName={displayName}
           roleLabel={roleLabel}
           avatarUrl={avatarUrl}
           email={email}
-          isCollapsed={isCollapsed}
-          onToggleSidebar={handleToggleSidebar}
-          onToggleMobile={() => setIsMobileOpen((prev) => !prev)}
         />
 
-        <main className={styles.contentArea}>{children}</main>
+        {/* Encabezado + contenido de cada módulo */}
+        <div className={styles.mainContent}>
+          <AdminHeader
+            displayName={displayName}
+            roleLabel={roleLabel}
+            avatarUrl={avatarUrl}
+            email={email}
+            isCollapsed={isCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+            onToggleMobile={() => setIsMobileOpen((prev) => !prev)}
+          />
+
+          <main className={styles.contentArea}>{children}</main>
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }

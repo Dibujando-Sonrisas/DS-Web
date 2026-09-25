@@ -22,7 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import AdminModal from "@/app/administracion/components/AdminModal";
-import AdminToast from "@/app/administracion/components/AdminToast";
+import { useToast } from "@/app/administracion/components/AdminToast";
 import StatCard from "@/app/administracion/components/StatCard";
 import styles from "@/styles/pages/admin.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
@@ -43,13 +43,7 @@ export function DonacionesClient({ userId }: { userId: string }) {
   const [currentPageEntregas, setCurrentPageEntregas] = useState(1);
   const itemsPerPage = 20;
 
-  // Toast notifications
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  const { showToast } = useToast();
 
   useEffect(() => {
     setCurrentPageDonaciones(1);
@@ -462,7 +456,6 @@ export function DonacionesClient({ userId }: { userId: string }) {
       )}
 
       {/* Toast Alert */}
-      <AdminToast toast={toast} />
     </div>
   );
 }

@@ -11,7 +11,7 @@ import {
 } from "./actions";
 import { LoaderCircle, Pencil, Search, TriangleAlert } from "lucide-react";
 import AdminModal from "../components/AdminModal";
-import AdminToast, { type ToastState } from "../components/AdminToast";
+import { useToast } from "../components/AdminToast";
 import RoleBadge from "../components/RoleBadge";
 import StatusBadge from "../components/StatusBadge";
 import UserAvatar from "../components/UserAvatar";
@@ -47,12 +47,7 @@ export default function UsuariosAdminClient({
 
   // Transition & UX State
   const [isPending, startTransition] = useTransition();
-  const [toast, setToast] = useState<ToastState>(null);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  const { showToast } = useToast();
 
   // Open Edit Modal
   const openEditModal = (user: ProfileWithSpecialty) => {
@@ -423,7 +418,6 @@ export default function UsuariosAdminClient({
         </AdminModal>
       )}
 
-      <AdminToast toast={toast} />
     </>
   );
 }

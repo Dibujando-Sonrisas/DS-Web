@@ -21,7 +21,7 @@ import {
   UserRound,
 } from "lucide-react";
 import AdminModal from "@/app/administracion/components/AdminModal";
-import AdminToast, { type ToastState } from "@/app/administracion/components/AdminToast";
+import { useToast } from "@/app/administracion/components/AdminToast";
 import EmptyState from "@/app/administracion/components/EmptyState";
 import UserAvatar from "@/app/administracion/components/UserAvatar";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
@@ -172,7 +172,7 @@ export function ExpedienteClient({
   const [errors, setErrors] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState<ToastState>(null);
+  const { showToast } = useToast();
   const { registerRef, focusFirstError } = useFieldFocus();
 
   // cada sección: con qué datos abre el formulario, cómo se valida y dónde se guarda
@@ -234,8 +234,7 @@ export function ExpedienteClient({
     try {
       await seccion.guardar();
       setEditando(null);
-      setToast({ message: "Cambios guardados en el expediente.", type: "success" });
-      setTimeout(() => setToast(null), 4000);
+      showToast("Cambios guardados en el expediente.");
       router.refresh();
     } catch (err) {
       console.error("Error técnico al corregir el expediente:", err);
@@ -495,7 +494,6 @@ export function ExpedienteClient({
         </AdminModal>
       )}
 
-      <AdminToast toast={toast} />
     </div>
   );
 }

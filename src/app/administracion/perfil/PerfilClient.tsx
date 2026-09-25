@@ -7,7 +7,7 @@ import { updateProfileAction, updateAvatarAction } from "../usuarios/actions";
 import { supabase } from "@/lib/supabase";
 import { Camera, CircleAlert, LoaderCircle } from "lucide-react";
 import PageHeader from "../components/PageHeader";
-import AdminToast, { type ToastState } from "../components/AdminToast";
+import { useToast } from "../components/AdminToast";
 import UserAvatar from "../components/UserAvatar";
 import RoleBadge from "../components/RoleBadge";
 import StatusBadge from "../components/StatusBadge";
@@ -55,18 +55,13 @@ export default function PerfilClient({
   const [formErrors, setFormErrors] = useState<
     Partial<Record<keyof ProfileFormValues, string>>
   >({});
-  const [toast, setToast] = useState<ToastState>(null);
+  const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   // Avatar Upload State
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -351,7 +346,6 @@ export default function PerfilClient({
       </div>
 
       {/* Toast de Notificaciones */}
-      <AdminToast toast={toast} />
     </div>
   );
 }
