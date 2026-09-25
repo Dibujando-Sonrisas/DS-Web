@@ -7,20 +7,46 @@ import {
   getPacientesDashboardAction as getPacientesDashboard,
 } from "./actions";
 import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
-import { ArrowRight, ChevronLeft, ChevronRight, Eye, HeartPulse, Mars, Plus, Venus } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCheck,
+  Eye,
+  HeartPulse,
+  Mars,
+  Plus,
+  Search,
+  Stethoscope,
+  UserPlus,
+  Users,
+  Venus,
+} from "lucide-react";
 import StatCard from "@/app/administracion/components/StatCard";
 import styles from "@/styles/pages/admin.module.css";
 import { useRouter } from "next/navigation";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 
-// etapas del expediente (v_pacientes_atendidos.estado) y el paso que le sigue a cada una
 export const ESTADOS: Record<string, { label: string; badge: string; siguiente?: string }> = {
   ingresado: { label: "Ingresado", badge: "badgeNeutral", siguiente: "Tomar preclínica" },
   preclinica: { label: "Preclínica", badge: "badgeWarning", siguiente: "Iniciar consulta" },
   consulta: { label: "En consulta", badge: "badgeInfo", siguiente: "Continuar consulta" },
   finalizada: { label: "Finalizada", badge: "badgeSuccess" },
 };
+
+const TABS = [
+  { id: "ingresado", label: ESTADOS.ingresado.label, icon: <UserPlus aria-hidden="true" /> },
+  { id: "preclinica", label: ESTADOS.preclinica.label, icon: <Activity aria-hidden="true" /> },
+  { id: "consulta", label: ESTADOS.consulta.label, icon: <Stethoscope aria-hidden="true" /> },
+  { id: "finalizada", label: ESTADOS.finalizada.label, icon: <ClipboardCheck aria-hidden="true" /> },
+  { id: "todos", label: "Todos", icon: <Users aria-hidden="true" /> },
+];
+
+const TAB_KEY = "pacientes:estado";
+
+const normalizar = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 export function PacientesClient() {
   const { can } = usePermissions();
@@ -29,13 +55,11 @@ export function PacientesClient() {
   const [dashboard, setDashboard] = useState<any>(null);
   const [todasLasBrigadas, setTodasLasBrigadas] = useState<any[]>([]);
   const [filtroBrigada, setFiltroBrigada] = useState<string>("todas");
+  const [busqueda, setBusqueda] = useState("");
+  const [activeTab, setActiveTab] = useState("todos");
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filtroBrigada]);
 
   const fetchData = async () => {
     try {
@@ -47,7 +71,16 @@ export function PacientesClient() {
       ]);
       setPacientes(pacs);
       setDashboard(dash);
-      setTodasLasBrigadas(brigs.data || []);
+      const brigadas = brigs.data || [];
+      setTodasLasBrigadas(brigadas);
+
+      const ultima = brigadas.find(b => b.estado !== "cancelada");
+      if (ultima) setFiltroBrigada(ultima.id);
+
+      try {
+        const guardada = sessionStorage.getItem(TAB_KEY);
+        if (TABS.some(t => t.id === guardada)) setActiveTab(guardada!);
+      } catch { /* sin sessionStorage (modo privado): se queda en "todos" */ }
     } catch (error) {
       console.error("Error al cargar pacientes", error);
     } finally {
@@ -62,9 +95,20 @@ export function PacientesClient() {
     return () => { mounted = false; };
   }, []);
 
-  const filtered = filtroBrigada === "todas"
-    ? pacientes
-    : pacientes.filter(p => p.brigada_id === filtroBrigada);
+  const cambiarTab = (id: string) => {
+    setActiveTab(id);
+    setCurrentPage(1);
+    try { sessionStorage.setItem(TAB_KEY, id); } catch { /* sin sessionStorage: solo no se recuerda */ }
+  };
+
+  const palabras = normalizar(busqueda).split(/\s+/).filter(Boolean);
+  const visibles = pacientes.filter(p =>
+    (filtroBrigada === "todas" || p.brigada_id === filtroBrigada) &&
+    palabras.every(w => normalizar(p.paciente ?? "").includes(w))
+  );
+  const porEstado = (id: string) => id === "todos" ? visibles : visibles.filter(p => p.estado === id);
+  const filtered = porEstado(activeTab);
+  const tabLabel = TABS.find(t => t.id === activeTab)?.label;
   const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
@@ -84,6 +128,23 @@ export function PacientesClient() {
           <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
         </div>
       )}
+
+      <div className={styles.tabs} role="tablist" aria-label="Expedientes por estado">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            className={styles.tab}
+            onClick={() => cambiarTab(tab.id)}
+          >
+            {tab.icon}
+            {tab.label}
+            <span className={styles.tabCount}>{porEstado(tab.id).length}</span>
+          </button>
+        ))}
+      </div>
 
       {isLoading ? (
         <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
@@ -119,13 +180,29 @@ export function PacientesClient() {
                 id="pacientes-filtro-brigada"
                 className="form-input form-input-sm"
                 value={filtroBrigada}
-                onChange={e => setFiltroBrigada(e.target.value)}
+                onChange={e => { setFiltroBrigada(e.target.value); setCurrentPage(1); }}
               >
                 <option value="todas">Todas las Brigadas</option>
                 {todasLasBrigadas.map(b => (
                   <option key={b.id} value={b.id}>{b.nombre}</option>
                 ))}
               </select>
+            </div>
+            <div className={`${styles.filter} ${styles.filterWide}`}>
+              <label className={styles.filterLabel} htmlFor="pacientes-buscar">
+                Buscar por nombre
+              </label>
+              <div className={styles.search}>
+                <Search aria-hidden="true" />
+                <input
+                  id="pacientes-buscar"
+                  type="text"
+                  className="form-input form-input-sm"
+                  placeholder="Nombre del paciente..."
+                  value={busqueda}
+                  onChange={e => { setBusqueda(e.target.value); setCurrentPage(1); }}
+                />
+              </div>
             </div>
           </div>
 
@@ -147,7 +224,12 @@ export function PacientesClient() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={8} className={styles.emptyCell}>
-                      No hay expedientes registrados en esta brigada.
+                      {palabras.length > 0
+                        ? `Ningún paciente coincide con "${busqueda.trim()}"`
+                        : activeTab === "todos"
+                          ? "No hay expedientes registrados"
+                          : `No hay expedientes con estado ${tabLabel}`}
+                      {filtroBrigada === "todas" ? "." : " en esta brigada."}
                     </td>
                   </tr>
                 ) : (
