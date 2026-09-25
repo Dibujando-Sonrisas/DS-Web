@@ -593,6 +593,97 @@ select.form-input-sm:not([multiple]) {
   background-position: right 1rem center;
 }
 
+/* ── COMBOBOX: escribir para filtrar y elegir (app/components/Combobox) ── */
+.combobox {
+  position: relative;
+}
+.combobox > .form-input {
+  padding-right: 4.4rem;
+}
+.combobox > .form-input-sm {
+  padding-right: 3.6rem;
+}
+.combobox-chevron {
+  position: absolute;
+  top: 50%;
+  right: 1.4rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  translate: 0 -50%;
+  color: var(--gray);
+  pointer-events: none;
+  transition: rotate 0.2s ease;
+}
+.combobox > .form-input-sm + .combobox-chevron {
+  right: 1rem;
+}
+.combobox[data-open] .combobox-chevron {
+  rotate: 180deg;
+}
+.combobox-list,
+.combobox-empty {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  left: 0;
+  z-index: 30;
+  padding: 0.4rem;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+.combobox-list {
+  max-height: 28rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  list-style: none;
+}
+.combobox-option {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 1.2rem 0.9rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 1.5rem;
+  line-height: 1.4;
+  color: var(--dark);
+  cursor: pointer;
+}
+/* la palomita marca la opción elegida; oculta, conserva la alineación */
+.combobox-option svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+  color: var(--primaryStrong);
+  visibility: hidden;
+}
+.combobox-option[data-chosen] {
+  font-weight: 600;
+}
+.combobox-option[data-chosen] svg {
+  visibility: visible;
+}
+.combobox-option[aria-selected="true"] {
+  background: var(--info-bg);
+  color: var(--info-ink);
+}
+.combobox-detail {
+  margin-left: auto;
+  padding-left: 1.2rem;
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: var(--gray);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.combobox-empty {
+  padding: 1.2rem 1.6rem;
+  font-size: 1.4rem;
+  color: var(--gray);
+}
+
 /* :where() deja que cada módulo ajuste la altura */
 :where(textarea.form-input) {
   min-height: 14rem;

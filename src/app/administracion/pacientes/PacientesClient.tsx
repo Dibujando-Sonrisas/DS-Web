@@ -28,6 +28,7 @@ import styles from "@/styles/pages/admin.module.css";
 import { useRouter } from "next/navigation";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { coincide } from "@/lib/texto";
 
 export const ESTADOS: Record<string, { label: string; badge: string; siguiente?: string }> = {
   ingresado: { label: "Ingresado", badge: "badgeNeutral", siguiente: "Tomar preclínica" },
@@ -45,8 +46,6 @@ const TABS = [
 ];
 
 const TAB_KEY = "pacientes:estado";
-
-const normalizar = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
 export function PacientesClient() {
   const { can } = usePermissions();
@@ -101,10 +100,9 @@ export function PacientesClient() {
     try { sessionStorage.setItem(TAB_KEY, id); } catch { /* sin sessionStorage: solo no se recuerda */ }
   };
 
-  const palabras = normalizar(busqueda).split(/\s+/).filter(Boolean);
   const visibles = pacientes.filter(p =>
     (filtroBrigada === "todas" || p.brigada_id === filtroBrigada) &&
-    palabras.every(w => normalizar(p.paciente ?? "").includes(w))
+    coincide(p.paciente ?? "", busqueda)
   );
   const porEstado = (id: string) => id === "todos" ? visibles : visibles.filter(p => p.estado === id);
   const filtered = porEstado(activeTab);
@@ -224,7 +222,7 @@ export function PacientesClient() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td colSpan={8} className={styles.emptyCell}>
-                      {palabras.length > 0
+                      {busqueda.trim()
                         ? `Ningún paciente coincide con "${busqueda.trim()}"`
                         : activeTab === "todos"
                           ? "No hay expedientes registrados"

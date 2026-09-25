@@ -24,6 +24,7 @@ import {
   useFieldFocus,
 } from "../components/CamposExpediente";
 import { FichaPaciente } from "../components/FichaPaciente";
+import Combobox from "@/app/components/Combobox";
 import {
   CAMPOS_CONSULTA,
   CAMPOS_PACIENTE,
@@ -611,31 +612,31 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
 
                 <h3 className={styles.subTitle}>Añadir Medicamento a la Receta</h3>
                 <div className="form-grid">
-                  <label className="form-field">
-                    <span className="form-label">
+                  <div className="form-field">
+                    <label htmlFor="receta-medicamento">
                       Medicamento <span className="form-required" aria-hidden="true">*</span>
-                    </span>
-                    <select
+                    </label>
+                    <Combobox
+                      id="receta-medicamento"
                       ref={registerRef("newMedId")}
-                      className="form-input"
                       aria-required="true"
                       aria-invalid={!!errors.newMedId}
+                      placeholder="Buscar medicamento..."
+                      emptyText="Ningún medicamento coincide con la búsqueda."
+                      options={medicamentosList.map((m) => ({
+                        value: m.medicamento_id || m.id,
+                        label: m.nombre,
+                        detail: `Stock: ${m.stock_total || 0}`,
+                      }))}
                       value={newMedId}
-                      onChange={(e) => {
-                        setNewMedId(e.target.value);
+                      onChange={(v) => {
+                        setNewMedId(v);
                         setRecetaError("");
                         if (errors.newMedId) setErrors((prev) => ({ ...prev, newMedId: "" }));
                       }}
-                    >
-                      <option value="">-- Seleccionar --</option>
-                      {medicamentosList.map((m) => (
-                        <option key={m.medicamento_id || m.id} value={m.medicamento_id || m.id}>
-                          {m.nombre} (Stock: {m.stock_total || 0})
-                        </option>
-                      ))}
-                    </select>
+                    />
                     <FieldError msg={errors.newMedId} />
-                  </label>
+                  </div>
                   <label className="form-field">
                     <span className="form-label">
                       Cantidad <span className="form-required" aria-hidden="true">*</span>
