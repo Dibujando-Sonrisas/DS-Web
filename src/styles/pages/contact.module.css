@@ -1,74 +1,48 @@
-.hero {
-  background-image: url(/new-Contacto-hero.png);
-  background-color: rgba(26, 35, 50, 0.6);
-  background-blend-mode: multiply;
-  background-size: cover;
-  background-position: center;
-  color: var(--white);
-  text-align: center;
-  padding: 9rem 2rem 7rem;
-}
-
-.hero h1 {
-  color: var(--white);
-  margin-bottom: 1rem;
-}
-
-.heroSub {
-  font-size: 1.9rem;
-  color: rgba(255, 255, 255, 0.9);
-  max-width: 55rem;
-  margin: 0 auto;
-}
-
-.contactSection {
-  padding: 7rem 2rem;
-}
+/* =====================================================
+   CONTACT — contact.module.css
+   Solo el layout propio de /contacto. Tarjetas, íconos, tonos
+   y formulario vienen de globals.css; el hero de PageHero.
+===================================================== */
 
 .contactGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 5rem;
+  gap: clamp(3rem, 5vw, 5rem);
+  align-items: start;
 }
 
 @media (min-width: 900px) {
   .contactGrid {
-    grid-template-columns: 1fr 1.4fr;
+    grid-template-columns: 1fr 1.3fr;
   }
 }
 
+/* ── COLUMNA DE INFORMACIÓN ── */
 .contactInfo h2 {
-  margin-bottom: 1.5rem;
+  color: var(--tertiaryColor);
+  margin-bottom: 1rem;
 }
 
 .contactInfo > p {
-  font-size: 1.6rem;
   margin-bottom: 3rem;
+}
+
+.infoList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
 }
 
 .infoItem {
   display: flex;
-  align-items: flex-start;
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
-}
-
-.infoIcon {
-  width: 4.5rem;
-  height: 4.5rem;
-  background: var(--primaryLight);
-  color: var(--primaryColor);
-  border-radius: 50%;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  flex-shrink: 0;
+  gap: 1.6rem;
+  padding: 1.6rem 2rem;
 }
 
-.infoText h4 {
-  font-size: 1.6rem;
-  margin-bottom: 0.3rem;
+.infoText h3 {
+  font-size: 1.8rem;
+  margin-bottom: 0.2rem;
 }
 
 .infoText p {
@@ -76,23 +50,32 @@
   margin: 0;
 }
 
+.infoText strong {
+  color: var(--dark);
+}
+
 .emailLink {
-  color: var(--primaryColor);
-  transition: opacity 0.2s;
+  color: var(--primaryDark);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--secondaryColor);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  word-break: break-word;
 }
 
 .emailLink:hover {
-  opacity: 0.8;
+  color: var(--primaryColor);
 }
 
 .contactSocial {
   margin-top: 3rem;
 }
 
-.contactSocial h4 {
-  font-size: 1.8rem;
-  margin-bottom: 1.5rem;
-  color: var(--dark);
+.contactSocial h3 {
+  font-size: 2rem;
+  color: var(--primaryColor);
+  margin-bottom: 1.4rem;
 }
 
 .socialLinks {
@@ -101,165 +84,79 @@
   flex-wrap: wrap;
 }
 
+/* el color de cada red lo reparte .tone-rotate */
 .socialLink {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 4.5rem;
-  height: 4.5rem;
+  width: 4.8rem;
+  height: 4.8rem;
   border-radius: 50%;
-  background: var(--bg-section);
-  color: var(--primaryColor);
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
+  background: var(--white);
+  color: var(--tone-text);
+  border: 2px dashed var(--tone);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .socialLink:hover {
   background: var(--primaryColor);
-  color: var(--white);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-sm);
-}
-
-.formWrapper {
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  padding: 4rem 3.5rem;
-  box-shadow: var(--shadow-md);
-}
-
-.formWrapper h3 {
-  margin-bottom: 2.5rem;
-}
-
-.formGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-}
-
-@media (min-width: 600px) {
-  .formGrid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.campo label,
-.campoFull label {
-  display: block;
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--dark);
-  margin-bottom: 0.6rem;
-}
-
-.campoFull {
-  grid-column: 1 / -1;
-}
-
-.input {
-  width: 100%;
-  padding: 1.2rem 1.6rem;
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  font-size: 1.5rem;
-  font-family: var(--fontBody);
-  color: var(--dark);
-  transition: border-color 0.2s ease;
-  background: var(--white);
-}
-
-.input:focus {
-  outline: none;
   border-color: var(--primaryColor);
-}
-
-.textarea {
-  min-height: 14rem;
-  resize: vertical;
-}
-
-.submitRow {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 2rem;
-}
-
-.submitBtn {
-  display: inline-block;
-  background-color: var(--primaryColor);
+  border-style: solid;
   color: var(--white);
-  font-size: 1.6rem;
-  font-weight: 600;
-  font-family: var(--fontBody);
-  border-radius: var(--radius-sm);
-  padding: 1.2rem 2.8rem;
-  border: 2px solid var(--primaryColor);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
-  cursor: pointer;
 }
 
-.submitBtn:hover:not(:disabled) {
-  background-color: var(--primaryDark);
-  border-color: var(--primaryDark);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.submitBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.errorMsg {
-  color: #e53e3e;
-  font-size: 1.4rem;
-  margin-top: 1rem;
-}
-
-.successMsg {
-  text-align: center;
-  padding: 4rem 2rem;
-  font-size: 1.8rem;
+/* ── FORMULARIO ── */
+.formWrapper h3 {
   color: var(--primaryColor);
-  font-weight: 600;
+  font-size: clamp(2.4rem, 3vw, 2.8rem);
+  margin-bottom: 2.4rem;
 }
 
+/* ── COMUNIDAD DE WHATSAPP ──
+   banda blanca: el footer ya es verde oscuro y se fundirían */
 .whatsappSection {
-  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
-  padding: 6rem 2rem;
+  background: var(--white);
+  padding: clamp(5rem, 8vw, 7rem) 2rem;
   text-align: center;
-  color: var(--white);
 }
 
 .whatsappSection h2 {
-  color: var(--white);
+  color: var(--primaryColor);
   margin-bottom: 1rem;
+  text-wrap: balance;
 }
 
 .whatsappSection p {
-  color: rgba(255, 255, 255, 0.9);
   font-size: 1.8rem;
-  margin-bottom: 3rem;
   max-width: 60rem;
-  margin-inline: auto;
+  margin: 0 auto 3rem;
 }
 
+/* verde oscuro de WhatsApp: 7.6:1 con blanco */
 .btnWhatsapp {
   display: inline-flex;
   align-items: center;
   gap: 1rem;
-  background: var(--white);
-  color: #128c7e;
+  background: #075e54;
+  color: var(--white);
   font-size: 1.7rem;
   font-weight: 700;
   padding: 1.4rem 3.2rem;
   border-radius: var(--radius-sm);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.whatsappIcon {
+  color: #25d366;
 }
 
 .btnWhatsapp:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }

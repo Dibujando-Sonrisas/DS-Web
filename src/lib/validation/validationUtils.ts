@@ -1,32 +1,13 @@
-/**
- * Utilidades de Validación Jerárquica de Entrada (Capítulo 15 - Kendall & Kendall)
- * 
- * Jerarquía de Validaciones:
- * 1. Presencia y Longitud.
- * 2. Sintaxis y Composición (Regex).
- * 3. Semántica y Rango.
- * 4. Referencias Cruzadas y Coherencia.
- * 5. Controles GUI en Frontend.
- */
-
 import { z } from "zod";
 import { validateHondurasDNI } from "../coding/codingUtils";
 
-// Expresiones Regulares Estandarizadas
 export const REGEX_PATTERNS = {
-  // Teléfono de Honduras: 8 dígitos iniciando en 2 (fijo), 3, 8 o 9 (móvil)
   HONDURAS_PHONE: /^[2389]\d{7}$/,
-  // Correo electrónico estándar internacional
   EMAIL: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-  // Solo texto alfabético y espacios (para nombres/apellidos)
   ONLY_ALPHA: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,
-  // Solo caracteres alfanuméricos y guiones (códigos de negocio)
   ALPHANUMERIC_CODE: /^[A-Z0-9-]+$/,
 };
 
-/**
- * Esquema de validación reutilizable para Teléfono de Honduras
- */
 export const phoneHondurasSchema = z
   .string()
   .trim()
@@ -44,9 +25,6 @@ export const phoneHondurasSchema = z
     }
   );
 
-/**
- * Esquema de validación reutilizable para DNI de Honduras
- */
 export const dniHondurasSchema = z
   .string()
   .trim()
@@ -64,9 +42,6 @@ export const dniHondurasSchema = z
     }
   );
 
-/**
- * Esquema de validación reutilizable para Correo Electrónico
- */
 export const emailSchema = z
   .string()
   .trim()
@@ -75,9 +50,6 @@ export const emailSchema = z
     message: "Prueba de sintaxis: Ingrese una dirección de correo electrónico válida (ej. usuario@dominio.com).",
   });
 
-/**
- * Helper para preprocesar valores de números en formularios de React
- */
 export function sanitizeNumberInput(val: unknown, fallback: number = 0): number {
   if (val === "" || val === null || val === undefined) return fallback;
   const num = Number(val);

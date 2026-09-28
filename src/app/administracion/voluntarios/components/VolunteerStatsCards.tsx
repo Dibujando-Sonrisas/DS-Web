@@ -1,5 +1,7 @@
 "use client";
 
+import { Stethoscope, Tent, UserCheck, Users } from "lucide-react";
+import StatCard from "@/app/administracion/components/StatCard";
 import styles from "@/styles/pages/admin.module.css";
 import type { VoluntarioRow } from "./VoluntariosTable";
 import { useMemo } from "react";
@@ -12,11 +14,11 @@ export default function VolunteerStatsCards({ voluntarios }: VolunteerStatsCards
   const stats = useMemo(() => {
     const total = voluntarios.length;
     const activos = voluntarios.filter(v => v.activo).length;
-    
+
     // Contar participaciones totales
     let participaciones = 0;
     const especialidadesSet = new Set();
-    
+
     voluntarios.forEach(v => {
       participaciones += (v.participaciones_voluntarios?.length || 0);
       if (v.especialidades) {
@@ -33,31 +35,16 @@ export default function VolunteerStatsCards({ voluntarios }: VolunteerStatsCards
   }, [voluntarios]);
 
   return (
-    <div className={styles.statsGrid}>
-      <div className={styles.statCard}>
-        <div className={styles.statHeader}>
-          <h3>Total Voluntarios</h3>
-        </div>
-        <p className={styles.statValue}>{stats.total}</p>
-      </div>
-      <div className={styles.statCard}>
-        <div className={styles.statHeader}>
-          <h3>Voluntarios Activos</h3>
-        </div>
-        <p className={styles.statValue} style={{ color: "var(--green-dark, #059669)" }}>{stats.activos}</p>
-      </div>
-      <div className={styles.statCard}>
-        <div className={styles.statHeader}>
-          <h3>Especialidades</h3>
-        </div>
-        <p className={styles.statValue}>{stats.especialidades}</p>
-      </div>
-      <div className={styles.statCard}>
-        <div className={styles.statHeader}>
-          <h3>Participaciones Totales</h3>
-        </div>
-        <p className={styles.statValue} style={{ color: "var(--primary)" }}>{stats.participaciones}</p>
-      </div>
+    <div className={`${styles.statGrid} tone-rotate`}>
+      <StatCard label="Total Voluntarios" value={stats.total} icon={<Users />} />
+      <StatCard
+        label="Voluntarios Activos"
+        value={stats.activos}
+        icon={<UserCheck />}
+        valueTone="ok"
+      />
+      <StatCard label="Especialidades" value={stats.especialidades} icon={<Stethoscope />} />
+      <StatCard label="Participaciones Totales" value={stats.participaciones} icon={<Tent />} />
     </div>
   );
 }

@@ -1,0 +1,135 @@
+/* =====================================================
+   VENTAS DE APOYO — admin-ventas.module.css
+   Solo el catálogo y el carrito. Paneles, tablas,
+   pestañas y modales vienen de admin.module.css.
+===================================================== */
+
+/* ── CATÁLOGO ── */
+.product {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  transition: border-color 0.2s ease;
+}
+
+.product:hover {
+  border-color: var(--primaryColor);
+}
+
+.productCode {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--gray);
+  font-variant-numeric: tabular-nums;
+}
+
+.productName {
+  margin: 0;
+  font-family: var(--fontBody);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.productPrice {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ok-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.productStock {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--primaryStrong);
+}
+
+.productStockOut {
+  color: var(--bad-ink);
+}
+
+.product button {
+  margin-top: auto;
+}
+
+/* ── CARRITO ── */
+.cartList {
+  display: flex;
+  flex-direction: column;
+  min-height: 12rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cartItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.4rem 1.2rem;
+  padding: 1.2rem 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 1.4rem;
+}
+
+.cartName {
+  font-weight: 700;
+  color: var(--dark);
+}
+
+.cartQty {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  grid-column: 1;
+  color: var(--gray);
+}
+
+.cartQty input {
+  width: 7.2rem;
+}
+
+.cartSubtotal {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cartItem :global(.btn-icon) {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+
+.cartEmpty {
+  margin: auto 0;
+  padding: 2.4rem 0;
+  font-size: 1.45rem;
+  text-align: center;
+}
+
+.cartTotal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 1.6rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dark);
+}
+
+.cartTotal strong {
+  font-size: 2.4rem;
+  color: var(--ok-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.cartForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}

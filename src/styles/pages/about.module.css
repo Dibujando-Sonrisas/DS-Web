@@ -2,50 +2,13 @@
    ABOUT US — about.module.css
    Estilos exclusivos para la página /sobre-nosotros
 
+   El hero vive en components/PageHero.
+
    Layout fluido: historia y misión/visión se reacomodan
    solas (auto-fit / flex-wrap) sin media query. El único
    breakpoint declarado es 768px, para las grillas de
    3 columnas (logros y equipo).
 ===================================================== */
-
-/* ── HERO ── */
-.hero {
-  background-image: url(/new-AboutUs-hero.png);
-  background-color: rgba(26, 35, 50, 0.55);
-  background-blend-mode: multiply;
-  background-size: cover;
-  background-position: center;
-  min-height: min(50rem, 80vh);
-  padding: clamp(6rem, 12vw, 12rem) 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.heroTitle {
-  color: var(--white);
-  font-size: clamp(3.6rem, 8vw, 6.5rem);
-  margin: 0 0 1rem 0;
-  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-}
-
-.heroTitle span:nth-child(1) {
-  color: var(--primaryColor);
-}
-.heroTitle span:nth-child(2) {
-  color: var(--secondaryColor);
-}
-.heroTitle span:nth-child(3) {
-  color: var(--tertiaryColor);
-}
-
-.heroHeading {
-  color: var(--white);
-  font-family: var(--fontBody), sans-serif;
-  font-size: clamp(2.2rem, 5vw, 4rem);
-  margin: 0;
-  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-}
 
 /* ── NUESTRA HISTORIA ── */
 .history {
@@ -63,7 +26,6 @@
 }
 
 .historyImage {
-  content: url("/new-AboutUs-hero.png");
   width: 100%;
   height: 100%;
   min-height: 28rem;
@@ -82,32 +44,6 @@
   gap: 1.5rem;
 }
 
-.historyIcon {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background-color: var(--white);
-  padding: 0.5rem 2rem;
-  width: fit-content;
-  max-width: 100%;
-  border-radius: var(--radius-lg);
-  font-size: 1.5rem;
-}
-
-.historyIcon svg {
-  flex-shrink: 0;
-}
-
-.historyIcon:nth-child(1) {
-  color: var(--primaryColor);
-}
-.historyIcon:nth-child(2) {
-  color: var(--secondaryColor);
-}
-.historyIcon:nth-child(3) {
-  color: var(--tertiaryColor);
-}
-
 /* ── MISIÓN Y VISIÓN ── */
 .missionAndVisionContainer {
   display: flex;
@@ -116,30 +52,19 @@
   margin-top: clamp(6rem, 10vw, 10rem);
 }
 
+/* borde y color vienen de .card-drawn + .tone-* (globals) */
 .missionAndVision {
   /* se apilan solas cuando ya no caben dos tarjetas por fila */
   flex: 1 1 46rem;
-  border: 3px dashed var(--secondaryColor);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2rem;
 }
 
-.missionAndVision:nth-child(2) {
-  border-color: var(--primaryColor);
-}
-
 .missionAndVision h3 {
-  color: var(--secondaryColor);
   font-size: clamp(2.2rem, 3vw, 2.8rem);
   margin-bottom: 1rem;
-}
-
-.missionAndVision:nth-child(2) h3 {
-  color: var(--primaryColor);
 }
 
 .missionAndVision p {
@@ -189,6 +114,10 @@
   min-width: 0;
 }
 
+.valuesItem strong {
+  color: var(--dark);
+}
+
 .valuesItem {
   font-size: 1.5rem;
   color: var(--gray);
@@ -198,7 +127,6 @@
   gap: 1rem;
   align-items: flex-start;
   line-height: 1.5;
-  background-color: var(--white);
   margin-top: 1rem;
   transition: transform 0.3s ease;
 }
@@ -254,50 +182,24 @@
   gap: 2.5rem;
 }
 
+/* borde, ícono y colores vienen de .card-drawn / .icon-circle / .tone-rotate */
 .achievementCard {
-  border-radius: var(--radius-lg);
-  border: 3px dashed var(--secondaryColor);
-  padding: 3rem clamp(1.8rem, 3vw, 2.5rem);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 1.8rem;
-  transition: transform 0.3s ease;
-}
-
-.iconWrap {
-  background: var(--secondaryColor);
-  color: var(--white);
-  width: 6rem;
-  height: 6rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.iconWrap svg {
-  width: 2.6rem;
-  height: 2.6rem;
 }
 
 .achievementText h3 {
   font-size: 1.9rem;
   margin-bottom: 0.6rem;
-  color: var(--secondaryColor);
+  color: var(--tone-text);
   text-wrap: balance;
 }
 
 .achievementText p {
   font-size: 1.4rem;
-}
-
-@media (hover: hover) {
-  .achievementCard:hover {
-    transform: translateY(-4px);
-  }
 }
 
 /* Tres columnas solo cuando cada tarjeta tiene ancho suficiente;
@@ -340,7 +242,7 @@
   border-radius: 50%;
   background-size: cover;
   background-position: center;
-  border: 5px solid var(--tertiaryColor);
+  border: 5px solid var(--tone);
   box-shadow: var(--shadow-sm);
 }
 
@@ -365,7 +267,7 @@
 
 .teamPerson p {
   font-size: 1.4rem;
-  color: var(--primaryColor);
+  color: var(--primaryDark);
   margin: 0;
 }
 

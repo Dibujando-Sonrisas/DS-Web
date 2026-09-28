@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import AdminHeader from "./AdminHeader";
 import SideBar from "./SideBar";
+import { ToastProvider } from "./AdminToast";
 import styles from "@/styles/pages/admin.module.css";
 
 interface AdminLayoutClientProps {
@@ -39,47 +40,35 @@ export default function AdminLayoutClient({
     });
   };
 
-  const handleToggleMobile = () => {
-    setIsMobileOpen((prev) => !prev);
-  };
-
-  const handleCloseMobile = () => {
-    setIsMobileOpen(false);
-  };
-
   return (
-    <div className={styles.adminLayoutWrapper}>
-      {/* HEADER SUPERIOR (100% Ancho) */}
-      <AdminHeader
-        displayName={displayName}
-        roleLabel={roleLabel}
-        avatarUrl={avatarUrl}
-        email={email}
-        isCollapsed={isCollapsed}
-        onToggleSidebar={handleToggleSidebar}
-        onToggleMobile={handleToggleMobile}
-      />
-
-      {/* CUERPO INFERIOR (Sidebar + Contenido Principal) */}
-      <div className={styles.adminLayoutBody}>
+    <ToastProvider>
+      <div className={styles.adminLayoutWrapper}>
+        {/* Barra lateral a todo lo alto; en móvil es un cajón */}
         <SideBar
           isCollapsed={isCollapsed}
           isMobileOpen={isMobileOpen}
-          onCloseMobile={handleCloseMobile}
+          onCloseMobile={() => setIsMobileOpen(false)}
           displayName={displayName}
           roleLabel={roleLabel}
           avatarUrl={avatarUrl}
           email={email}
         />
 
-        <main
-          className={`${styles.mainContent} ${
-            isCollapsed ? styles.mainContentCollapsed : ""
-          }`}
-        >
-          <div className={styles.contentArea}>{children}</div>
-        </main>
+        {/* Encabezado + contenido de cada módulo */}
+        <div className={styles.mainContent}>
+          <AdminHeader
+            displayName={displayName}
+            roleLabel={roleLabel}
+            avatarUrl={avatarUrl}
+            email={email}
+            isCollapsed={isCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+            onToggleMobile={() => setIsMobileOpen((prev) => !prev)}
+          />
+
+          <main className={styles.contentArea}>{children}</main>
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }

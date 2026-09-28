@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition } from "react";
+import { Search } from "lucide-react";
 import styles from "@/styles/pages/admin.module.css";
+import brig from "@/styles/pages/admin-brigadas.module.css";
 
 export type PerfilRow = {
   id: string;
@@ -80,35 +82,38 @@ export default function AsignacionesTable({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.6rem" }}>
-      {/* Filtros */}
-      <div
-        className={styles.tableContainer}
-        style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1.6rem" }}
-      >
-        <h3 style={{ fontSize: "1.6rem", fontWeight: "bold" }}>Asignación de Personal</h3>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "1.6rem",
-          }}
-        >
+    <section className={styles.stackSm}>
+      <h3 className={styles.subTitle}>Asignación de Personal</h3>
+
+      <div className={brig.bleed}>
+        {/* Filtros */}
+        <div className={styles.toolbar}>
           {/* Buscar */}
-          <div className={styles.formField}>
-            <span>Buscar personal por nombre o cargo</span>
-            <input
-              type="text"
-              placeholder="Buscar..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className={`${styles.filter} ${styles.filterWide}`}>
+            <label className={styles.filterLabel} htmlFor="asignaciones-buscar">
+              Buscar personal por nombre o cargo
+            </label>
+            <div className={styles.search}>
+              <Search aria-hidden="true" />
+              <input
+                id="asignaciones-buscar"
+                type="text"
+                className="form-input form-input-sm"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* Asignación */}
-          <div className={styles.formField}>
-            <span>Filtrar por Asignación</span>
+          <div className={styles.filter}>
+            <label className={styles.filterLabel} htmlFor="asignaciones-filtro">
+              Filtrar por Asignación
+            </label>
             <select
+              id="asignaciones-filtro"
+              className="form-input form-input-sm"
               value={assignmentFilter}
               onChange={(e) => setAssignmentFilter(e.target.value)}
             >
@@ -118,12 +123,10 @@ export default function AsignacionesTable({
             </select>
           </div>
         </div>
-      </div>
 
-      {/* Tabla */}
-      <div className={styles.tableContainer}>
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.adminTable}>
+        {/* Tabla */}
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
             <thead>
               <tr>
                 <th>Miembro</th>
@@ -145,53 +148,27 @@ export default function AsignacionesTable({
 
                   return (
                     <tr key={p.id}>
+                      <td className={styles.cellMain}>{p.nombre_completo || "Usuario Sin Nombre"}</td>
                       <td>
-                        <strong>
-                          {p.nombre_completo || "Usuario Sin Nombre"}
-                        </strong>
-                      </td>
-                      <td>
-                        <span style={{ display: "block", fontSize: "1.3rem", fontWeight: "bold" }}>
-                          {ROLE_LABELS[p.rol] || p.rol}
-                        </span>
-                        {p.cargo && (
-                          <span style={{ display: "block", fontSize: "1.2rem", color: "var(--gray)" }}>
-                            {p.cargo}
-                          </span>
-                        )}
+                        <span className={styles.cellMain}>{ROLE_LABELS[p.rol] || p.rol}</span>
+                        {p.cargo && <span className={styles.cellSub}>{p.cargo}</span>}
                       </td>
                       <td>
                         {p.especialidades ? (
-                          <span
-                            style={{
-                              background: "rgba(var(--primary-rgb), 0.1)",
-                              color: "var(--primary)",
-                              padding: "0.2rem 0.6rem",
-                              borderRadius: "4px",
-                              fontSize: "1.2rem",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            {p.especialidades.nombre}
-                          </span>
+                          <span className={`${styles.badge} ${styles.badgeInfo}`}>{p.especialidades.nombre}</span>
                         ) : (
-                          <span style={{ fontSize: "1.2rem", color: "var(--gray)" }}>—</span>
+                          <span className={styles.muted}>—</span>
                         )}
                       </td>
                       <td>
                         <select
+                          className={`form-input form-input-sm ${brig.areaSelect} ${
+                            currentArea !== "none" ? brig.areaSelectOn : ""
+                          }`}
+                          aria-label={`Área asignada a ${p.nombre_completo || "Usuario Sin Nombre"}`}
                           value={currentArea}
                           onChange={(e) => handleAssignChange(p.id, e.target.value)}
                           disabled={isPending || isReadOnly}
-                          style={{
-                            width: "100%",
-                            padding: "0.6rem",
-                            borderRadius: "6px",
-                            border: "1px solid var(--border-color)",
-                            fontSize: "1.3rem",
-                            background: currentArea !== "none" ? "rgba(16, 185, 129, 0.05)" : "inherit",
-                            borderColor: currentArea !== "none" ? "#10b981" : "var(--border-color)",
-                          }}
                         >
                           <option value="none">Sin asignar</option>
                           {Object.entries(AREAS_MAP).map(([val, label]) => (
@@ -209,6 +186,6 @@ export default function AsignacionesTable({
           </table>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

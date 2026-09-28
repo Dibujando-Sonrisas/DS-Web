@@ -74,11 +74,11 @@
 }
 
 .navRef:hover {
-  color: var(--primaryColor);
+  color: var(--primaryStrong);
 }
 
 .navRefActive {
-  color: var(--primaryColor);
+  color: var(--primaryStrong);
 }
 
 .navRefActive:before {
@@ -101,52 +101,7 @@
   align-items: center;
 }
 
-.headerButton {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  background-color: var(--primaryColor);
-  color: var(--white);
-  font-size: 1.5rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  padding: 0.7rem 2rem;
-  border: 2px solid var(--primaryColor);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  text-decoration: none;
-}
-
-.headerButton:hover {
-  background-color: var(--primaryDark);
-  border-color: var(--primaryDark);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.headerButtonOutline {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  background-color: transparent;
-  color: var(--primaryColor);
-  font-size: 1.5rem;
-  font-weight: 600;
-  border-radius: var(--radius-sm);
-  padding: 0.7rem 2rem;
-  border: 2px solid var(--primaryColor);
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  text-decoration: none;
-}
-
-.headerButtonOutline:hover {
-  background-color: var(--primaryColor);
-  color: var(--white);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
+/* los botones del header usan .btn-primary / .btn-outline-blue + .btn-sm (globals) */
 
 .mobileMenuToggle {
   display: none;

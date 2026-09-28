@@ -6,29 +6,17 @@ type RoleBadgeProps = {
   role: AppRole;
 };
 
+// un color por rol para distinguirlos de un vistazo (no son estados)
+const ROLE_CLASSES: Partial<Record<AppRole, string>> = {
+  admin: styles.badgeBrand,
+  coordinador: styles.badgeInfo,
+  atencion_pacientes: styles.badgeSuccess,
+  encargado_farmacia: styles.badgeWarning,
+};
+
 export default function RoleBadge({ role }: RoleBadgeProps) {
-  let badgeClass = styles.badgeSecondary;
-
-  switch (role) {
-    case "admin":
-      badgeClass = styles.badgeDanger;
-      break;
-    case "coordinador":
-      badgeClass = styles.badgeInfo;
-      break;
-    case "atencion_pacientes":
-      badgeClass = styles.badgePrimary;
-      break;
-    case "encargado_farmacia":
-      badgeClass = styles.badgeWarning;
-      break;
-    case "encargado_bodega":
-      badgeClass = styles.badgeSecondary;
-      break;
-  }
-
   return (
-    <span className={`${styles.badge} ${badgeClass}`}>
+    <span className={`${styles.badge} ${ROLE_CLASSES[role] ?? styles.badgeNeutral}`}>
       {ROLE_LABELS[role] || role}
     </span>
   );

@@ -1,6 +1,9 @@
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { requirePermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import Link from "next/link";
+import { ArrowLeft, TriangleAlert } from "lucide-react";
+import PageHeader from "@/app/administracion/components/PageHeader";
 import styles from "@/styles/pages/admin.module.css";
 import EspecialidadesTable from "../components/EspecialidadesTable";
 
@@ -15,25 +18,27 @@ export default async function EspecialidadesPage() {
 
   if (error) {
     return (
-      <div className={styles.pageIntro}>
-        <h2>Gestión de Especialidades</h2>
-        <div style={{ color: "red", marginTop: "1rem" }}>
+      <div className={styles.page}>
+        <PageHeader title="Gestión de Especialidades" />
+        <p className="notice notice-bad" role="alert">
+          <TriangleAlert aria-hidden="true" />
           Error cargando especialidades: {error.message}
-        </div>
+        </p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className={styles.pageIntro}>
-        <h2>Gestión de Especialidades</h2>
-        <p>
-          Administra el catálogo de especialidades que pueden ser asignadas a
-          los voluntarios de la organización. Las especialidades no se pueden
-          eliminar para preservar el historial, pero puedes desactivarlas.
-        </p>
-      </div>
+    <div className={styles.page}>
+      <PageHeader
+        title="Gestión de Especialidades"
+        description="Administra el catálogo de especialidades que pueden ser asignadas a los voluntarios de la organización. Las especialidades no se pueden eliminar para preservar el historial, pero puedes desactivarlas."
+      >
+        <Link href="/administracion/voluntarios" className="btn-ghost btn-sm">
+          <ArrowLeft aria-hidden="true" />
+          Volver a Voluntarios
+        </Link>
+      </PageHeader>
 
       <EspecialidadesTable initialSpecialties={(especialidades as any) || []} />
     </div>

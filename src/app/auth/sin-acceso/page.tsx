@@ -1,5 +1,3 @@
-import Header from "@/app/components/Header";
-import Footer from "@/app/components/Footer";
 import SinAccesoClient from "./SinAccesoClient";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
@@ -10,7 +8,7 @@ export default async function SinAccesoPage() {
   } = await supabase.auth.getUser();
 
   let userName = "";
-  let userEmail = user?.email || "";
+  const userEmail = user?.email || "";
 
   if (user) {
     const { data: profile } = await supabase
@@ -22,11 +20,5 @@ export default async function SinAccesoPage() {
     userName = profile?.nombre_completo || user.user_metadata?.full_name || "";
   }
 
-  return (
-    <>
-      <Header />
-      <SinAccesoClient userName={userName} userEmail={userEmail} />
-      <Footer />
-    </>
-  );
+  return <SinAccesoClient userName={userName} userEmail={userEmail} />;
 }

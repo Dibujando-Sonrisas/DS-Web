@@ -3,8 +3,19 @@ import Image from "next/image";
 import Link from "next/link";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import PageHero from "../components/PageHero";
 import { getBrigadas } from "../../lib/db/brigadas";
 import styles from "../../styles/pages/our-work.module.css";
+import {
+  BriefcaseMedical,
+  HeartPulse,
+  MapPin,
+  Package,
+  Quote,
+  ShieldPlus,
+  Smile,
+  Users,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Nuestro Trabajo | Dibujando Sonrisas",
@@ -20,98 +31,25 @@ const services = [
     id: "odontologia",
     title: "Atención Odontológica",
     desc: "Extracciones, limpiezas dentales y tratamientos para restaurar la salud bucal de nuestros pacientes.",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path d="M12 5.5c-1.032-.956-2.418-1.5-4-1.5c-3.314 0-6 2.686-6 6c0 4 2 7 4 9h4" />
-        <path d="M12 5.5c1.032-.956 2.418-1.5 4-1.5c3.314 0 6 2.686 6 6c0 4-2 7-4 9h-4" />
-        <path d="M9 11c0 1 .667 2 3 2s3-1 3-2" />
-      </svg>
-    ),
+    icon: <Smile />,
   },
   {
     id: "medicina",
     title: "Medicina General",
     desc: "Consultas generales, chequeos y tratamientos para enfermedades comunes en todas las edades.",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path d="M19 8h-14a1 1 0 0 0 -1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1 -1v-8a1 1 0 0 0 -1 -1z" />
-        <path d="M12 8v-3a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v3" />
-        <line x1="9" y1="13" x2="15" y2="13" />
-        <line x1="12" y1="10" x2="12" y2="16" />
-      </svg>
-    ),
+    icon: <BriefcaseMedical />,
   },
   {
     id: "prevencion",
     title: "Prevención y Educación",
     desc: "Educamos a las comunidades en higiene, nutrición y prevención de enfermedades para una salud duradera.",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path d="M12 3a9 9 0 1 0 9 9" />
-        <path d="M15 4.5l-3 3l-3 -3" />
-        <path d="M21 3l-5 5" />
-        <path d="M16 3h5v5" />
-      </svg>
-    ),
+    icon: <ShieldPlus />,
   },
   {
     id: "donaciones",
     title: "Donación de Insumos",
     desc: "Entregamos medicamentos e insumos médicos a hospitales públicos y asilos de ancianos.",
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.566" />
-        <path d="M12 6l-2 4l4 2l-2 4" />
-      </svg>
-    ),
+    icon: <Package />,
   },
 ];
 
@@ -148,70 +86,83 @@ const stories = [
 export default async function NuestroTrabajo() {
   const { data: brigadas } = await getBrigadas();
 
+  const stats = [
+    { label: "Pacientes Atendidos", value: "2,000+", icon: <HeartPulse /> },
+    { label: "Voluntarios Participantes", value: "200+", icon: <Users /> },
+    {
+      label: "Comunidades Servidas",
+      value: `${brigadas?.length ?? 0}+`,
+      icon: <MapPin />,
+    },
+  ];
+
   return (
-    <div className={styles.pageWrapper}>
+    <>
       <Header />
 
-      {/* ── HERO ── */}
-      <div className={styles.hero}>
-        <div className={styles.inner}>
-          <h1>Transformando Vidas, Una Sonrisa a la Vez</h1>
-          <p className={styles.heroSub}>
-            Descubre el impacto que nuestras brigadas médico-odontológicas
-            tienen en comunidades que lo necesitan
-          </p>
-          <div className={styles.heroButtons}>
-            <Link href="/voluntariado" className={styles.btnSolid}>
-              Ser Voluntario
-            </Link>
-            <Link href="/donar" className={styles.btnOutline}>
-              Donar Ahora
-            </Link>
-          </div>
-        </div>
-      </div>
+      <PageHero
+        image="/new-OurWork-hero.png"
+        title={
+          <>
+            Transformando Vidas, <em>Una Sonrisa</em> a la Vez
+          </>
+        }
+        subtitle="Descubre el impacto que nuestras brigadas médico-odontológicas tienen en las comunidades que más lo necesitan."
+      >
+        <Link href="/voluntariado" className="btn-primary">
+          Ser Voluntario
+        </Link>
+        <Link href="/donar" className="btn-outline">
+          Donar Ahora
+        </Link>
+      </PageHero>
 
       <main>
         {/* ── NÚMEROS ── */}
         <section
-          className={styles.numbersSection}
+          className={`${styles.numbersSection} section-y`}
           aria-labelledby="numeros-heading"
         >
-          <div className={styles.inner}>
+          <div className="container">
             <h2 id="numeros-heading">Nuestro Impacto en Números</h2>
-            <div className={styles.numbersGrid}>
-              <div className={styles.statCard}>
-                <h4>Pacientes Atendidos</h4>
-                <p>2,000+</p>
-              </div>
-              <div className={styles.statCard}>
-                <h4>Voluntarios Participantes</h4>
-                <p>200+</p>
-              </div>
-              <div className={styles.statCard}>
-                <h4>Comunidades Servidas</h4>
-                <p>{brigadas?.length ?? 0}+</p>
-              </div>
-            </div>
+            <ul className={`${styles.numbersGrid} tone-rotate`}>
+              {stats.map((stat) => (
+                <li
+                  key={stat.label}
+                  className={`${styles.statCard} card-drawn lift`}
+                >
+                  <div className="icon-circle" aria-hidden="true">
+                    {stat.icon}
+                  </div>
+                  <p className={styles.statValue}>{stat.value}</p>
+                  <p className={styles.statLabel}>{stat.label}</p>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
         {/* ── SERVICIOS ── */}
         <section
-          className={styles.servicesSection}
+          className={`${styles.servicesSection} section-y`}
           aria-labelledby="servicios-heading"
         >
-          <div className={styles.inner}>
+          <div className="container">
             <h2 id="servicios-heading">Servicios Médicos que Brindamos</h2>
-            <div className={styles.servicesGrid}>
+            <div className={`${styles.servicesGrid} tone-rotate`}>
               {services.map((s) => (
-                <div key={s.id} className={styles.serviceCard}>
-                  <div className={styles.serviceIcon}>{s.icon}</div>
-                  <div className={styles.serviceText}>
-                    <h4>{s.title}</h4>
+                <article
+                  key={s.id}
+                  className={`${styles.serviceCard} card-soft lift`}
+                >
+                  <div className="icon-circle icon-circle-sm" aria-hidden="true">
+                    {s.icon}
+                  </div>
+                  <div>
+                    <h3>{s.title}</h3>
                     <p>{s.desc}</p>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </div>
@@ -219,26 +170,22 @@ export default async function NuestroTrabajo() {
 
         {/* ── GALERÍA ── */}
         <section
-          className={styles.actionSection}
+          className={`${styles.actionSection} section-y`}
           aria-labelledby="galeria-heading"
         >
-          <div className={styles.inner}>
+          <div className="container">
             <h2 id="galeria-heading">Nuestras Brigadas en Acción</h2>
             <div className={styles.actionGrid}>
               {actionPhotos.map((photo) => (
-                <div key={photo.src} className={styles.actionCard}>
+                <figure key={photo.src} className={`${styles.actionCard} card-soft`}>
                   <Image
                     src={photo.src}
                     alt={photo.alt}
                     width={600}
                     height={450}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
+                    sizes="(min-width: 768px) 33vw, 50vw"
                   />
-                </div>
+                </figure>
               ))}
             </div>
           </div>
@@ -246,35 +193,30 @@ export default async function NuestroTrabajo() {
 
         {/* ── HISTORIAS ── */}
         <section
-          className={styles.storiesSection}
+          className={`${styles.storiesSection} section-y`}
           aria-labelledby="historias-heading"
         >
-          <div className={styles.inner}>
+          <div className="container">
             <h2 id="historias-heading">Historias de Esperanza</h2>
-            <div className={styles.storiesGrid}>
+            <div className={`${styles.storiesGrid} tone-rotate`}>
               {stories.map((s) => (
-                <article key={s.id} className={styles.storyCard}>
-                  <p>{s.quote}</p>
-                  <div className={styles.storyRow}>
-                    <div className={styles.storyImg}>
-                      <Image
-                        src={s.img}
-                        alt={s.name}
-                        width={50}
-                        height={50}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    </div>
-                    <div className={styles.storyText}>
-                      <h4>{s.name}</h4>
-                      <p>{s.location}</p>
-                    </div>
-                  </div>
-                </article>
+                <figure key={s.id} className={`${styles.storyCard} card-drawn`}>
+                  <Quote className={styles.quoteIcon} aria-hidden="true" />
+                  <blockquote>{s.quote}</blockquote>
+                  <figcaption className={styles.storyRow}>
+                    <Image
+                      className={styles.storyImg}
+                      src={s.img}
+                      alt={s.name}
+                      width={112}
+                      height={112}
+                    />
+                    <span>
+                      <strong>{s.name}</strong>
+                      <span>{s.location}</span>
+                    </span>
+                  </figcaption>
+                </figure>
               ))}
             </div>
           </div>
@@ -282,6 +224,6 @@ export default async function NuestroTrabajo() {
       </main>
 
       <Footer />
-    </div>
+    </>
   );
 }

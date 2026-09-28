@@ -15,7 +15,25 @@ import {
   deleteProductoAction as deleteProducto,
 } from "./actions";
 import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
+import {
+  Banknote,
+  Boxes,
+  Check,
+  History,
+  LayoutDashboard,
+  LoaderCircle,
+  Plus,
+  Receipt,
+  ShoppingCart,
+  SlidersHorizontal,
+  Trash2,
+  X,
+} from "lucide-react";
+import AdminModal from "@/app/administracion/components/AdminModal";
+import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
+import StatCard from "@/app/administracion/components/StatCard";
 import styles from "@/styles/pages/admin.module.css";
+import ventas from "@/styles/pages/admin-ventas.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 
@@ -170,446 +188,672 @@ export function VentasClient({ userId }: { userId: string }) {
     }
   };
 
+  const TABS = [
+    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard aria-hidden="true" /> },
+    { id: "nueva_venta", label: "Nueva Venta", icon: <ShoppingCart aria-hidden="true" /> },
+    { id: "inventario", label: "Inventario", icon: <Boxes aria-hidden="true" /> },
+    { id: "historial", label: "Historial", icon: <History aria-hidden="true" /> },
+  ] as const;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
-      
+    <div className={styles.stack}>
       {/* Menu Pestañas */}
-      <div style={{ display: "flex", gap: "1rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem", overflowX: "auto" }}>
-        {["dashboard", "nueva_venta", "inventario", "historial"].map(tab => (
+      <div className={styles.tabs} role="tablist" aria-label="Secciones de ventas">
+        {TABS.map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab as any)}
-            style={{
-              padding: "0.8rem 1.6rem", borderRadius: "var(--radius-sm)", border: "none", cursor: "pointer", fontWeight: "bold",
-              background: activeTab === tab ? "var(--primaryColor)" : "transparent",
-              color: activeTab === tab ? "white" : "var(--gray)",
-              textTransform: "capitalize"
-            }}
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            className={styles.tab}
+            onClick={() => setActiveTab(tab.id)}
           >
-            {tab.replace("_", " ")}
+            {tab.icon}
+            {tab.label}
+            {tab.id === "nueva_venta" && cart.length > 0 && (
+              <span className={styles.tabCount}>{cart.length}</span>
+            )}
           </button>
         ))}
       </div>
 
-      {isLoading ? <p>Cargando datos...</p> : (
+      {isLoading ? (
+        <div className={styles.statGrid}>
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+        </div>
+      ) : (
         <>
           {/* TAB 1: DASHBOARD */}
           {activeTab === "dashboard" && (
-            <div>
-              <div className={styles.statsGrid} style={{ marginBottom: "2.4rem" }}>
-                <div className={styles.statCard}>
-                  <div className={styles.statHeader}><h3>Ventas Realizadas</h3></div>
-                  <p className={styles.statValue}>{dashboard?.ventas || 0}</p>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statHeader}><h3>Ingresos Totales</h3></div>
-                  <p className={styles.statValue} style={{ color: "var(--success)" }}>L. {Number(dashboard?.ingresos || 0).toFixed(2)}</p>
-                </div>
-                <div className={styles.statCard}>
-                  <div className={styles.statHeader}><h3>Promedio por Venta</h3></div>
-                  <p className={styles.statValue}>L. {Number(dashboard?.promedio_venta || 0).toFixed(2)}</p>
-                </div>
+            <div className={styles.stack}>
+              <div className={`${styles.statGrid} tone-rotate`}>
+                <StatCard
+                  label="Ventas Realizadas"
+                  value={dashboard?.ventas || 0}
+                  icon={<ShoppingCart />}
+                />
+                <StatCard
+                  label="Ingresos Totales"
+                  value={`L. ${Number(dashboard?.ingresos || 0).toFixed(2)}`}
+                  icon={<Banknote />}
+                  valueTone="ok"
+                />
+                <StatCard
+                  label="Promedio por Venta"
+                  value={`L. ${Number(dashboard?.promedio_venta || 0).toFixed(2)}`}
+                  icon={<Receipt />}
+                />
               </div>
 
-              <div className={styles.tableContainer}>
-                <div className={styles.tableHeader}>
-                  <h3> Productos con Bajo Stock (5 o menos)</h3>
+              <section className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2 className={styles.panelTitle}>Productos con Bajo Stock (5 o menos)</h2>
                 </div>
-                <table className={styles.adminTable}>
-                  <thead>
-                    <tr>
-                      <th>Código</th>
-                      <th>Producto</th>
-                      <th>Stock Actual</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {bajoStock.length === 0 ? <tr><td colSpan={3} style={{textAlign: "center"}}>Inventario saludable.</td></tr> :
-                     bajoStock.map(p => (
-                       <tr key={p.id}>
-                         <td>{p.codigo}</td>
-                         <td style={{fontWeight: "bold"}}>{p.nombre}</td>
-                         <td style={{fontWeight: "bold", color: p.stock === 0 ? "var(--danger)" : "var(--warning)"}}>{p.stock}</td>
-                       </tr>
-                     ))
-                    }
-                  </tbody>
-                </table>
-              </div>
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Código</th>
+                        <th>Producto</th>
+                        <th className={styles.num}>Stock Actual</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bajoStock.length === 0 ? (
+                        <tr>
+                          <td colSpan={3} className={styles.emptyCell}>
+                            Inventario saludable.
+                          </td>
+                        </tr>
+                      ) : (
+                        bajoStock.map((p) => (
+                          <tr key={p.id}>
+                            <td className={styles.cellCode}>{p.codigo}</td>
+                            <td className={styles.cellMain}>{p.nombre}</td>
+                            <td className={styles.num}>
+                              <span
+                                className={`${styles.badge} ${
+                                  p.stock === 0 ? styles.badgeDanger : styles.badgeWarning
+                                }`}
+                              >
+                                {p.stock}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
           )}
 
           {/* TAB 2: NUEVA VENTA */}
           {activeTab === "nueva_venta" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "2.4rem", alignItems: "start" }}>
-              
+            <div className={styles.layoutAside}>
               {/* Catalogo */}
-              <div className={styles.tableContainer}>
-                <div className={styles.tableHeader}>
-                  <h3>Catálogo de Productos</h3>
+              <section className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2 className={styles.panelTitle}>Catálogo de Productos</h2>
                 </div>
-                <div style={{ padding: "1.6rem", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1.6rem" }}>
-                  {productos.filter(p => p.activo).map(p => (
-                    <div key={p.id} style={{ 
-                      border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", padding: "1.6rem",
-                      display: "flex", flexDirection: "column", gap: "0.8rem", background: "var(--bg-secondary)"
-                    }}>
-                      <div style={{ fontSize: "1.2rem", color: "var(--gray)" }}>{p.codigo}</div>
-                      <h4 style={{ margin: 0, fontSize: "1.6rem" }}>{p.nombre}</h4>
-                      <div style={{ fontSize: "1.8rem", fontWeight: "bold", color: "var(--success)" }}>L. {p.precio}</div>
-                      <div style={{ fontSize: "1.2rem", color: p.stock > 0 ? "var(--primaryColor)" : "var(--danger)" }}>
-                        Stock: {p.stock}
-                      </div>
-                      <button 
-                        className={styles.btnPrimary} 
-                        style={{ marginTop: "auto" }} 
-                        onClick={() => addToCart(p.id)}
-                        disabled={p.stock === 0}
-                      >
-                        {p.stock === 0 ? "Agotado" : "Añadir"}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Carrito */}
-              <form className={styles.adminFormSingleColumn} style={{ background: "var(--white)", padding: "2.4rem", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-sm)", position: "sticky", top: "2.4rem" }} onSubmit={confirmarVenta}>
-                <h3 style={{ marginBottom: "2rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem", fontSize: "1.8rem", fontWeight: "700" }}>Resumen de Venta</h3>
-                
-                <div style={{ minHeight: "150px", marginBottom: "2rem" }}>
-                  {cart.length === 0 ? <p style={{ color: "var(--gray)", textAlign: "center" }}>Carrito vacío</p> : 
-                    cart.map((item, idx) => (
-                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", fontSize: "1.4rem" }}>
-                        <div style={{ flex: 1 }}>
-                          <strong>{item.nombre}</strong>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", marginTop: "0.4rem" }}>
-                            <input 
-                              type="number" min="1" max={item.maxStock} value={item.cantidad} 
-                              onChange={(e) => updateCartQty(item.producto_id, Number(e.target.value))}
-                              style={{ width: "60px", padding: "0.2rem" }}
-                            />
-                            <span>x L. {item.precio_unitario}</span>
-                          </div>
-                        </div>
-                        <div style={{ fontWeight: "bold" }}>L. {(item.cantidad * item.precio_unitario).toFixed(2)}</div>
-                        <button type="button" onClick={() => removeFromCart(item.producto_id)} style={{ background: "none", border: "none", color: "var(--danger)", cursor: "pointer", marginLeft: "1rem", display: "inline-flex", alignItems: "center" }} aria-label="Remover del carrito">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <div className={styles.panelBody}>
+                  <div className={styles.gridAuto}>
+                    {productos.filter((p) => p.activo).map((p) => (
+                      <div key={p.id} className={ventas.product}>
+                        <span className={ventas.productCode}>{p.codigo}</span>
+                        <h3 className={ventas.productName}>{p.nombre}</h3>
+                        <span className={ventas.productPrice}>L. {p.precio}</span>
+                        <span
+                          className={`${ventas.productStock} ${
+                            p.stock > 0 ? "" : ventas.productStockOut
+                          }`}
+                        >
+                          Stock: {p.stock}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn-primary btn-xs"
+                          onClick={() => addToCart(p.id)}
+                          disabled={p.stock === 0}
+                        >
+                          <Plus aria-hidden="true" />
+                          {p.stock === 0 ? "Agotado" : "Añadir"}
                         </button>
                       </div>
-                    ))
-                  }
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Carrito */}
+              <form className={`${styles.panel} ${styles.sticky}`} onSubmit={confirmarVenta}>
+                <div className={styles.panelHeader}>
+                  <h2 className={styles.panelTitle}>
+                    Resumen de Venta
+                    {cart.length > 0 && <span className={styles.count}>{cart.length}</span>}
+                  </h2>
                 </div>
 
-                <div style={{ borderTop: "2px solid var(--border-color)", paddingTop: "1.6rem", marginBottom: "2rem", display: "flex", justifyContent: "space-between", fontSize: "2rem", fontWeight: "bold" }}>
-                  <span>TOTAL:</span>
-                  <span style={{ color: "var(--success)" }}>L. {calcularTotalCarrito().toFixed(2)}</span>
-                </div>
-
-                <label className={styles.formField} style={{ marginBottom: "1.6rem" }}>
-                  <span className={styles.fieldLabel}>Asociar a Brigada <span className={styles.optionalTag}>(Opcional)</span></span>
-                  <select value={ventaBrigadaId} onChange={e => setVentaBrigadaId(e.target.value)}>
-                    <option value="">-- Ninguna --</option>
-                    {brigadas.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
-                  </select>
-                </label>
-
-                <label className={styles.formField} style={{ marginBottom: "2rem" }}>
-                  <span className={styles.fieldLabel}>Observaciones <span className={styles.optionalTag}>(Opcional)</span></span>
-                  <textarea rows={2} value={ventaObservaciones} onChange={e => setVentaObservaciones(e.target.value)} placeholder="Ej. Cliente pagó exacto..." />
-                </label>
-
-                {can(PERMISSIONS.VENTAS_CREATE) && (
-                  <button
-                    type="submit"
-                    className={styles.btnPrimary}
-                    style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.8rem" }}
-                    disabled={cart.length === 0 || isSubmittingVenta}
-                  >
-                    {isSubmittingVenta && (
-                      <svg style={{ width: "1.6rem", height: "1.6rem", animation: "spin 1s linear infinite" }} viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25" />
-                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" opacity="0.75" />
-                      </svg>
+                <div className={styles.panelBody}>
+                  <ul className={ventas.cartList}>
+                    {cart.length === 0 ? (
+                      <li className={`${ventas.cartEmpty} ${styles.muted}`}>Carrito vacío</li>
+                    ) : (
+                      cart.map((item, idx) => (
+                        <li key={idx} className={ventas.cartItem}>
+                          <span className={ventas.cartName}>{item.nombre}</span>
+                          <label className={ventas.cartQty}>
+                            <span className="sr-only">Cantidad de {item.nombre}</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max={item.maxStock}
+                              value={item.cantidad}
+                              onChange={(e) =>
+                                updateCartQty(item.producto_id, Number(e.target.value))
+                              }
+                              className="form-input form-input-sm"
+                            />
+                            <span>x L. {item.precio_unitario}</span>
+                          </label>
+                          <span className={ventas.cartSubtotal}>
+                            L. {(item.cantidad * item.precio_unitario).toFixed(2)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item.producto_id)}
+                            className="btn-icon btn-icon-danger"
+                            aria-label={`Remover ${item.nombre} del carrito`}
+                          >
+                            <X aria-hidden="true" />
+                          </button>
+                        </li>
+                      ))
                     )}
-                    <span>{isSubmittingVenta ? "Procesando Venta..." : "Confirmar Venta"}</span>
-                  </button>
-                )}
-              </form>
+                  </ul>
 
+                  <div className={ventas.cartTotal}>
+                    <span>TOTAL:</span>
+                    <strong>L. {calcularTotalCarrito().toFixed(2)}</strong>
+                  </div>
+
+                  <div className={ventas.cartForm}>
+                    <label className="form-field">
+                      <span className="form-label">
+                        Asociar a Brigada <span className="form-optional">(Opcional)</span>
+                      </span>
+                      <select
+                        className="form-input"
+                        value={ventaBrigadaId}
+                        onChange={(e) => setVentaBrigadaId(e.target.value)}
+                      >
+                        <option value="">-- Ninguna --</option>
+                        {brigadas.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="form-field">
+                      <span className="form-label">
+                        Observaciones <span className="form-optional">(Opcional)</span>
+                      </span>
+                      <textarea
+                        className="form-input"
+                        rows={2}
+                        value={ventaObservaciones}
+                        onChange={(e) => setVentaObservaciones(e.target.value)}
+                        placeholder="Ej. Cliente pagó exacto..."
+                      />
+                    </label>
+
+                    {can(PERMISSIONS.VENTAS_CREATE) && (
+                      <button
+                        type="submit"
+                        className="btn-primary btn-block"
+                        disabled={cart.length === 0 || isSubmittingVenta}
+                      >
+                        {isSubmittingVenta ? (
+                          <LoaderCircle className="spin" aria-hidden="true" />
+                        ) : (
+                          <Check aria-hidden="true" />
+                        )}
+                        {isSubmittingVenta ? "Procesando Venta..." : "Confirmar Venta"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </form>
             </div>
           )}
 
           {/* TAB 3: INVENTARIO (Categorías y Productos) */}
           {activeTab === "inventario" && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "2.4rem" }}>
-              <div className={styles.tableContainer}>
-                <div className={styles.tableHeader}>
-                  <h3>Categorías</h3>
+            <div className={styles.stack}>
+              <section className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2 className={styles.panelTitle}>
+                    Categorías <span className={styles.count}>{categorias.length}</span>
+                  </h2>
                   {can(PERMISSIONS.VENTAS_CREATE) && (
-                    <button className={styles.btnSecondary} onClick={() => { setCatForm({codigo: "", nombre: "", descripcion: ""}); setIsCatModalOpen(true); }}>+ Nueva Categoría</button>
+                    <button
+                      type="button"
+                      className="btn-ghost btn-sm"
+                      onClick={() => {
+                        setCatForm({ codigo: "", nombre: "", descripcion: "" });
+                        setIsCatModalOpen(true);
+                      }}
+                    >
+                      <Plus aria-hidden="true" />
+                      Nueva Categoría
+                    </button>
                   )}
                 </div>
-                <table className={styles.adminTable}>
-                  <thead><tr><th>Código</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr></thead>
-                  <tbody>
-                    {categorias.map(c => (
-                      <tr key={c.id}>
-                        <td>{c.codigo}</td>
-                        <td style={{fontWeight: "bold"}}>{c.nombre}</td>
-                        <td>{c.descripcion}</td>
-                        <td>
-                          {can(PERMISSIONS.VENTAS_DELETE) && (
-                            <button 
-                              className={styles.btnDanger} 
-                              style={{ padding: "0.4rem 1rem", fontSize: "1.3rem" }}
-                              onClick={() => setDeleteCatTarget(c)}
-                            >
-                              Eliminar
-                            </button>
-                          )}
-                        </td>
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th className={styles.num}>Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {categorias.map((c) => (
+                        <tr key={c.id}>
+                          <td className={styles.cellCode}>{c.codigo}</td>
+                          <td className={styles.cellMain}>{c.nombre}</td>
+                          <td>{c.descripcion}</td>
+                          <td>
+                            <div className={styles.rowActions}>
+                              {can(PERMISSIONS.VENTAS_DELETE) && (
+                                <button
+                                  type="button"
+                                  className="btn-icon btn-icon-danger"
+                                  onClick={() => setDeleteCatTarget(c)}
+                                  aria-label={`Eliminar categoría ${c.nombre}`}
+                                  title="Eliminar"
+                                >
+                                  <Trash2 aria-hidden="true" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
 
-              <div className={styles.tableContainer}>
-                <div className={styles.tableHeader}>
-                  <h3>Productos</h3>
+              <section className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2 className={styles.panelTitle}>
+                    Productos <span className={styles.count}>{productos.length}</span>
+                  </h2>
                   {can(PERMISSIONS.VENTAS_CREATE) && (
-                    <button className={styles.btnPrimary} onClick={() => { setProdForm({categoria_id: "", codigo: "", nombre: "", descripcion: "", precio: 0, stock: 0}); setIsProdModalOpen(true); }}>+ Nuevo Producto</button>
+                    <button
+                      type="button"
+                      className="btn-primary btn-sm"
+                      onClick={() => {
+                        setProdForm({ categoria_id: "", codigo: "", nombre: "", descripcion: "", precio: 0, stock: 0 });
+                        setIsProdModalOpen(true);
+                      }}
+                    >
+                      <Plus aria-hidden="true" />
+                      Nuevo Producto
+                    </button>
                   )}
                 </div>
-                <table className={styles.adminTable}>
-                  <thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr></thead>
-                  <tbody>
-                    {productos.map(p => (
-                      <tr key={p.id}>
-                        <td>{p.codigo}</td>
-                        <td style={{fontWeight: "bold"}}>{p.nombre}</td>
-                        <td>{p.categorias_productos?.nombre}</td>
-                        <td>L. {p.precio}</td>
-                        <td style={{fontWeight: "bold", color: p.stock === 0 ? "var(--danger)" : "inherit"}}>{p.stock}</td>
-                        <td style={{ display: "flex", gap: "0.8rem", alignItems: "center" }}>
-                          <button className={styles.btnSecondary} onClick={() => { setStockForm({id: p.id, nombre: p.nombre, stock: p.stock}); setIsStockModalOpen(true); }}>Ajustar Stock</button>
-                          <button 
-                            className={styles.btnDanger} 
-                            style={{ padding: "0.4rem 1rem", fontSize: "1.3rem" }}
-                            onClick={() => setDeleteProdTarget(p)}
-                          >
-                            Eliminar
-                          </button>
-                        </td>
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Código</th>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th className={styles.num}>Precio</th>
+                        <th className={styles.num}>Stock</th>
+                        <th className={styles.num}>Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {productos.map((p) => (
+                        <tr key={p.id}>
+                          <td className={styles.cellCode}>{p.codigo}</td>
+                          <td className={styles.cellMain}>{p.nombre}</td>
+                          <td>{p.categorias_productos?.nombre}</td>
+                          <td className={styles.num}>L. {p.precio}</td>
+                          <td className={styles.num}>
+                            {p.stock === 0 ? (
+                              <span className={`${styles.badge} ${styles.badgeDanger}`}>0</span>
+                            ) : (
+                              p.stock
+                            )}
+                          </td>
+                          <td>
+                            <div className={styles.rowActions}>
+                              <button
+                                type="button"
+                                className="btn-ghost btn-xs"
+                                onClick={() => {
+                                  setStockForm({ id: p.id, nombre: p.nombre, stock: p.stock });
+                                  setIsStockModalOpen(true);
+                                }}
+                              >
+                                <SlidersHorizontal aria-hidden="true" />
+                                Ajustar Stock
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-icon btn-icon-danger"
+                                onClick={() => setDeleteProdTarget(p)}
+                                aria-label={`Eliminar producto ${p.nombre}`}
+                                title="Eliminar"
+                              >
+                                <Trash2 aria-hidden="true" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
           )}
 
           {/* TAB 4: HISTORIAL DE VENTAS */}
           {activeTab === "historial" && (
-            <div className={styles.tableContainer}>
-              <div className={styles.tableHeader}><h3>Historial de Ventas</h3></div>
-              <table className={styles.adminTable}>
-                <thead><tr><th>Fecha</th><th>Código</th><th>Vendedor</th><th>Total</th></tr></thead>
-                <tbody>
-                  {historial.length === 0 ? <tr><td colSpan={4} style={{textAlign: "center"}}>No hay ventas registradas.</td></tr> : 
-                    historial.map(v => (
-                      <tr key={v.id}>
-                        <td>{new Date(v.fecha).toLocaleString()}</td>
-                        <td style={{fontWeight: "bold"}}>{v.codigo}</td>
-                        <td>{v.vendedor}</td>
-                        <td style={{fontWeight: "bold", fontSize: "1.4rem", color: "var(--success)"}}>L. {Number(v.total).toFixed(2)}</td>
+            <section className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <h2 className={styles.panelTitle}>
+                  Historial de Ventas <span className={styles.count}>{historial.length}</span>
+                </h2>
+              </div>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Código</th>
+                      <th>Vendedor</th>
+                      <th className={styles.num}>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historial.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className={styles.emptyCell}>
+                          No hay ventas registradas.
+                        </td>
                       </tr>
-                    ))
-                  }
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      historial.map((v) => (
+                        <tr key={v.id}>
+                          <td className={styles.nowrap}>{new Date(v.fecha).toLocaleString()}</td>
+                          <td className={styles.cellCode}>{v.codigo}</td>
+                          <td>{v.vendedor}</td>
+                          <td className={`${styles.num} ${styles.cellMain}`}>
+                            L. {Number(v.total).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           )}
         </>
       )}
 
       {/* MODAL CATEGORIA */}
       {isCatModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsCatModalOpen(false)}>
-          <div className={`${styles.modal} ${styles.modalSm}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700" }}>Nueva Categoría de Producto</h3>
-              <button className={styles.modalClose} onClick={() => setIsCatModalOpen(false)} aria-label="Cerrar modal">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <AdminModal title="Nueva Categoría de Producto" size="sm" onClose={() => setIsCatModalOpen(false)}>
+          <form className={styles.modalForm} onSubmit={submitCategoria}>
+            <div className={styles.modalBody}>
+              <div className={styles.formSection}>
+                <h3 className={styles.formSectionTitle}>1. Clasificación de Recaudación</h3>
+                <label className="form-field">
+                  <span className="form-label">
+                    Código de Categoría <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    className="form-input"
+                    value={catForm.codigo}
+                    onChange={(e) => setCatForm({ ...catForm, codigo: e.target.value.toUpperCase() })}
+                    placeholder="Ej. CAM"
+                    required
+                    maxLength={15}
+                  />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Nombre de Categoría <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    className="form-input"
+                    value={catForm.nombre}
+                    onChange={(e) => setCatForm({ ...catForm, nombre: e.target.value })}
+                    placeholder="Ej. Camisetas"
+                    required
+                  />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Descripción <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <textarea
+                    className="form-input"
+                    rows={2}
+                    value={catForm.descripcion}
+                    onChange={(e) => setCatForm({ ...catForm, descripcion: e.target.value })}
+                  />
+                </label>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsCatModalOpen(false)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn-primary btn-sm">
+                Guardar Categoría
               </button>
             </div>
-            <form className={styles.adminFormSingleColumn} onSubmit={submitCategoria} style={{ padding: "2.4rem" }}>
-              <div className={styles.formSectionTitle}>1. Clasificación de Recaudación</div>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>Código de Categoría <strong className={styles.requiredStar}>* (Requerido)</strong></span>
-                <input value={catForm.codigo} onChange={e => setCatForm({...catForm, codigo: e.target.value.toUpperCase()})} placeholder="Ej. CAM" required maxLength={15} />
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>Nombre de Categoría <strong className={styles.requiredStar}>* (Requerido)</strong></span>
-                <input value={catForm.nombre} onChange={e => setCatForm({...catForm, nombre: e.target.value})} placeholder="Ej. Camisetas" required />
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>Descripción <span className={styles.optionalTag}>(Opcional)</span></span>
-                <textarea rows={2} value={catForm.descripcion} onChange={e => setCatForm({...catForm, descripcion: e.target.value})} />
-              </label>
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.btnSecondary} onClick={() => setIsCatModalOpen(false)}>Cancelar</button>
-                <button type="submit" className={styles.btnPrimary}>Guardar Categoría</button>
-              </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </AdminModal>
       )}
 
       {/* MODAL PRODUCTO */}
       {isProdModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsProdModalOpen(false)}>
-          <div className={`${styles.modal} ${styles.modalSm}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700" }}>Nuevo Producto de Recaudación</h3>
-              <button className={styles.modalClose} onClick={() => setIsProdModalOpen(false)} aria-label="Cerrar modal">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <AdminModal title="Nuevo Producto de Recaudación" size="sm" onClose={() => setIsProdModalOpen(false)}>
+          <form className={styles.modalForm} onSubmit={submitProducto}>
+            <div className={styles.modalBody}>
+              <div className={styles.formSection}>
+                <h3 className={styles.formSectionTitle}>1. Información del Producto</h3>
+                <label className="form-field">
+                  <span className="form-label">
+                    Categoría <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <select
+                    className="form-input"
+                    value={prodForm.categoria_id}
+                    onChange={(e) => setProdForm({ ...prodForm, categoria_id: e.target.value })}
+                    required
+                  >
+                    <option value="">-- Seleccionar --</option>
+                    {categorias.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Código Identificador <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    className="form-input"
+                    value={prodForm.codigo}
+                    onChange={(e) => setProdForm({ ...prodForm, codigo: e.target.value.toUpperCase() })}
+                    placeholder="Ej. CAM-001"
+                    required
+                  />
+                </label>
+                <label className="form-field">
+                  <span className="form-label">
+                    Nombre del Producto <span className="form-required" aria-hidden="true">*</span>
+                  </span>
+                  <input
+                    className="form-input"
+                    value={prodForm.nombre}
+                    onChange={(e) => setProdForm({ ...prodForm, nombre: e.target.value })}
+                    placeholder="Ej. Camiseta Oficial Blanca"
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className={styles.formSection}>
+                <h3 className={styles.formSectionTitle}>2. Precio y Existencias</h3>
+                <div className="form-grid">
+                  <label className="form-field">
+                    <span className="form-label">
+                      Precio (L.) <span className="form-required" aria-hidden="true">*</span>
+                    </span>
+                    <input
+                      className="form-input"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={prodForm.precio}
+                      onChange={(e) => setProdForm({ ...prodForm, precio: Number(e.target.value) })}
+                      required
+                    />
+                  </label>
+                  <label className="form-field">
+                    <span className="form-label">
+                      Stock Inicial <span className="form-required" aria-hidden="true">*</span>
+                    </span>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      value={prodForm.stock}
+                      onChange={(e) => setProdForm({ ...prodForm, stock: Number(e.target.value) })}
+                      required
+                    />
+                  </label>
+                </div>
+                <label className="form-field">
+                  <span className="form-label">
+                    Descripción <span className="form-optional">(Opcional)</span>
+                  </span>
+                  <textarea
+                    className="form-input"
+                    rows={2}
+                    value={prodForm.descripcion}
+                    onChange={(e) => setProdForm({ ...prodForm, descripcion: e.target.value })}
+                  />
+                </label>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsProdModalOpen(false)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn-primary btn-sm">
+                Guardar Producto
               </button>
             </div>
-            <form className={styles.adminFormSingleColumn} onSubmit={submitProducto} style={{ padding: "2.4rem" }}>
-              <div className={styles.formSectionTitle}>1. Información del Producto</div>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>Categoría <strong className={styles.requiredStar}>* (Requerido)</strong></span>
-                <select value={prodForm.categoria_id} onChange={e => setProdForm({...prodForm, categoria_id: e.target.value})} required>
-                  <option value="">-- Seleccionar --</option>
-                  {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                </select>
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>Código Identificador <strong className={styles.requiredStar}>* (Requerido)</strong></span>
-                <input value={prodForm.codigo} onChange={e => setProdForm({...prodForm, codigo: e.target.value.toUpperCase()})} placeholder="Ej. CAM-001" required />
-              </label>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>Nombre del Producto <strong className={styles.requiredStar}>* (Requerido)</strong></span>
-                <input value={prodForm.nombre} onChange={e => setProdForm({...prodForm, nombre: e.target.value})} placeholder="Ej. Camiseta Oficial Blanca" required />
-              </label>
-              <div className={styles.formSectionTitle}>2. Precio y Existencias</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.2rem" }}>
-                <label className={styles.formField}>
-                  <span className={styles.fieldLabel}>Precio (L.) <strong className={styles.requiredStar}>* (Requerido)</strong></span>
-                  <input type="number" step="0.01" min="0" value={prodForm.precio} onChange={e => setProdForm({...prodForm, precio: Number(e.target.value)})} required />
-                </label>
-                <label className={styles.formField}>
-                  <span className={styles.fieldLabel}>Stock Inicial <strong className={styles.requiredStar}>* (Requerido)</strong></span>
-                  <input type="number" min="0" value={prodForm.stock} onChange={e => setProdForm({...prodForm, stock: Number(e.target.value)})} required />
-                </label>
-              </div>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>Descripción <span className={styles.optionalTag}>(Opcional)</span></span>
-                <textarea rows={2} value={prodForm.descripcion} onChange={e => setProdForm({...prodForm, descripcion: e.target.value})} />
-              </label>
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.btnSecondary} onClick={() => setIsProdModalOpen(false)}>Cancelar</button>
-                <button type="submit" className={styles.btnPrimary}>Guardar Producto</button>
-              </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </AdminModal>
       )}
 
       {/* MODAL AJUSTAR STOCK */}
       {isStockModalOpen && (
-        <div className={styles.modalOverlay} onClick={() => setIsStockModalOpen(false)}>
-          <div className={`${styles.modal} ${styles.modalSm}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700" }}>Ajustar Stock Físico</h3>
-              <button className={styles.modalClose} onClick={() => setIsStockModalOpen(false)} aria-label="Cerrar modal">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <AdminModal
+          title="Ajustar Stock Físico"
+          description={
+            <>
+              Actualizando existencias para: <strong>{stockForm.nombre}</strong>
+            </>
+          }
+          size="sm"
+          onClose={() => setIsStockModalOpen(false)}
+        >
+          <form className={styles.modalForm} onSubmit={submitStock}>
+            <div className={styles.modalBody}>
+              <label className="form-field">
+                <span className="form-label">
+                  Nuevo Nivel de Stock <span className="form-required" aria-hidden="true">*</span>
+                </span>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  value={stockForm.stock}
+                  onChange={(e) => setStockForm({ ...stockForm, stock: Number(e.target.value) })}
+                  required
+                />
+              </label>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsStockModalOpen(false)}>
+                Cancelar
+              </button>
+              <button type="submit" className="btn-primary btn-sm">
+                Actualizar Stock
               </button>
             </div>
-            <form className={styles.adminFormSingleColumn} onSubmit={submitStock} style={{ padding: "2.4rem" }}>
-              <p style={{ marginBottom: "1.6rem", fontSize: "1.4rem", color: "var(--text-muted)" }}>
-                Actualizando existencias para: <strong>{stockForm.nombre}</strong>
-              </p>
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>Nuevo Nivel de Stock <strong className={styles.requiredStar}>* (Requerido)</strong></span>
-                <input type="number" min="0" value={stockForm.stock} onChange={e => setStockForm({...stockForm, stock: Number(e.target.value)})} required />
-              </label>
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.btnSecondary} onClick={() => setIsStockModalOpen(false)}>Cancelar</button>
-                <button type="submit" className={styles.btnPrimary}>Actualizar Stock</button>
-              </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </AdminModal>
       )}
 
       {/* MODAL ADVERTENCIA ELIMINAR CATEGORÍA */}
       {deleteCatTarget && (
-        <div className={styles.modalOverlay} onClick={() => setDeleteCatTarget(null)}>
-          <div className={`${styles.modal} ${styles.modalSm}`} onClick={(e) => e.stopPropagation()} role="alertdialog">
-            <div className={styles.modalHeader}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700", color: "#dc2626" }}>¿Eliminar Categoría?</h3>
-            </div>
-            <p style={{ padding: "1.6rem 0", color: "var(--text-color)", fontSize: "1.4rem", lineHeight: "1.6" }}>
-              ¿Estás seguro de que deseas eliminar la categoría <strong>{deleteCatTarget.nombre}</strong>? (No debe tener productos asociados). Esta acción no se puede deshacer.
-            </p>
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.btnSecondary} onClick={() => setDeleteCatTarget(null)}>
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className={styles.btnDanger}
-                onClick={async () => {
-                  try {
-                    await deleteCategoriaProducto(deleteCatTarget.id);
-                    setDeleteCatTarget(null);
-                    fetchData();
-                  } catch (e: any) { alert("Error al eliminar: " + e.message); }
-                }}
-              >
-                Sí, Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="¿Eliminar Categoría?"
+          confirmLabel="Sí, Eliminar"
+          onCancel={() => setDeleteCatTarget(null)}
+          onConfirm={async () => {
+            try {
+              await deleteCategoriaProducto(deleteCatTarget.id);
+              setDeleteCatTarget(null);
+              fetchData();
+            } catch (e: any) { alert("Error al eliminar: " + e.message); }
+          }}
+        >
+          ¿Estás seguro de que deseas eliminar la categoría <strong>{deleteCatTarget.nombre}</strong>? (No debe tener productos asociados). Esta acción no se puede deshacer.
+        </ConfirmDialog>
       )}
 
       {/* MODAL ADVERTENCIA ELIMINAR PRODUCTO */}
       {deleteProdTarget && (
-        <div className={styles.modalOverlay} onClick={() => setDeleteProdTarget(null)}>
-          <div className={`${styles.modal} ${styles.modalSm}`} onClick={(e) => e.stopPropagation()} role="alertdialog">
-            <div className={styles.modalHeader}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700", color: "#dc2626" }}>¿Eliminar Producto?</h3>
-            </div>
-            <p style={{ padding: "1.6rem 0", color: "var(--text-color)", fontSize: "1.4rem", lineHeight: "1.6" }}>
-              ¿Estás seguro de que deseas eliminar el producto <strong>{deleteProdTarget.nombre}</strong>? (No debe tener ventas asociadas). Esta acción no se puede deshacer.
-            </p>
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.btnSecondary} onClick={() => setDeleteProdTarget(null)}>
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className={styles.btnDanger}
-                onClick={async () => {
-                  try {
-                    await deleteProducto(deleteProdTarget.id);
-                    setDeleteProdTarget(null);
-                    fetchData();
-                  } catch (e: any) { alert("Error al eliminar: " + e.message); }
-                }}
-              >
-                Sí, Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="¿Eliminar Producto?"
+          confirmLabel="Sí, Eliminar"
+          onCancel={() => setDeleteProdTarget(null)}
+          onConfirm={async () => {
+            try {
+              await deleteProducto(deleteProdTarget.id);
+              setDeleteProdTarget(null);
+              fetchData();
+            } catch (e: any) { alert("Error al eliminar: " + e.message); }
+          }}
+        >
+          ¿Estás seguro de que deseas eliminar el producto <strong>{deleteProdTarget.nombre}</strong>? (No debe tener ventas asociadas). Esta acción no se puede deshacer.
+        </ConfirmDialog>
       )}
-
     </div>
   );
 }
-

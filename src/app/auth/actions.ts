@@ -98,7 +98,7 @@ export async function signUpAction(
       await supabase.from("perfiles").insert({
         id: user.id,
         nombre_completo: fullName,
-        rol: null, // Asignación inicial como nula / pendiente
+        // sin rol: la base asigna el predeterminado ("voluntario"), igual que el trigger handle_new_user
         activo: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

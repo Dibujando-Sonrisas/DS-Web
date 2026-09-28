@@ -3,8 +3,20 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import PageHero from "../components/PageHero";
+import {
+  BriefcaseMedical,
+  Check,
+  Globe,
+  Handshake,
+  Heart,
+  Lock,
+  Quote,
+  Stethoscope,
+} from "lucide-react";
+import type { Brigada } from "@/lib/db/brigadas";
 import VolunteerForm from "./VolunteerForm";
-import PublicBrigadaBanner from "../administracion/brigadas/components/PublicBrigadaBanner";
+import BrigadaBanner from "../components/BrigadaBanner";
 import styles from "../../styles/pages/volunteer.module.css";
 
 export const metadata: Metadata = {
@@ -63,64 +75,38 @@ export default async function Voluntariado() {
     <>
       <Header />
 
-      {/* ── HERO ── */}
-      <div className={styles.hero}>
-        <h1>Lleva Sonrisas a Quienes Más lo Necesitan</h1>
-        <p className={styles.heroSub}>
-          Tus habilidades pueden cambiar vidas. Únete a nuestras brigadas
-          médicas y marca una diferencia real en Honduras.
-        </p>
-        <div className={styles.heroButtons}>
-          {!isClosed && !isCupoLleno ? (
-            <a href="#formulario" className={styles.btnPrimary}>
-              Ser Voluntario
-            </a>
-          ) : isCupoLleno ? (
-            <span
-              className={styles.btnPrimary}
-              style={{
-                opacity: 0.85,
-                cursor: "not-allowed",
-                backgroundColor: "#64748b",
-                borderColor: "#64748b",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.6rem",
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              Cupo Máximo Alcanzado
-            </span>
-          ) : (
-            <span
-              className={styles.btnPrimary}
-              style={{ opacity: 0.6, cursor: "not-allowed" }}
-            >
-              Inscripciones Cerradas
-            </span>
-          )}
-          <Link href="/donar" className={styles.btnOutlined}>
-            Donar Ahora
-          </Link>
-        </div>
-      </div>
+      <PageHero
+        image="/new-Voluntariado-hero.png"
+        title={
+          <>
+            Lleva <em>Sonrisas</em> a Quienes Más lo Necesitan
+          </>
+        }
+        subtitle="Tus habilidades pueden cambiar vidas. Únete a nuestras brigadas médicas y marca una diferencia real en Honduras."
+      >
+        {!isClosed && !isCupoLleno ? (
+          <a href="#formulario" className="btn-primary">
+            Ser Voluntario
+          </a>
+        ) : (
+          <span className="btn-primary btn-disabled">
+            {isCupoLleno && <Lock size={16} aria-hidden="true" />}
+            {isCupoLleno ? "Cupo Máximo Alcanzado" : "Inscripciones Cerradas"}
+          </span>
+        )}
+        <Link href="/donar" className="btn-outline">
+          Donar Ahora
+        </Link>
+      </PageHero>
 
       {/* ── MAIN ── */}
       <main className={styles.volunteerMain}>
-        <div className={styles.innerContainer}>
-          {/* ── BANNER DINÁMICO DE PRÓXIMA BRIGADA ── */}
-          {!isClosed && activeBrigada && (
-            <div style={{ marginTop: "2rem", display: "flex", justifyContent: "center" }}>
-              <PublicBrigadaBanner
-                brigada={activeBrigada as any}
-                cuposInfo={cuposInfo}
-              />
-            </div>
-          )}
+        {/* ── BANNER DINÁMICO DE PRÓXIMA BRIGADA ── */}
+        {!isClosed && activeBrigada && (
+          <BrigadaBanner brigada={activeBrigada as Brigada} cuposInfo={cuposInfo} />
+        )}
 
+        <div className="container">
           {/* ── ¿POR QUÉ SER VOLUNTARIO? ── */}
           <section className={styles.whySection} aria-labelledby="why-heading">
             <h2 id="why-heading">¿Por Qué Ser Voluntario con Nosotros?</h2>
@@ -128,87 +114,39 @@ export default async function Voluntariado() {
               Crece como profesional mientras impactas la salud de Honduras de
               forma tangible.
             </p>
-            <div className={styles.whyCards}>
-              <div className={styles.whyCard}>
-                <div className={styles.circle}>
-                  <span className={styles.circleIcon} aria-hidden="true">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="28"
-                      height="28"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <path d="M19 8h-14a1 1 0 0 0 -1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1 -1v-8a1 1 0 0 0 -1 -1z" />
-                      <path d="M12 8v-3a1 1 0 0 0 -1 -1h-2a1 1 0 0 0 -1 1v3" />
-                      <path d="M12 13h.01" />
-                    </svg>
-                  </span>
+            <div className={`${styles.whyCards} tone-rotate`}>
+              <article className={`${styles.whyCard} card-drawn lift`}>
+                <div className="icon-circle" aria-hidden="true">
+                  <BriefcaseMedical />
                 </div>
-                <h4>Crecimiento Profesional</h4>
+                <h3>Crecimiento Profesional</h3>
                 <p>
                   Gana experiencia médica única en entornos diversos y pon a
                   prueba tus habilidades en campo real.
                 </p>
-              </div>
+              </article>
 
-              <div className={styles.whyCard}>
-                <div className={styles.circle}>
-                  <span className={styles.circleIcon} aria-hidden="true">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="28"
-                      height="28"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <circle cx="12" cy="12" r="9" />
-                      <path d="M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 0 0 0 18M12.5 3a17 17 0 0 1 0 18" />
-                    </svg>
-                  </span>
+              <article className={`${styles.whyCard} card-drawn lift`}>
+                <div className="icon-circle" aria-hidden="true">
+                  <Globe />
                 </div>
-                <h4>Impacto Inmediato</h4>
+                <h3>Impacto Inmediato</h3>
                 <p>
                   Ve los resultados de tu atención directamente en los pacientes
                   y la comunidad que sirves.
                 </p>
-              </div>
+              </article>
 
-              <div className={styles.whyCard}>
-                <div className={styles.circle}>
-                  <span className={styles.circleIcon} aria-hidden="true">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="28"
-                      height="28"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.566" />
-                    </svg>
-                  </span>
+              <article className={`${styles.whyCard} card-drawn lift`}>
+                <div className="icon-circle" aria-hidden="true">
+                  <Heart />
                 </div>
-                <h4>Servicio con Propósito</h4>
+                <h3>Servicio con Propósito</h3>
                 <p>
                   Más que medicina — predicamos el evangelio y llevamos amor a
                   cada lugar donde llegamos.
                 </p>
-              </div>
+              </article>
             </div>
           </section>
 
@@ -218,89 +156,66 @@ export default async function Voluntariado() {
             aria-labelledby="roles-heading"
           >
             <h2 id="roles-heading">Roles Disponibles</h2>
-            <div>
-              <p>
-                Necesitamos tanto profesionales de la salud como personal de
-                apoyo para hacer exitosas nuestras misiones.
-              </p>
-            </div>
+            <p className={styles.rolesSubtitle}>
+              Necesitamos tanto profesionales de la salud como personal de
+              apoyo para hacer exitosas nuestras misiones.
+            </p>
             <div className={styles.rolesGrid}>
-              <div className={styles.roleCard}>
+              <article className={`${styles.roleCard} card-soft tone-primary`}>
                 <div className={styles.roleImg1} aria-hidden="true" />
                 <div className={styles.roleName}>
-                  <span className={styles.roleIcon} aria-hidden="true">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="28"
-                      height="28"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <path d="M3 6a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
-                      <path d="M21 14a3 3 0 1 0 -6 0" />
-                      <path d="M6 9v11" />
-                      <path d="M18 11v8" />
-                      <path d="M12 4v16" />
-                      <path d="M9 7h6" />
-                    </svg>
+                  <span className="icon-circle icon-circle-sm" aria-hidden="true">
+                    <Stethoscope />
                   </span>
                   <h3>Profesionales de Salud</h3>
                 </div>
                 <ul>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Médicos Generales y Especialistas
                   </li>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Odontólogos y Asistentes Dentales
                   </li>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Enfermeros y Técnicos en Salud
                   </li>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Estudiantes de Medicina y Odontología
                   </li>
                 </ul>
-              </div>
+              </article>
 
-              <div className={styles.roleCard}>
+              <article className={`${styles.roleCard} card-soft tone-tertiary`}>
                 <div className={styles.roleImg2} aria-hidden="true" />
                 <div className={styles.roleName}>
-                  <span className={styles.roleIcon} aria-hidden="true">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="28"
-                      height="28"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <path d="M4 13c0-4.243 3.497-8 8-8c4.418 0 7.656 3.582 7.656 8" />
-                      <path d="M4 13c0 2.21 1.791 4 4 4h1a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2h-3.5" />
-                      <path d="M20 13c0 2.21-1.791 4-4 4h-1a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h3.5" />
-                    </svg>
+                  <span className="icon-circle icon-circle-sm" aria-hidden="true">
+                    <Handshake />
                   </span>
                   <h3>Apoyo y Logística</h3>
                 </div>
                 <ul>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Coordinadores de Logística
                   </li>
-                  <li className={styles.roleItem}>Personal de Apoyo General</li>
-                  <li className={styles.roleItem}>Evangelistas y Oración</li>
                   <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
+                    Personal de Apoyo General
+                  </li>
+                  <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
+                    Evangelistas y Oración
+                  </li>
+                  <li className={styles.roleItem}>
+                    <Check aria-hidden="true" />
                     Documentación y Fotografía
                   </li>
                 </ul>
-              </div>
+              </article>
             </div>
           </section>
 
@@ -310,40 +225,40 @@ export default async function Voluntariado() {
             aria-labelledby="steps-heading"
           >
             <h2 id="steps-heading">¿Cómo Unirte?</h2>
-            <div className={styles.stepsGrid}>
-              <div className={styles.step}>
-                <div className={styles.stepNumber} aria-hidden="true">
+            <ol className={`${styles.stepsGrid} tone-rotate`}>
+              <li className={`${styles.step} card-soft`}>
+                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
                   1
                 </div>
                 <h3>Aplica en Línea</h3>
                 <p>
                   Llena el formulario de abajo con tus datos y área de interés.
                 </p>
-              </div>
-              <div className={styles.step}>
-                <div className={styles.stepNumber} aria-hidden="true">
+              </li>
+              <li className={`${styles.step} card-soft`}>
+                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
                   2
                 </div>
                 <h3>Entrevista</h3>
                 <p>Una breve llamada para conocerte y alinear expectativas.</p>
-              </div>
-              <div className={styles.step}>
-                <div className={styles.stepNumber} aria-hidden="true">
+              </li>
+              <li className={`${styles.step} card-soft`}>
+                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
                   3
                 </div>
                 <h3>Preparación</h3>
                 <p>Te informamos sobre la próxima brigada y qué llevar.</p>
-              </div>
-              <div className={styles.step}>
-                <div className={styles.stepNumber} aria-hidden="true">
+              </li>
+              <li className={`${styles.step} card-soft`}>
+                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
                   4
                 </div>
                 <h3>¡A Servir!</h3>
                 <p>
                   Viaja con el equipo y comienza tu experiencia de voluntariado.
                 </p>
-              </div>
-            </div>
+              </li>
+            </ol>
           </section>
 
           {/* ── CITA VOLUNTARIO ── */}
@@ -351,27 +266,23 @@ export default async function Voluntariado() {
             className={styles.quoteSection}
             aria-label="Testimonio de voluntario"
           >
-            <div>
-              <div
-                className={styles.quoteImage}
-                role="img"
-                aria-label="Foto voluntario"
-              />
-            </div>
-            <div className={styles.quoteWords}>
-              <div className={styles.quoteIcon} aria-hidden="true">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" opacity="0.8">
-                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                </svg>
-              </div>
-              <h3>
+            <div
+              className={styles.quoteImage}
+              role="img"
+              aria-label="Foto del Dr. Eugenio Rodriguez en una brigada"
+            />
+            <figure className={styles.quoteWords}>
+              <Quote className={styles.quoteIcon} aria-hidden="true" />
+              <blockquote>
                 &#34;Ser voluntario con Dibujando Sonrisas me recordó por qué
                 elegí ser médico: para servir a quienes más lo necesitan, con
                 amor y fe.&#34;
-              </h3>
-              <h4>Dr. Eugenio Rodriguez</h4>
-              <p>Médico General, 10 brigadas</p>
-            </div>
+              </blockquote>
+              <figcaption>
+                <strong>Dr. Eugenio Rodriguez</strong>
+                <span>Médico General, 10 brigadas</span>
+              </figcaption>
+            </figure>
           </section>
 
           {/* ── FORMULARIO O MENSAJE DE CIERRE ── */}
@@ -387,60 +298,32 @@ export default async function Voluntariado() {
                 ? "Capacidad Máxima Alcanzada"
                 : "Inscripciones Cerradas"}
             </h2>
-            <div>
-              <p>
-                {!isClosed && !isCupoLleno
-                  ? `Llena el formulario para postularte a la brigada ${activeBrigada?.nombre ?? ""}${
-                      cuposInfo.disponibles !== null
-                        ? ` (${cuposInfo.disponibles} cupos disponibles)`
-                        : ""
-                    }. Nos pondremos en contacto contigo pronto.`
-                  : isCupoLleno
-                  ? `Hemos completado la capacidad máxima de voluntarios (${cuposInfo.registrados} de ${cuposInfo.total} cupos ocupados) para la brigada ${activeBrigada?.nombre ?? ""}. Agradecemos tu vocación de servicio; mantente al tanto para futuras convocatorias.`
-                  : "Actualmente no contamos con brigadas activas para inscripciones abiertas de voluntarios. Por favor mantente al tanto de nuestros canales oficiales para futuras convocatorias."}
-              </p>
-            </div>
+            <p className={styles.formIntro}>
+              {!isClosed && !isCupoLleno
+                ? `Llena el formulario para postularte a la brigada ${activeBrigada?.nombre ?? ""}${
+                    cuposInfo.disponibles !== null
+                      ? ` (${cuposInfo.disponibles} cupos disponibles)`
+                      : ""
+                  }. Nos pondremos en contacto contigo pronto.`
+                : isCupoLleno
+                ? `Hemos completado la capacidad máxima de voluntarios (${cuposInfo.registrados} de ${cuposInfo.total} cupos ocupados) para la brigada ${activeBrigada?.nombre ?? ""}. Agradecemos tu vocación de servicio; mantente al tanto para futuras convocatorias.`
+                : "Actualmente no contamos con brigadas activas para inscripciones abiertas de voluntarios. Por favor mantente al tanto de nuestros canales oficiales para futuras convocatorias."}
+            </p>
             {!isClosed && !isCupoLleno && activeBrigada && (
               <VolunteerForm activeBrigadaId={activeBrigada.id} />
             )}
             {isCupoLleno && (
-              <div
-                style={{
-                  background: "#fff",
-                  borderRadius: "var(--radius-md)",
-                  padding: "3rem 2rem",
-                  maxWidth: "60rem",
-                  margin: "2rem auto 0",
-                  boxShadow: "var(--shadow-sm)",
-                  border: "1px solid var(--border-color)",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: "6.4rem",
-                    height: "6.4rem",
-                    borderRadius: "50%",
-                    background: "#f1f5f9",
-                    color: "#64748b",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    margin: "0 auto 1.6rem",
-                  }}
-                >
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
+              <div className={`${styles.fullCard} card-drawn tone-tertiary`}>
+                <div className={`${styles.fullIcon} icon-circle`} aria-hidden="true">
+                  <Lock />
                 </div>
-                <h3 style={{ fontSize: "2rem", color: "var(--dark)", marginBottom: "1rem" }}>
-                  Cupo de Voluntarios Completo
-                </h3>
-                <p style={{ fontSize: "1.5rem", color: "var(--gray)", marginBottom: "2rem" }}>
-                  Esta brigada médica ha alcanzado el número máximo de participantes. Puedes seguir apoyando nuestra labor donando insumos o conociendo nuestras brigadas anteriores.
+                <h3 className="tone-text">Cupo de Voluntarios Completo</h3>
+                <p>
+                  Esta brigada médica ha alcanzado el número máximo de
+                  participantes. Puedes seguir apoyando nuestra labor donando
+                  insumos o conociendo nuestras brigadas anteriores.
                 </p>
-                <div style={{ display: "flex", gap: "1.2rem", justifyContent: "center", flexWrap: "wrap" }}>
+                <div className={styles.fullActions}>
                   <Link href="/brigadas" className="btn-primary">
                     Ver Brigadas Realizadas
                   </Link>

@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import styles from "@/styles/pages/reportes.module.css";
+import { ChevronLeft, ChevronRight, Printer, Search } from "lucide-react";
+import styles from "@/styles/pages/admin.module.css";
+import rep from "@/styles/pages/reportes.module.css";
+import listas from "@/styles/pages/admin-reportes-listas.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { supabase } from "@/lib/supabase";
@@ -172,159 +175,151 @@ export default function PacientesBrigada() {
   return (
     <div>
       {/* ── VISTA WEB (PAGINADA) ── */}
-      <div className={styles.screenView}>
+      <div className={`${rep.screenView} ${styles.stack} no-print`}>
         {/* Encabezado */}
-        <div className={styles.reportHeader}>
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <div className={styles.reportHeaderText}>
-              <h3>Reporte de Pacientes por Brigada</h3>
-              <p>
-                Listado detallado de pacientes atendidos, diagnóstico y
-                medicamentos recetados.
-              </p>
+        <div className={styles.sectionHead}>
+          <div>
+            <h2 className={styles.sectionTitle}>Reporte de Pacientes por Brigada</h2>
+            <p className={styles.sectionLead}>
+              Listado detallado de pacientes atendidos, diagnóstico y
+              medicamentos recetados.
+            </p>
+          </div>
+          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+            <Printer aria-hidden="true" />
+            Imprimir
+          </button>
+        </div>
+
+        <section className={styles.panel}>
+          {/* Filtros */}
+          <div className={styles.toolbar}>
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="brigada-select">Brigada</label>
+              <select
+                id="brigada-select"
+                className="form-input form-input-sm"
+                value={brigadaSeleccionada}
+                onChange={(e) => setBrigadaSeleccionada(e.target.value)}
+              >
+                {brigadas.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={`${styles.filter} ${styles.filterWide}`}>
+              <label className={styles.filterLabel} htmlFor="busqueda-paciente">Buscar paciente</label>
+              <div className={styles.search}>
+                <Search aria-hidden="true" />
+                <input
+                  id="busqueda-paciente"
+                  type="text"
+                  className="form-input form-input-sm"
+                  placeholder="Nombre, comunidad, médico…"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                />
+              </div>
             </div>
           </div>
-          <div className={styles.reportHeaderActions}>
-            <button
-              type="button"
-              className={styles.btnActionSecondary}
-              onClick={handlePrint}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5Zm-3 0h.008v.008H15V10.5Z"
-                />
-              </svg>
-              Imprimir
-            </button>
-          </div>
-        </div>
 
-        {/* Filtros */}
-        <div className={styles.reportFilters}>
-          <div className={styles.filterGroup}>
-            <label htmlFor="brigada-select">Brigada</label>
-            <select
-              id="brigada-select"
-              value={brigadaSeleccionada}
-              onChange={(e) => setBrigadaSeleccionada(e.target.value)}
-            >
-              {brigadas.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div
-            className={styles.filterGroup}
-            style={{ flex: 1, minWidth: "220px" }}
-          >
-            <label htmlFor="busqueda-paciente">Buscar paciente</label>
-            <input
-              id="busqueda-paciente"
-              type="text"
-              placeholder="Nombre, comunidad, médico…"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Tabla Web */}
-        <div className={styles.printableContainer}>
-          <div style={{ overflowX: "auto" }}>
-            <table className={styles.printableTable}>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Nombre del Paciente</th>
-                  <th>Edad</th>
-                  <th>Comunidad</th>
-                  <th>Motivo de Consulta</th>
-                  <th>Médico Asignado</th>
-                  <th>Medicamentos Recetados</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
+          {/* Tabla Web */}
+          {loading ? (
+            <div className={styles.panelBody}>
+              <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
+                <span className="sr-only">Cargando pacientes de la brigada...</span>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
                   <tr>
-                    <td colSpan={7} style={{ textAlign: "center", padding: "2rem", color: "var(--grayLight)" }}>
-                      Cargando pacientes de la brigada...
-                    </td>
+                    <th>#</th>
+                    <th>Nombre del Paciente</th>
+                    <th className={styles.num}>Edad</th>
+                    <th>Comunidad</th>
+                    <th>Motivo de Consulta</th>
+                    <th>Médico Asignado</th>
+                    <th>Medicamentos Recetados</th>
                   </tr>
-                ) : pacientesFiltrados.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className={styles.noData}>
-                      No hay pacientes registrados en esta brigada.
-                    </td>
-                  </tr>
-                ) : (
-                  pacientesFiltrados
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((p, relativeIdx) => {
-                      const absoluteIdx = (currentPage - 1) * itemsPerPage + relativeIdx;
-                      return (
-                        <tr key={p.id}>
-                          <td style={{ color: "var(--grayLight)", fontWeight: 600 }}>
-                            {absoluteIdx + 1}
-                          </td>
-                          <td style={{ fontWeight: 700 }}>{p.nombre}</td>
-                          <td>{p.edad}</td>
-                          <td>{p.comunidad}</td>
-                          <td>{p.motivo}</td>
-                          <td>{p.medico}</td>
-                          <td>
-                            {p.medicamentos.length === 0 ? (
-                              <span style={{ color: "var(--grayLight)" }}>Ninguno</span>
-                            ) : (
-                              p.medicamentos.join(", ")
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {pacientesFiltrados.length > 0 && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", marginTop: "2rem", padding: "1rem" }} className="no-print">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                className={styles.btnActionSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}
-              >
-                Anterior
-              </button>
-              <span style={{ fontSize: "1.3rem", fontWeight: "600" }}>
-                Página {currentPage} de {totalPages}
-              </span>
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                className={styles.btnActionSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1 }}
-              >
-                Siguiente
-              </button>
+                </thead>
+                <tbody>
+                  {pacientesFiltrados.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className={styles.emptyCell}>
+                        No hay pacientes registrados en esta brigada.
+                      </td>
+                    </tr>
+                  ) : (
+                    pacientesFiltrados
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((p, relativeIdx) => {
+                        const absoluteIdx = (currentPage - 1) * itemsPerPage + relativeIdx;
+                        return (
+                          <tr key={p.id}>
+                            <td className={styles.muted}>{absoluteIdx + 1}</td>
+                            <td className={styles.cellMain}>{p.nombre}</td>
+                            <td className={styles.num}>{p.edad}</td>
+                            <td>{p.comunidad}</td>
+                            <td>{p.motivo}</td>
+                            <td>{p.medico}</td>
+                            <td>
+                              {p.medicamentos.length === 0 ? (
+                                <span className={styles.muted}>Ninguno</span>
+                              ) : (
+                                <div className={listas.pills}>
+                                  {p.medicamentos.map((med, i) => (
+                                    <span key={`${med}-${i}`} className={`${styles.badge} ${styles.badgeInfo}`}>
+                                      {med}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
-        </div>
+
+          {pacientesFiltrados.length > 0 && (
+            <div className={styles.panelFooter}>
+              <span className={styles.pagerInfo}>
+                Página {currentPage} de {totalPages}
+              </span>
+              <div className={styles.row}>
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                >
+                  <ChevronLeft aria-hidden="true" />
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                >
+                  Siguiente
+                  <ChevronRight aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
       {/* ── VISTA DE IMPRESIÓN REUTILIZABLE INSTITUCIONAL ── */}
-      <div className={styles.printView}>
+      <div className={rep.printView}>
         <PrintReportDocument
           title="Reporte de Pacientes por Brigada"
           userRole={userRole}
@@ -334,43 +329,43 @@ export default function PacientesBrigada() {
           ]}
           footerNote="Confidencialidad médica — Fundación Dibujando Sonrisas"
         >
-          <table className={styles.printTable}>
+          <table className={rep.printTable}>
             <thead>
               <tr>
-                <th style={{ width: "4%" }}>#</th>
-                <th style={{ width: "24%" }}>Nombre del Paciente</th>
-                <th style={{ width: "6%" }}>Edad</th>
-                <th style={{ width: "16%" }}>Comunidad</th>
-                <th style={{ width: "20%" }}>Motivo de Consulta</th>
-                <th style={{ width: "16%" }}>Médico Asignado</th>
-                <th style={{ width: "14%" }}>Medicamentos Recetados</th>
+                <th className={rep.w4}>#</th>
+                <th className={rep.w24}>Nombre del Paciente</th>
+                <th className={rep.w6}>Edad</th>
+                <th className={rep.w16}>Comunidad</th>
+                <th className={rep.w20}>Motivo de Consulta</th>
+                <th className={rep.w16}>Médico Asignado</th>
+                <th className={rep.w14}>Medicamentos Recetados</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "1.5rem", color: "#000000" }}>
+                  <td colSpan={7} className={rep.printCenter}>
                     Cargando pacientes de la brigada...
                   </td>
                 </tr>
               ) : pacientesFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "1.5rem", color: "#000000" }}>
+                  <td colSpan={7} className={rep.printCenter}>
                     No se encontraron pacientes para esta brigada.
                   </td>
                 </tr>
               ) : (
                 pacientesFiltrados.map((p, idx) => (
                   <tr key={p.id}>
-                    <td style={{ textAlign: "center" }}>{idx + 1}</td>
-                    <td style={{ fontWeight: "bold" }}>{p.nombre}</td>
-                    <td style={{ textAlign: "center" }}>{p.edad}</td>
+                    <td className={rep.printCenter}>{idx + 1}</td>
+                    <td className={rep.printStrong}>{p.nombre}</td>
+                    <td className={rep.printCenter}>{p.edad}</td>
                     <td>{p.comunidad}</td>
                     <td>{p.motivo}</td>
                     <td>{p.medico}</td>
                     <td>
                       {p.medicamentos.length === 0 ? (
-                        <span style={{ color: "#777777" }}>Ninguno</span>
+                        <span className={rep.printMuted}>Ninguno</span>
                       ) : (
                         p.medicamentos.join(", ")
                       )}

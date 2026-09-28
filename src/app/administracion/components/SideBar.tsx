@@ -1,19 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { logoutAction } from "@/app/auth/actions";
+import { canAccessRoute } from "@/lib/auth/permissions";
 import { adminModules } from "./navModules";
 import { usePermissions } from "./PermissionsProvider";
-import {
-  canAccessRoute,
-  hasPermission,
-  hasAnyPermission,
-  MODULE_PERMISSIONS,
-} from "@/lib/auth/permissions";
-import styles from "@/styles/pages/admin.module.css";
 import UserAvatar from "./UserAvatar";
+import styles from "@/styles/pages/admin.module.css";
 
 interface SideBarProps {
   isCollapsed: boolean;
@@ -37,24 +34,52 @@ export default function SideBar({
   const pathname = usePathname();
   const { role, specialtyName } = usePermissions();
 
-  const visibleModules = adminModules.filter((link) => {
-    return canAccessRoute(role, link.href, specialtyName);
-  });
+  // en móvil, Escape cierra el menú abierto
+  useEffect(() => {
+    if (!isMobileOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseMobile();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isMobileOpen, onCloseMobile]);
+
+  const visibleModules = adminModules.filter((link) =>
+    canAccessRoute(role, link.href, specialtyName)
+  );
 
   return (
     <>
-      {/* Overlay para móviles */}
+      {/* Fondo oscuro detrás del menú en móvil */}
       {isMobileOpen && (
-        <div className={styles.mobileOverlay} onClick={onCloseMobile} />
+        <div className={styles.mobileOverlay} onClick={onCloseMobile} aria-hidden="true" />
       )}
 
       <aside
+        id="admin-sidebar"
+        aria-label="Menú del panel"
         className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ""} ${
           isMobileOpen ? styles.sidebarMobileOpen : ""
         }`}
       >
-        {/* Lista de Navegación de Módulos */}
-        <nav className={styles.sidebarNav}>
+        <Link
+          href="/"
+          className={styles.brand}
+          aria-label="Dibujando Sonrisas: ir al sitio público"
+          title="Ir al sitio público"
+        >
+          <span className={styles.brandLogo}>
+            <Image src="/logo-mark.png" alt="" width={44} height={44} priority />
+          </span>
+          <span className={styles.brandText}>
+            <span className={styles.brandName}>
+              Dibujando <span>Sonrisas</span>
+            </span>
+            <span className={styles.brandSub}>Sistema de Gestión</span>
+          </span>
+        </Link>
+
+        <nav className={styles.sidebarNav} aria-label="Módulos">
           {visibleModules.map((link) => {
             const isActive =
               link.href === "/administracion"
@@ -63,73 +88,45 @@ export default function SideBar({
 
             return (
               <Link
-                key={link.name}
+                key={link.href}
                 href={link.href}
                 onClick={onCloseMobile}
                 title={isCollapsed ? link.name : undefined}
-                className={`${styles.navItem} ${isActive && styles.navItemActive} ${isCollapsed && styles.navItemCollapsed}`}
+                aria-current={isActive ? "page" : undefined}
+                className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
               >
-                <div className={styles.navItemIcon}>{link.icon}</div>
-
-                <span
-                  className={`${styles.navItemLabel} ${isCollapsed && styles.navItemLabelCollapsed}`}
-                >
-                  {link.name}
-                  {!link.available && (
-                    <span className={styles.navSoon}>Próx.</span>
-                  )}
-                </span>
+                {link.icon}
+                <span className={styles.navLabel}>{link.name}</span>
+                {!link.available && <span className={styles.navSoon}>Próx.</span>}
               </Link>
             );
           })}
         </nav>
 
-        {/* Mini Widget de Perfil Integrado en la Barra Lateral */}
-        {!isCollapsed && displayName && (
-          <div className={styles.sidebarProfileWidget}>
-            <UserAvatar
-              avatarUrl={avatarUrl}
-              nombres={displayName}
-              email={email}
-              size={36}
-            />
-            <div className={styles.sidebarProfileText}>
-              <span className={styles.sidebarProfileName}>{displayName}</span>
-              <span className={styles.sidebarProfileRole}>
-                {roleLabel || "Personal"}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Pie del Menú / Cerrar Sesión */}
         <div className={styles.sidebarFooter}>
-          <form action={logoutAction} style={{ width: "100%" }}>
+          {displayName && (
+            <Link
+              href="/administracion/perfil"
+              onClick={onCloseMobile}
+              className={styles.sidebarProfile}
+              title={isCollapsed ? displayName : undefined}
+            >
+              <UserAvatar avatarUrl={avatarUrl} nombres={displayName} email={email} size={36} />
+              <span className={styles.profileText}>
+                <span className={styles.profileName}>{displayName}</span>
+                <span className={styles.profileRole}>{roleLabel || "Personal"}</span>
+              </span>
+            </Link>
+          )}
+
+          <form action={logoutAction}>
             <button
               type="submit"
-              className={`${styles.logoutBtn} ${isCollapsed && styles.logoutBtnCollapsed}`}
+              className={styles.logoutBtn}
               title={isCollapsed ? "Cerrar Sesión" : undefined}
             >
-              <div className={styles.logoutIcon}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.8}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75"
-                  />
-                </svg>
-              </div>
-              <span
-                className={`${isCollapsed && styles.navItemLabelCollapsed}`}
-              >
-                Cerrar Sesión
-              </span>
+              <LogOut aria-hidden="true" />
+              <span className={styles.logoutLabel}>Cerrar Sesión</span>
             </button>
           </form>
         </div>

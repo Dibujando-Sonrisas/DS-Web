@@ -2,6 +2,10 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { Eye } from "lucide-react";
+import { ROLE_LABELS, type AppRole } from "@/lib/auth/roles";
+import StatusBadge from "@/app/administracion/components/StatusBadge";
+import UserAvatar from "@/app/administracion/components/UserAvatar";
 import styles from "@/styles/pages/admin.module.css";
 import VolunteerFilters from "./VolunteerFilters";
 
@@ -50,7 +54,13 @@ export default function VoluntariosTable({ voluntarios }: VoluntariosTableProps)
   }, [voluntarios, searchTerm, filterSpecialty, filterStatus]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem", marginTop: "2rem" }}>
+    <section className={styles.panel} aria-labelledby="listado-voluntarios">
+      <div className={styles.panelHeader}>
+        <h2 id="listado-voluntarios" className={styles.panelTitle}>
+          Voluntarios Encontrados <span className={styles.count}>{filtered.length}</span>
+        </h2>
+      </div>
+
       <VolunteerFilters
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
@@ -61,95 +71,70 @@ export default function VoluntariosTable({ voluntarios }: VoluntariosTableProps)
         specialties={specialties}
       />
 
-      <div className={styles.tableContainer}>
-        <div className={styles.tableHeader}>
-          <h3>Voluntarios Encontrados ({filtered.length})</h3>
-        </div>
-
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.adminTable}>
-        <thead>
-          <tr>
-            <th>Voluntario</th>
-            <th>Especialidad</th>
-            <th>Cargo</th>
-            <th>Participaciones</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.length === 0 ? (
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
             <tr>
-              <td colSpan={6} style={{ textAlign: "center", padding: "2rem" }}>
-                No se encontraron voluntarios con los filtros aplicados.
-              </td>
+              <th>Voluntario</th>
+              <th>Especialidad</th>
+              <th>Cargo</th>
+              <th className={styles.num}>Participaciones</th>
+              <th>Estado</th>
+              <th className={styles.num}>Acciones</th>
             </tr>
-          ) : (
-            filtered.map((v) => (
-              <tr key={v.id}>
-                <td>
-                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                    <div style={{
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "50%",
-                      backgroundColor: "var(--gray-light)",
-                      backgroundImage: v.avatar_url ? `url(${v.avatar_url})` : "none",
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "var(--gray)",
-                      fontWeight: "bold",
-                    }}>
-                      {!v.avatar_url && (v.nombre_completo?.charAt(0) || "?")}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{v.nombre_completo || "Sin nombre"}</div>
-                      <div style={{ fontSize: "0.8rem", color: "var(--gray)" }}>
-                        Rol: {v.rol}
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td>{v.especialidades?.nombre || <span style={{ color: "var(--gray)" }}>Sin asignar</span>}</td>
-                <td>{v.cargo || <span style={{ color: "var(--gray)" }}>N/A</span>}</td>
-                <td>
-                  {v.participaciones_voluntarios?.length || 0} brigadas
-                </td>
-                <td>
-                  <span
-                    className={`${styles.badge} ${
-                      v.activo ? styles.badgeSuccess : styles.badgeDanger
-                    }`}
-                  >
-                    <span
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        backgroundColor: v.activo ? "#10b981" : "#f43f5e",
-                      }}
-                    />
-                    {v.activo ? "Activo" : "Inactivo"}
-                  </span>
-                </td>
-                <td>
-                  <Link href={`/administracion/voluntarios/${v.id}`}>
-                    <button className={styles.btnSecondary}>
-                      Ver Perfil
-                    </button>
-                  </Link>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className={styles.emptyCell}>
+                  No se encontraron voluntarios con los filtros aplicados.
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              filtered.map((v) => {
+                const nombre = v.nombre_completo || "Sin nombre";
+                return (
+                  <tr key={v.id}>
+                    <td>
+                      <div className={styles.cellPerson}>
+                        <UserAvatar avatarUrl={v.avatar_url} nombres={v.nombre_completo} size={36} />
+                        <div>
+                          <span className={styles.cellMain}>{nombre}</span>
+                          {v.rol && (
+                            <span className={styles.cellSub}>
+                              Rol: {ROLE_LABELS[v.rol as AppRole] ?? v.rol}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td>{v.especialidades?.nombre || <span className={styles.muted}>Sin asignar</span>}</td>
+                    <td>{v.cargo || <span className={styles.muted}>N/A</span>}</td>
+                    <td className={styles.num}>
+                      {v.participaciones_voluntarios?.length || 0} brigadas
+                    </td>
+                    <td>
+                      <StatusBadge activo={v.activo} />
+                    </td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        <Link
+                          href={`/administracion/voluntarios/${v.id}`}
+                          className="btn-ghost btn-xs"
+                          aria-label={`Ver perfil de ${nombre}`}
+                        >
+                          <Eye aria-hidden="true" />
+                          Ver Perfil
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
-      </div>
-    </div>
+    </section>
   );
 }

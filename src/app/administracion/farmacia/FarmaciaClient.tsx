@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   getDashboardFarmaciaAction,
   getEntregasFarmaciaAction,
@@ -9,7 +9,23 @@ import {
   registrarEntregaManualAction,
 } from "./actions";
 import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  CircleCheck,
+  ClipboardList,
+  HeartPulse,
+  History,
+  LoaderCircle,
+  Package,
+  PackageCheck,
+  Pill,
+} from "lucide-react";
+import AdminModal from "@/app/administracion/components/AdminModal";
+import StatCard from "@/app/administracion/components/StatCard";
 import styles from "@/styles/pages/admin.module.css";
+import pac from "@/styles/pages/admin-pacientes.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 
@@ -30,7 +46,7 @@ export function FarmaciaClient({ userId }: { userId: string }) {
     setCurrentPagePendientes(1);
     setCurrentPageHistorial(1);
   }, [filtroBrigada, activeTab]);
-  
+
   const entregadoPorId = userId;
 
   // Modal State
@@ -114,334 +130,328 @@ export function FarmaciaClient({ userId }: { userId: string }) {
     }
   };
 
+  // lista de la pestaña activa, filtrada por brigada y paginada
+  const list = activeTab === "pendientes" ? pendientes : entregas;
+  const filtered = filtroBrigada === "todas"
+    ? list
+    : list.filter(item => item.brigada_id === filtroBrigada);
+  const curPage = activeTab === "pendientes" ? currentPagePendientes : currentPageHistorial;
+  const setCurPage = activeTab === "pendientes" ? setCurrentPagePendientes : setCurrentPageHistorial;
+  const paginated = filtered.slice((curPage - 1) * itemsPerPage, curPage * itemsPerPage);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem", position: "relative" }}>
-      
+    <div className={styles.stack}>
+
       {/* Modal */}
       {isModalOpen && selectedConsulta && (
-        <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: "800px", width: "95%" }}>
-            <div className={styles.modalHeader}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700" }}>Registrar Entrega a Paciente</h3>
-              <button className={styles.modalClose} onClick={() => setIsModalOpen(false)} title="Cerrar" aria-label="Cerrar">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
+        <AdminModal title="Registrar Entrega a Paciente" size="lg" onClose={() => setIsModalOpen(false)}>
+          <div className={styles.modalBody}>
+            {modalError && (
+              <p className="form-error form-alert" role="alert">
+                <CircleAlert aria-hidden="true" />
+                <span>{modalError}</span>
+              </p>
+            )}
+            {modalSuccess && (
+              <p className="notice notice-ok" role="status">
+                <CircleCheck aria-hidden="true" />
+                <span>{modalSuccess}</span>
+              </p>
+            )}
+
+            <div className={styles.formSection}>
+              <h3 className={styles.formSectionTitle}>1. Información del Paciente y Receta</h3>
+              <dl className={styles.kv}>
+                <dt>Paciente:</dt>
+                <dd>{selectedConsulta.pacientes?.nombres} {selectedConsulta.pacientes?.apellidos}</dd>
+                <dt>Fecha Receta:</dt>
+                <dd>{new Date(selectedConsulta.created_at).toLocaleDateString()}</dd>
+              </dl>
             </div>
 
-            <div style={{ padding: "2.4rem", display: "flex", flexDirection: "column", gap: "1.6rem" }}>
-              {modalError && (
-                <div className={styles.formErrorBanner}>
-                  <span>{modalError}</span>
-                </div>
-              )}
-              {modalSuccess && (
-                <div className={styles.formSuccessBanner}>
-                  <span>{modalSuccess}</span>
-                </div>
-              )}
-
-              <div className={styles.formSectionTitle}>1. Información del Paciente y Receta</div>
-              <div style={{ marginBottom: "2rem", color: "var(--gray)", fontSize: "1.4rem", background: "var(--bg-secondary)", padding: "1.2rem", borderRadius: "var(--radius-sm)" }}>
-                <strong>Paciente:</strong> {selectedConsulta.pacientes?.nombres} {selectedConsulta.pacientes?.apellidos} <br />
-                <strong>Fecha Receta:</strong> {new Date(selectedConsulta.created_at).toLocaleDateString()}
-              </div>
-
-              <div className={styles.formSectionTitle}>2. Asignación de Lotes (Automático FEFO)</div>
-              <table className={styles.adminTable} style={{ marginBottom: "2rem" }}>
-                <thead>
-                  <tr>
-                    <th>Medicamento</th>
-                    <th>Lote</th>
-                    <th>Stock Lote</th>
-                    <th>Cant. Solicitada</th>
-                    <th>Cant. a Entregar</th>
-                    <th>Observación</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isSubmitting && fefoSuggestions.length === 0 ? (
-                    <tr><td colSpan={6} style={{ textAlign: "center" }}>Calculando lotes FEFO...</td></tr>
-                  ) : fefoSuggestions.map((s, idx) => (
-                    <tr key={idx} style={{ background: s.error ? "rgba(255,0,0,0.05)" : s.warning ? "rgba(255,200,0,0.05)" : "transparent" }}>
-                      <td style={{ fontWeight: "bold" }}>{s.medicamento_nombre}</td>
-                      <td>{s.lote_numero}</td>
-                      <td>{s.stock_disponible}</td>
-                      <td>{s.cantidad_requerida}</td>
-                      <td>
-                        <input 
-                          type="number" 
-                          min="0" 
-                          max={s.stock_disponible} 
-                          value={s.cantidad_sugerida} 
-                          onChange={(e) => handleCantidadChange(idx, Number(e.target.value))}
-                          style={{ width: "70px", padding: "0.4rem" }}
-                          disabled={!!s.error}
-                        />
-                      </td>
-                      <td style={{ color: s.error ? "red" : s.warning ? "orange" : "green" }}>
-                        {s.error || s.warning || "Stock suficiente"}
-                      </td>
+            <div className={styles.formSection}>
+              <h3 className={styles.formSectionTitle}>2. Asignación de Lotes (Automático FEFO)</h3>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Medicamento</th>
+                      <th>Lote</th>
+                      <th className={styles.num}>Stock Lote</th>
+                      <th className={styles.num}>Cant. Solicitada</th>
+                      <th>Cant. a Entregar</th>
+                      <th>Observación</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <form className={styles.adminFormSingleColumn} onSubmit={(e) => { e.preventDefault(); handleConfirmarEntrega(); }}>
-                <div className={styles.formSectionTitle}>3. Observaciones y Confirmación</div>
-                <label className={styles.formField} style={{ marginBottom: "2rem" }}>
-                  <span className={styles.fieldLabel}>
-                    Observaciones de Entrega <span className={styles.optionalTag}>(Opcional)</span>
-                  </span>
-                  <textarea 
-                    rows={2} 
-                    value={observaciones} 
-                    onChange={(e) => setObservaciones(e.target.value)}
-                    placeholder="Opcional: Ej. Paciente rechazó un medicamento..."
-                  />
-                </label>
-
-                <div className={styles.modalActions}>
-                  <button type="button" className={styles.btnSecondary} onClick={() => setIsModalOpen(false)}>Cancelar</button>
-                  <button type="submit" className={styles.btnPrimary} disabled={isSubmitting || fefoSuggestions.length === 0}>
-                    {isSubmitting ? "Procesando Entrega..." : "Confirmar Entrega de Medicamentos"}
-                  </button>
-                </div>
-              </form>
+                  </thead>
+                  <tbody>
+                    {isSubmitting && fefoSuggestions.length === 0 ? (
+                      <tr><td colSpan={6} className={styles.emptyCell}>Calculando lotes FEFO...</td></tr>
+                    ) : fefoSuggestions.map((s, idx) => (
+                      <tr key={idx}>
+                        <td className={styles.cellMain}>{s.medicamento_nombre}</td>
+                        <td className={styles.cellCode}>{s.lote_numero}</td>
+                        <td className={styles.num}>{s.stock_disponible}</td>
+                        <td className={styles.num}>{s.cantidad_requerida}</td>
+                        <td>
+                          <label className={pac.qty}>
+                            <span className="sr-only">Cantidad a entregar de {s.medicamento_nombre}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max={s.stock_disponible}
+                              value={s.cantidad_sugerida}
+                              onChange={(e) => handleCantidadChange(idx, Number(e.target.value))}
+                              className="form-input form-input-sm"
+                              disabled={!!s.error}
+                            />
+                          </label>
+                        </td>
+                        <td>
+                          <span className={`${styles.badge} ${s.error ? styles.badgeDanger : s.warning ? styles.badgeWarning : styles.badgeSuccess}`}>
+                            {s.error || s.warning || "Stock suficiente"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
+
+            {/* el formulario abarca solo las observaciones, como antes: Enter en una cantidad no envía la entrega */}
+            <form
+              id="farmacia-entrega-form"
+              className={styles.formSection}
+              onSubmit={(e) => { e.preventDefault(); handleConfirmarEntrega(); }}
+            >
+              <h3 className={styles.formSectionTitle}>3. Observaciones y Confirmación</h3>
+              <label className="form-field">
+                <span className="form-label">
+                  Observaciones de Entrega <span className="form-optional">(Opcional)</span>
+                </span>
+                <textarea
+                  className="form-input"
+                  rows={2}
+                  value={observaciones}
+                  onChange={(e) => setObservaciones(e.target.value)}
+                  placeholder="Opcional: Ej. Paciente rechazó un medicamento..."
+                />
+              </label>
+            </form>
           </div>
-        </div>
+
+          <div className={styles.modalFooter}>
+            <button type="button" className="btn-ghost btn-sm" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+            <button
+              type="submit"
+              form="farmacia-entrega-form"
+              className="btn-primary btn-sm"
+              disabled={isSubmitting || fefoSuggestions.length === 0}
+            >
+              {isSubmitting ? (
+                <LoaderCircle className="spin" aria-hidden="true" />
+              ) : (
+                <PackageCheck aria-hidden="true" />
+              )}
+              {isSubmitting ? "Procesando Entrega..." : "Confirmar Entrega de Medicamentos"}
+            </button>
+          </div>
+        </AdminModal>
       )}
 
 
       {/* Dashboard Top */}
-      {dashboard && (
-        <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
-            <div className={styles.statHeader}>
-              <h3>Pacientes Atendidos</h3>
-            </div>
-            <p className={styles.statValue}>{dashboard.pacientes_atendidos || 0}</p>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statHeader}>
-              <h3>Líneas de Entrega</h3>
-            </div>
-            <p className={styles.statValue}>{dashboard.total_entregas || 0}</p>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statHeader}>
-              <h3>Unidades Entregadas</h3>
-            </div>
-            <p className={styles.statValue}>{dashboard.total_unidades_entregadas || 0}</p>
-          </div>
+      {dashboard ? (
+        <div className={`${styles.statGrid} tone-rotate`}>
+          <StatCard label="Pacientes Atendidos" value={dashboard.pacientes_atendidos || 0} icon={<HeartPulse />} />
+          <StatCard label="Líneas de Entrega" value={dashboard.total_entregas || 0} icon={<Package />} />
+          <StatCard label="Unidades Entregadas" value={dashboard.total_unidades_entregadas || 0} icon={<Pill />} />
+        </div>
+      ) : isLoading && (
+        <div className={styles.statGrid}>
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
         </div>
       )}
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: "1rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "1rem" }}>
+      <div className={styles.tabs} role="tablist" aria-label="Secciones de farmacia">
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "pendientes"}
+          className={styles.tab}
           onClick={() => setActiveTab("pendientes")}
-          style={{
-            padding: "0.8rem 1.6rem",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            cursor: "pointer",
-            fontWeight: "bold",
-            background: activeTab === "pendientes" ? "var(--primaryColor)" : "transparent",
-            color: activeTab === "pendientes" ? "white" : "var(--gray)"
-          }}
         >
-          Recetas Pendientes ({pendientes.length})
+          <ClipboardList aria-hidden="true" />
+          Recetas Pendientes
+          <span className={styles.tabCount}>{pendientes.length}</span>
         </button>
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "historial"}
+          className={styles.tab}
           onClick={() => setActiveTab("historial")}
-          style={{
-            padding: "0.8rem 1.6rem",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            cursor: "pointer",
-            fontWeight: "bold",
-            background: activeTab === "historial" ? "var(--primaryColor)" : "transparent",
-            color: activeTab === "historial" ? "white" : "var(--gray)"
-          }}
         >
+          <History aria-hidden="true" />
           Historial de Entregas
         </button>
       </div>
 
       {/* Main Table Container */}
-      <div className={styles.tableContainer}>
-        <div className={styles.tableHeader}>
-          <h3>{activeTab === "pendientes" ? "Recetas Pendientes de Entrega" : "Historial de Medicamentos Entregados"}</h3>
+      {isLoading ? (
+        <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
+          <span className="sr-only">Cargando...</span>
         </div>
+      ) : (
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>
+              {activeTab === "pendientes" ? "Recetas Pendientes de Entrega" : "Historial de Medicamentos Entregados"}
+            </h2>
+          </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.6rem", padding: "0 2.4rem" }}>
-          <label style={{ fontSize: "1.4rem", fontWeight: "600", color: "var(--text-color)" }}>
-            {activeTab === "pendientes" ? "Filtrar por Brigada Activa:" : "Filtrar por Brigada:"}
-          </label>
-          <select
-            value={filtroBrigada}
-            onChange={e => setFiltroBrigada(e.target.value)}
-            style={{
-              padding: "0.6rem 1.2rem",
-              borderRadius: "var(--radius)",
-              border: "1px solid var(--border-color)",
-              background: "var(--white)",
-              color: "var(--text-color)",
-              fontSize: "1.4rem"
-            }}
-          >
-            <option value="todas">Todas las Brigadas</option>
-            {todasLasBrigadas
-              .filter(b => activeTab !== "pendientes" || (b.estado !== "finalizada" && b.estado !== "cancelada"))
-              .map(b => (
-                <option key={b.id} value={b.id}>{b.nombre}</option>
-              ))}
-          </select>
-        </div>
+          <div className={styles.toolbar}>
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="farmacia-filtro-brigada">
+                {activeTab === "pendientes" ? "Filtrar por Brigada Activa:" : "Filtrar por Brigada:"}
+              </label>
+              <select
+                id="farmacia-filtro-brigada"
+                className="form-input form-input-sm"
+                value={filtroBrigada}
+                onChange={e => setFiltroBrigada(e.target.value)}
+              >
+                <option value="todas">Todas las Brigadas</option>
+                {todasLasBrigadas
+                  .filter(b => activeTab !== "pendientes" || (b.estado !== "finalizada" && b.estado !== "cancelada"))
+                  .map(b => (
+                    <option key={b.id} value={b.id}>{b.nombre}</option>
+                  ))}
+              </select>
+            </div>
+          </div>
 
-        <div style={{ overflowX: "auto" }}>
-          {activeTab === "pendientes" ? (
-            <table className={styles.adminTable}>
-              <thead>
-                <tr>
-                  <th>Fecha Consulta</th>
-                  <th>Paciente</th>
-                  <th>Medicamentos Recetados</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
+          <div className={styles.tableWrap}>
+            {activeTab === "pendientes" ? (
+              <table className={styles.table}>
+                <thead>
                   <tr>
-                    <td colSpan={4} style={{ textAlign: "center", padding: "2rem" }}>Cargando...</td>
+                    <th>Fecha Consulta</th>
+                    <th>Paciente</th>
+                    <th>Medicamentos Recetados</th>
+                    <th className={styles.num}>Acción</th>
                   </tr>
-              ) : (() => {
-                  const filtered = filtroBrigada === "todas"
-                    ? pendientes
-                    : pendientes.filter(p => p.brigada_id === filtroBrigada);
-                  const paginated = filtered.slice((currentPagePendientes - 1) * itemsPerPage, currentPagePendientes * itemsPerPage);
-                  return filtered.length === 0 ? (
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+                      <td colSpan={4} className={styles.emptyCell}>
                         No hay recetas pendientes en esta brigada.
                       </td>
                     </tr>
                   ) : (
                     paginated.map((p) => (
                       <tr key={p.id}>
-                        <td>{new Date(p.created_at).toLocaleDateString()}</td>
-                        <td style={{ fontWeight: "bold" }}>{p.pacientes?.nombres} {p.pacientes?.apellidos}</td>
+                        <td className={styles.nowrap}>{new Date(p.created_at).toLocaleDateString()}</td>
+                        <td className={styles.cellMain}>{p.pacientes?.nombres} {p.pacientes?.apellidos}</td>
                         <td>
-                          <ul style={{ paddingLeft: "2rem", margin: 0 }}>
+                          <ul className={styles.stackSm}>
                             {p.medicamentos_consulta?.map((m: any, idx: number) => (
                               <li key={idx}>
-                                {m.cantidad}x {m.medicamentos?.nombre} 
-                                {m.indicaciones && <span style={{ color: "var(--gray)", fontSize: "0.9em" }}> ({m.indicaciones})</span>}
+                                <span className={`${styles.badge} ${styles.badgeInfo}`}>
+                                  {m.cantidad}x {m.medicamentos?.nombre}
+                                </span>
+                                {m.indicaciones && <span className={styles.cellSub}>({m.indicaciones})</span>}
                               </li>
                             ))}
                           </ul>
                         </td>
                         <td>
                           {(can(PERMISSIONS.FARMACIA_PROCESS) || can(PERMISSIONS.FARMACIA_CREATE)) && (
-                            <button 
-                              className={styles.btnPrimary}
-                              onClick={() => openEntregaModal(p)}
-                            >
-                              Realizar Entrega
-                            </button>
+                            <div className={styles.rowActions}>
+                              <button
+                                type="button"
+                                className="btn-primary btn-xs"
+                                onClick={() => openEntregaModal(p)}
+                              >
+                                <PackageCheck aria-hidden="true" />
+                                Realizar Entrega
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
                     ))
-                  );
-                })()}
-              </tbody>
-            </table>
-          ) : (
-            <table className={styles.adminTable}>
-              <thead>
-                <tr>
-                  <th>Fecha Entrega</th>
-                  <th>Paciente</th>
-                  <th>Medicamento</th>
-                  <th>Cantidad</th>
-                  <th>Lote</th>
-                  <th>Vencimiento</th>
-                  <th>Entregado Por</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className={styles.table}>
+                <thead>
                   <tr>
-                    <td colSpan={7} style={{ textAlign: "center", padding: "2rem" }}>Cargando...</td>
+                    <th>Fecha Entrega</th>
+                    <th>Paciente</th>
+                    <th>Medicamento</th>
+                    <th className={styles.num}>Cantidad</th>
+                    <th>Lote</th>
+                    <th>Vencimiento</th>
+                    <th>Entregado Por</th>
                   </tr>
-              ) : (() => {
-                  const filtered = filtroBrigada === "todas"
-                    ? entregas
-                    : entregas.filter(e => e.brigada_id === filtroBrigada);
-                  const paginated = filtered.slice((currentPageHistorial - 1) * itemsPerPage, currentPageHistorial * itemsPerPage);
-                  return filtered.length === 0 ? (
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
+                      <td colSpan={7} className={styles.emptyCell}>
                         No hay historial de entregas para esta brigada.
                       </td>
                     </tr>
                   ) : (
                     paginated.map((e) => (
                       <tr key={e.id}>
-                        <td>{new Date(e.fecha_entrega).toLocaleDateString()}</td>
-                        <td style={{ fontWeight: "bold" }}>{e.paciente}</td>
+                        <td className={styles.nowrap}>{new Date(e.fecha_entrega).toLocaleDateString()}</td>
+                        <td className={styles.cellMain}>{e.paciente}</td>
                         <td>{e.medicamento}</td>
-                        <td style={{ fontWeight: "bold", fontSize: "1.2rem" }}>{e.cantidad}</td>
-                        <td><span className={`${styles.badge} ${styles.badgeWarning}`}>{e.numero_lote}</span></td>
-                        <td>{new Date(e.fecha_vencimiento).toLocaleDateString()}</td>
-                        <td style={{ color: "var(--gray)" }}>{e.entregado_por}</td>
+                        <td className={`${styles.num} ${styles.cellMain}`}>{e.cantidad}</td>
+                        <td className={styles.cellCode}>{e.numero_lote}</td>
+                        <td className={styles.nowrap}>{new Date(e.fecha_vencimiento).toLocaleDateString()}</td>
+                        <td className={styles.muted}>{e.entregado_por}</td>
                       </tr>
                     ))
-                  );
-                })()}
-              </tbody>
-            </table>
-          )}
-        </div>
-        
-        {(() => {
-          const list = activeTab === "pendientes" ? pendientes : entregas;
-          const filtered = filtroBrigada === "todas"
-            ? list
-            : list.filter(item => item.brigada_id === filtroBrigada);
-          const totalPages = Math.ceil(filtered.length / itemsPerPage);
-          if (totalPages <= 1) return null;
-          const curPage = activeTab === "pendientes" ? currentPagePendientes : currentPageHistorial;
-          const setCurPage = activeTab === "pendientes" ? setCurrentPagePendientes : setCurrentPageHistorial;
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
 
-          return (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", marginTop: "2rem", padding: "1.5rem" }}>
-              <button 
-                disabled={curPage === 1} 
+          {totalPages > 1 && (
+            <nav className={styles.panelFooter} aria-label="Paginación">
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                disabled={curPage === 1}
                 onClick={() => setCurPage(prev => Math.max(prev - 1, 1))}
-                className={styles.btnSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: curPage === 1 ? "not-allowed" : "pointer", opacity: curPage === 1 ? 0.5 : 1 }}
               >
+                <ChevronLeft aria-hidden="true" />
                 Anterior
               </button>
-              <span style={{ fontSize: "1.3rem", fontWeight: "600" }}>Página {curPage} de {totalPages}</span>
-              <button 
-                disabled={curPage === totalPages} 
+              <span className={styles.pagerInfo}>Página {curPage} de {totalPages}</span>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                disabled={curPage === totalPages}
                 onClick={() => setCurPage(prev => Math.min(prev + 1, totalPages))}
-                className={styles.btnSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: curPage === totalPages ? "not-allowed" : "pointer", opacity: curPage === totalPages ? 0.5 : 1 }}
               >
                 Siguiente
+                <ChevronRight aria-hidden="true" />
               </button>
-            </div>
-          );
-        })()}
-      </div>
+            </nav>
+          )}
+        </section>
+      )}
     </div>
   );
 }

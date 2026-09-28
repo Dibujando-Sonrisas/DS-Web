@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { requirePermission, getAuthContext } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { isAppRole, type AppRole } from "@/lib/auth/roles";
+import PageHeader from "@/app/administracion/components/PageHeader";
 import styles from "@/styles/pages/admin.module.css";
 import UsuariosAdminClient from "./UsuariosAdminClient";
 
@@ -59,15 +60,11 @@ export default async function UsuariosPage() {
     profilesError?.message || specialtiesError?.message || null;
 
   return (
-    <div>
-      <div className={styles.pageIntro}>
-        <h2>Administración de Usuarios</h2>
-        <p>
-          Gestiona los perfiles de los miembros de Dibujando Sonrisas. Puedes
-          buscar, filtrar, cambiar roles, asignar especialidades clínicas y
-          activar o desactivar accesos.
-        </p>
-      </div>
+    <div className={styles.page}>
+      <PageHeader
+        title="Administración de Usuarios"
+        description="Gestiona los perfiles de los miembros de Dibujando Sonrisas. Puedes buscar, filtrar, cambiar roles, asignar especialidades clínicas y activar o desactivar accesos."
+      />
 
       <UsuariosAdminClient
         rows={rows}

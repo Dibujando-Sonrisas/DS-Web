@@ -1,102 +1,219 @@
 /* =====================================================
    AUTH PAGES — auth.module.css
+   Solo el layout de /auth (AuthShell + formularios).
+   Tarjeta, íconos, tonos, botones, campos y avisos vienen
+   de globals.css.
 ===================================================== */
 
-/* ── Wrapper de página completa ── */
+/* el padding superior libera el header fijo */
 .authPage {
-  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-    135deg,
-    var(--bg-light) 0%,
-    var(--bg-section) 60%,
-    var(--primaryLight) 100%
-  );
-  padding: 4rem 1.6rem;
+  min-height: 100dvh;
+  padding: clamp(1.6rem, 5vw, 4.8rem) 1.6rem;
 }
 
-/* ── Tarjeta central ── */
-.authCard {
-  background: var(--white);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: 4.8rem 4rem;
+.authShell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
-  max-width: 46rem;
-  animation: slideUp 0.35s ease both;
+  max-width: 52rem;
+  overflow: hidden;
+  box-shadow: 0 24px 60px -24px rgba(7, 40, 38, 0.28);
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+@media (min-width: 900px) {
+  .authShell {
+    grid-template-columns: 38rem minmax(0, 1fr);
+    max-width: 98rem;
   }
 }
 
-/* ── Encabezado de la tarjeta ── */
-.authHeader {
-  text-align: center;
-  margin-bottom: 3.2rem;
+/* ── PANEL DE MARCA: verde oscuro con borde de boleto ── */
+.authAside {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2.8rem;
+  padding: 2.8rem 3.2rem;
+  background: var(--primaryDark);
+  color: var(--white);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  outline: 2px dashed rgba(247, 203, 112, 0.55);
+  outline-offset: -1.2rem;
 }
 
-.authIcon {
+@media (min-width: 900px) {
+  .authAside {
+    padding: 4rem 3.6rem;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  }
+}
+
+.asideBrand {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+
+.asideLogo {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 5.6rem;
+  height: 5.6rem;
+  border-radius: 50%;
+  background: var(--white);
+  overflow: hidden;
+}
+
+/* logo-mark.png: solo las tres caritas, legible en tamaños chicos */
+.asideLogo img {
+  width: 100%;
+  height: 100%;
+  padding: 0.7rem;
+  object-fit: contain;
+}
+
+.asideName {
+  display: block;
+  font-family: var(--fontHeading);
+  font-size: 2.4rem;
+  line-height: 1.1;
+  color: var(--white);
+}
+
+.asideName span {
+  color: var(--secondaryColor);
+}
+
+.asideSub {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* foto con marco crema, girada como pegada a mano (igual que en /nuestro-trabajo) */
+.asidePhoto {
+  align-self: center;
+  width: min(100%, 26rem);
+  margin: 0;
+  padding: 0.8rem;
+  background: var(--bg-light);
+  border-radius: var(--radius-md);
+  box-shadow: 0 18px 36px -14px rgba(0, 0, 0, 0.5);
+  transform: rotate(-2.5deg);
+}
+
+.asidePhoto img {
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: calc(var(--radius-md) - 0.4rem);
+}
+
+.asideTagline {
+  margin: 0;
+  max-width: 30ch;
+  font-size: 1.6rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.asideFoot :global(.crayons) {
+  margin: 1.4rem 0 0;
+}
+
+/* en móvil el panel queda como franja con el logo */
+@media (max-width: 899px) {
+  .asidePhoto,
+  .asideFoot {
+    display: none;
+  }
+}
+
+/* ── FORMULARIO ── */
+/* sin menú del sitio, este enlace es la salida al inicio */
+.backLink {
   display: inline-flex;
   align-items: center;
+  align-self: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 2.4rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--gray);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.backLink:hover {
+  color: var(--primaryDark);
+}
+
+.backLink svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  transition: transform 0.2s ease;
+}
+
+.backLink:hover svg {
+  transform: translateX(-0.3rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backLink:hover svg {
+    transform: none;
+  }
+}
+
+.authBody {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
-  width: 6.4rem;
-  height: 6.4rem;
-  background: var(--primaryLight);
-  border-radius: 50%;
+  padding: clamp(2.8rem, 5vw, 5.6rem);
+}
+
+.authHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 2.8rem;
+}
+
+.authHeader :global(.icon-circle) {
   margin-bottom: 1.6rem;
 }
 
-.authIcon svg {
-  width: 2.8rem;
-  height: 2.8rem;
+.authTitle {
   color: var(--primaryColor);
+  font-size: clamp(2.6rem, 5vw, 3.2rem);
+  margin: 0;
+  text-wrap: balance;
 }
 
-.authTitle {
-  font-family: var(--fontHeading);
-  font-size: 2.8rem;
-  font-weight: 700;
-  color: var(--dark);
-  margin: 0 0 0.8rem 0;
+.authHeader :global(.crayons) {
+  margin: 1.2rem 0 1.4rem;
 }
 
 .authSubtitle {
   font-size: 1.5rem;
-  color: var(--text-light);
-  margin: 0;
   line-height: 1.5;
+  max-width: 40ch;
 }
 
-/* ── Formulario ── */
+.greeting {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primaryDark);
+}
+
 .authForm {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-}
-
-/* ── Grupo de campo ── */
-.fieldGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.fieldLabel {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--dark);
-  letter-spacing: 0.01em;
 }
 
 .fieldWrapper {
@@ -109,8 +226,7 @@
   position: absolute;
   left: 1.4rem;
   display: flex;
-  align-items: center;
-  color: var(--grayLight);
+  color: var(--gray);
   pointer-events: none;
   transition: color 0.2s ease;
 }
@@ -120,33 +236,15 @@
   height: 1.8rem;
 }
 
-.fieldInput {
-  width: 100%;
-  padding: 1.2rem 1.4rem 1.2rem 4.4rem;
-  font-family: var(--fontBody);
-  font-size: 1.5rem;
-  color: var(--dark);
-  background: var(--white);
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  transition: border-color 0.2s ease;
-  outline: none;
-}
-
-.fieldInput::placeholder {
-  color: var(--grayLight);
-}
-
-.fieldInput:focus {
-  border-color: var(--primaryColor);
-}
-
-.fieldInput:focus + .fieldIcon,
 .fieldWrapper:focus-within .fieldIcon {
-  color: var(--primaryColor);
+  color: var(--primaryStrong);
 }
 
-/* ── Fila "Recordar / Olvidé contraseña" ── */
+.fieldInput {
+  padding-left: 4.4rem;
+}
+
+/* "Recordar sesión" + "¿Olvidaste tu contraseña?" */
 .fieldRow {
   display: flex;
   align-items: center;
@@ -155,110 +253,24 @@
   gap: 0.8rem;
 }
 
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+.textLink {
   font-size: 1.4rem;
-  color: var(--gray);
-  cursor: pointer;
-  user-select: none;
+  font-weight: 600;
+  color: var(--primaryStrong);
 }
 
-.checkboxInput {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 1.8rem;
-  height: 1.8rem;
-  border: 1.5px solid var(--border-color);
-  border-radius: 0.4rem;
-  background: var(--bg-light);
-  cursor: pointer;
-  position: relative;
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease;
-  flex-shrink: 0;
-}
-
-.checkboxInput:checked {
-  background: var(--primaryColor);
-  border-color: var(--primaryColor);
-}
-
-.checkboxInput:checked::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -60%) rotate(45deg);
-  width: 0.45rem;
-  height: 0.85rem;
-  border: 2px solid var(--white);
-  border-top: none;
-  border-left: none;
-}
-
-.forgotLink {
-  font-size: 1.4rem;
-  font-weight: 500;
-  color: var(--primaryColor);
-  transition: color 0.2s ease;
-}
-
-.forgotLink:hover {
+.textLink:hover {
   color: var(--primaryDark);
   text-decoration: underline;
 }
 
-/* ── Botón de submit ── */
-.submitBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.8rem;
-  width: 100%;
-  padding: 1.4rem 2.4rem;
-  background: var(--primaryColor);
-  color: var(--white);
-  font-family: var(--fontBody);
-  font-size: 1.6rem;
-  font-weight: 600;
-  border: 2px solid var(--primaryColor);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition:
-    background 0.25s ease,
-    border-color 0.25s ease,
-    transform 0.2s ease,
-    box-shadow 0.25s ease;
-  margin-top: 0.4rem;
-}
-
-.submitBtn:hover {
-  background: var(--primaryDark);
-  border-color: var(--primaryDark);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.submitBtn:active {
-  transform: translateY(0);
-  box-shadow: var(--shadow-sm);
-}
-
-.submitBtn svg {
-  width: 1.8rem;
-  height: 1.8rem;
-}
-
-/* ── Separador ── */
+/* ── SEPARADOR Y PIE ── */
 .divider {
   display: flex;
   align-items: center;
   gap: 1.2rem;
-  color: var(--grayLight);
+  margin-top: 2.4rem;
+  color: var(--gray);
   font-size: 1.3rem;
 }
 
@@ -266,93 +278,27 @@
 .divider::after {
   content: "";
   flex: 1;
-  height: 1px;
-  background: var(--border-color);
+  border-top: 2px dashed var(--line);
 }
 
-/* ── Footer de la tarjeta ── */
 .authFooter {
   text-align: center;
-  margin-top: 2.4rem;
+  margin-top: 2rem;
   font-size: 1.4rem;
-  color: var(--gray);
 }
 
-.authFooter a {
-  color: var(--primaryColor);
-  font-weight: 600;
-  transition: color 0.2s ease;
+/* ── SIN ACCESO ── */
+.pendingNote {
+  background: var(--bg-light);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+  margin-bottom: 2.4rem;
+  font-size: 1.5rem;
+  color: var(--dark);
 }
 
-.authFooter a:hover {
-  color: var(--primaryDark);
-  text-decoration: underline;
-}
-
-/* ── Mensajes de Error ── */
-.errorBanner {
+.actions {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  background-color: #fee2e2;
-  color: #b91c1c;
-  padding: 1.2rem 1.6rem;
-  border-radius: var(--radius-sm);
-  font-size: 1.4rem;
-  font-weight: 500;
-  margin-bottom: 2rem;
-  border: 1px solid #fca5a5;
-  animation: slideDown 0.3s ease both;
-}
-
-.errorBanner svg {
-  width: 2rem;
-  height: 2rem;
-  flex-shrink: 0;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ── Spinner de carga ── */
-.spinner {
-  display: inline-block;
-  width: 1.8rem;
-  height: 1.8rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: var(--white);
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.submitBtn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-
-/* ── Responsive ── */
-@media (max-width: 520px) {
-  .authCard {
-    padding: 3.2rem 2.4rem;
-  }
-
-  .authTitle {
-    font-size: 2.4rem;
-  }
+  flex-direction: column;
+  gap: 1.2rem;
 }

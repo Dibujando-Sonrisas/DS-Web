@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   getMedicamentosAction as getMedicamentos,
   getCategoriasInventarioAction as getCategoriasInventario,
@@ -10,6 +10,9 @@ import {
 } from "./actions";
 import { LotesModal } from "./components/LotesModal";
 import { MedicamentoForm } from "./components/MedicamentoForm";
+import { Boxes, Layers, Lock, Pencil, Pill, Plus, Syringe, Tent, Trash2 } from "lucide-react";
+import AdminModal from "@/app/administracion/components/AdminModal";
+import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import styles from "@/styles/pages/admin.module.css";
 
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
@@ -143,233 +146,163 @@ export function InventarioClient() {
   const getTipoBadge = (tipo?: string) => {
     switch (tipo) {
       case "insumo_medico":
-        return (
-          <span
-            style={{
-              background: "#f0fdfa",
-              color: "#0f766e",
-              border: "1px solid #ccfbf1",
-              padding: "0.3rem 0.9rem",
-              borderRadius: "9999px",
-              fontSize: "1.15rem",
-              fontWeight: 700,
-              display: "inline-block",
-            }}
-          >
-            Insumo Médico
-          </span>
-        );
+        return <span className={`${styles.badge} ${styles.badgeBrand}`}>Insumo Médico</span>;
       case "material_brigada":
-        return (
-          <span
-            style={{
-              background: "#f5f3ff",
-              color: "#6d28d9",
-              border: "1px solid #ddd6fe",
-              padding: "0.3rem 0.9rem",
-              borderRadius: "9999px",
-              fontSize: "1.15rem",
-              fontWeight: 700,
-              display: "inline-block",
-            }}
-          >
-            Material Brigada
-          </span>
-        );
+        return <span className={`${styles.badge} ${styles.badgeNeutral}`}>Material Brigada</span>;
       default:
-        return (
-          <span
-            style={{
-              background: "#ecfdf5",
-              color: "#047857",
-              border: "1px solid #a7f3d0",
-              padding: "0.3rem 0.9rem",
-              borderRadius: "9999px",
-              fontSize: "1.15rem",
-              fontWeight: 700,
-              display: "inline-block",
-            }}
-          >
-            Medicamento
-          </span>
-        );
+        return <span className={`${styles.badge} ${styles.badgeInfo}`}>Medicamento</span>;
     }
   };
 
   const getStockBadge = (estado: string) => {
-    let bg = "#f8fafc";
-    let color = "#64748b";
-    let border = "#e2e8f0";
-
+    let tone = styles.badgeSuccess;
     if (estado === "Sin Existencias") {
-      bg = "#fff1f2";
-      color = "#be123c";
-      border = "#fecdd3";
+      tone = styles.badgeDanger;
     } else if (estado === "Stock Bajo" || estado === "Stock Crítico") {
-      bg = "#fffbeb";
-      color = "#b45309";
-      border = "#fde68a";
-    } else {
-      bg = "#ecfdf5";
-      color = "#047857";
-      border = "#a7f3d0";
+      tone = styles.badgeWarning;
     }
 
-    return (
-      <span
-        style={{
-          background: bg,
-          color: color,
-          border: `1px solid ${border}`,
-          padding: "0.35rem 1rem",
-          borderRadius: "9999px",
-          fontWeight: 700,
-          fontSize: "1.2rem",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.5rem",
-        }}
-      >
-        <span
-          style={{
-            width: "6px",
-            height: "6px",
-            borderRadius: "50%",
-            backgroundColor: color,
-          }}
-        />
-        {estado}
-      </span>
-    );
+    return <span className={`${styles.badge} ${styles.badgeDot} ${tone}`}>{estado}</span>;
   };
 
+  const FILTROS = [
+    { id: "todos", label: "Todos", icon: <Boxes aria-hidden="true" /> },
+    { id: "medicamento", label: "Fármacos", icon: <Pill aria-hidden="true" /> },
+    { id: "insumo_medico", label: "Insumos", icon: <Syringe aria-hidden="true" /> },
+    { id: "material_brigada", label: "Material Brigada", icon: <Tent aria-hidden="true" /> },
+  ] as const;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
-      <div className={styles.adminCard}>
-        <div className={styles.adminCardHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+    <div className={styles.stack}>
+      <section className={styles.panel}>
+        <div className={styles.panelHeader}>
           <div>
-            <h2 className={styles.adminCardTitle}>Gestión Global de Inventario</h2>
-            <p style={{ color: "var(--text-muted)", fontSize: "1.3rem", marginTop: "0.4rem" }}>
+            <h2 className={styles.panelTitle}>
+              Gestión Global de Inventario
+              {!isLoading && <span className={styles.count}>{medicamentos.length}</span>}
+            </h2>
+            <p className={styles.panelSub}>
               Control unificado de medicamentos, insumos médicos y material de brigadas
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-            <div style={{ display: "flex", background: "var(--bg-light)", padding: "0.4rem", borderRadius: "8px", border: "1px solid var(--border-color)" }}>
-              <button 
-                className={`${styles.btnSecondary} ${filtroTipo === "todos" ? styles.btnActive : ""}`}
-                style={{ padding: "0.6rem 1.2rem", fontSize: "1.2rem", border: "none", background: filtroTipo === "todos" ? "var(--primaryColor)" : "transparent", color: filtroTipo === "todos" ? "white" : "inherit" }}
-                onClick={() => setFiltroTipo("todos")}
-              >
-                Todos
-              </button>
-              <button 
-                className={`${styles.btnSecondary} ${filtroTipo === "medicamento" ? styles.btnActive : ""}`}
-                style={{ padding: "0.6rem 1.2rem", fontSize: "1.2rem", border: "none", background: filtroTipo === "medicamento" ? "var(--primaryColor)" : "transparent", color: filtroTipo === "medicamento" ? "white" : "inherit" }}
-                onClick={() => setFiltroTipo("medicamento")}
-              >
-                Fármacos
-              </button>
-              <button 
-                className={`${styles.btnSecondary} ${filtroTipo === "insumo_medico" ? styles.btnActive : ""}`}
-                style={{ padding: "0.6rem 1.2rem", fontSize: "1.2rem", border: "none", background: filtroTipo === "insumo_medico" ? "var(--primaryColor)" : "transparent", color: filtroTipo === "insumo_medico" ? "white" : "inherit" }}
-                onClick={() => setFiltroTipo("insumo_medico")}
-              >
-                Insumos
-              </button>
-              <button 
-                className={`${styles.btnSecondary} ${filtroTipo === "material_brigada" ? styles.btnActive : ""}`}
-                style={{ padding: "0.6rem 1.2rem", fontSize: "1.2rem", border: "none", background: filtroTipo === "material_brigada" ? "var(--primaryColor)" : "transparent", color: filtroTipo === "material_brigada" ? "white" : "inherit" }}
-                onClick={() => setFiltroTipo("material_brigada")}
-              >
-                Material Brigada
-              </button>
-            </div>
-
-            {can(PERMISSIONS.INVENTARIO_CREATE) ? (
-              <button className={styles.btnPrimary} onClick={() => handleOpenMedForm()}>
-                + Nuevo Recurso
-              </button>
-            ) : (
-              <span style={{ fontSize: "1.2rem", padding: "0.4rem 1rem", borderRadius: "1rem", background: "#e2e8f0", color: "#475569", fontWeight: 600 }}>
-                Modo Solo Lectura
-              </span>
-            )}
-          </div>
+          {can(PERMISSIONS.INVENTARIO_CREATE) ? (
+            <button type="button" className="btn-primary btn-sm" onClick={() => handleOpenMedForm()}>
+              <Plus aria-hidden="true" />
+              Nuevo Recurso
+            </button>
+          ) : (
+            <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+              <Lock aria-hidden="true" />
+              Modo Solo Lectura
+            </span>
+          )}
         </div>
-        
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.adminTable}>
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th>Nombre del Recurso</th>
-                <th>Descripción</th>
-                <th>Unidad</th>
-                <th>Stock Mínimo</th>
-                <th>Stock Total</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
+
+        <div className={styles.tabs} role="tablist" aria-label="Tipo de recurso">
+          {FILTROS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={filtroTipo === f.id}
+              className={styles.tab}
+              onClick={() => setFiltroTipo(f.id)}
+            >
+              {f.icon}
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {isLoading ? (
+          <div className={styles.panelBody}>
+            <div className={`${styles.skeleton} ${styles.skeletonBlock}`} />
+          </div>
+        ) : (
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "2rem" }}>
-                    Cargando inventario...
-                  </td>
+                  <th>Tipo</th>
+                  <th>Nombre del Recurso</th>
+                  <th>Unidad</th>
+                  <th className={styles.num}>Stock Mínimo</th>
+                  <th className={styles.num}>Stock Total</th>
+                  <th>Estado</th>
+                  <th className={styles.num}>Acciones</th>
                 </tr>
-              ) : medicamentos.length === 0 ? (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
-                    No hay recursos registrados en esta categoría de inventario.
-                  </td>
-                </tr>
-              ) : (
-                medicamentos.map((med: any) => (
-                  <tr key={med.medicamento_id || med.id}>
-                    <td>{getTipoBadge(med.tipo_recurso)}</td>
-                    <td style={{ fontWeight: "bold", color: "var(--primaryColor)" }}>{med.nombre}</td>
-                    <td style={{ maxWidth: "200px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }} title={med.descripcion}>{med.descripcion || "-"}</td>
-                    <td>{med.unidad_medida || "-"}</td>
-                    <td>{med.stock_minimo}</td>
-                    <td style={{ fontWeight: "bold", fontSize: "1.4rem" }}>{med.stock_total || 0}</td>
-                    <td>{getStockBadge(med.estado_stock || "Sin Existencias")}</td>
-                    <td>
-                        <div className={styles.tableActions}>
+              </thead>
+              <tbody>
+                {medicamentos.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className={styles.emptyCell}>
+                      No hay recursos registrados en esta categoría de inventario.
+                    </td>
+                  </tr>
+                ) : (
+                  medicamentos.map((med: any) => (
+                    <tr key={med.medicamento_id || med.id}>
+                      <td>{getTipoBadge(med.tipo_recurso)}</td>
+                      {/* la descripción va bajo el nombre para que las acciones quepan sin desplazar */}
+                      <td>
+                        <span className={styles.cellMain}>{med.nombre}</span>
+                        {med.descripcion && (
+                          <span
+                            className={`${styles.cellSub} ${styles.truncate}`}
+                            title={med.descripcion}
+                          >
+                            {med.descripcion}
+                          </span>
+                        )}
+                      </td>
+                      <td>{med.unidad_medida || "-"}</td>
+                      <td className={styles.num}>{med.stock_minimo}</td>
+                      <td className={`${styles.num} ${styles.cellMain}`}>{med.stock_total || 0}</td>
+                      <td>{getStockBadge(med.estado_stock || "Sin Existencias")}</td>
+                      <td>
+                        <div className={styles.rowActions}>
                           {can(PERMISSIONS.INVENTARIO_UPDATE) && (
-                            <button 
-                              className={styles.btnSecondary}
-                              style={{ fontSize: "1.3rem" }}
+                            <button
+                              type="button"
+                              className="btn-icon"
                               onClick={() => handleOpenMedForm(med)}
+                              aria-label={`Editar ${med.nombre}`}
+                              title="Editar"
                             >
-                              Editar
+                              <Pencil aria-hidden="true" />
                             </button>
                           )}
-                          <button 
-                            className={styles.btnSecondary}
+                          <button
+                            type="button"
+                            className="btn-ghost btn-xs"
                             onClick={() => setSelectedMedLotes({ id: med.medicamento_id || med.id, nombre: med.nombre })}
+                            aria-label={`Ver lotes de ${med.nombre}`}
                           >
+                            <Layers aria-hidden="true" />
                             Ver Lotes
                           </button>
                           {can(PERMISSIONS.INVENTARIO_DELETE) && (
-                            <button 
-                              className={styles.btnDanger}
-                              style={{ fontSize: "1.3rem", padding: "0.4rem 1rem", background: "#fee2e2", color: "#dc2626", border: "1px solid #fca5a5" }}
+                            <button
+                              type="button"
+                              className="btn-icon btn-icon-danger"
                               onClick={() => setMedToDelete(med)}
+                              aria-label={`Eliminar ${med.nombre}`}
+                              title="Eliminar"
                             >
-                              Eliminar
+                              <Trash2 aria-hidden="true" />
                             </button>
                           )}
                         </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {selectedMedLotes && (
         <LotesModal
@@ -382,76 +315,33 @@ export function InventarioClient() {
       )}
 
       {isMedModalOpen && (
-        <div className={styles.modalOverlay} onClick={handleCloseMedForm}>
-          <div 
-            className={styles.modal} 
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "640px", width: "95%" }}
-          >
-            <div className={styles.modalHeader}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700" }}>
-                {selectedMedForEdit ? "Editar medicamento" : "Nuevo Medicamento o Insumo"}
-              </h3>
-              <button className={styles.modalClose} onClick={handleCloseMedForm} title="Cerrar" aria-label="Cerrar">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <div style={{ padding: "2.4rem" }}>
-              <MedicamentoForm 
-                initialData={selectedMedForEdit} 
-                categorias={categorias}
-                onSubmit={handleSubmitMed}
-                onCancel={handleCloseMedForm}
-                isLoading={isSubmitting} 
-              />
-            </div>
-          </div>
-        </div>
+        <AdminModal
+          title={selectedMedForEdit ? "Editar medicamento" : "Nuevo Medicamento o Insumo"}
+          onClose={handleCloseMedForm}
+          busy={isSubmitting}
+        >
+          <MedicamentoForm
+            initialData={selectedMedForEdit}
+            categorias={categorias}
+            onSubmit={handleSubmitMed}
+            onCancel={handleCloseMedForm}
+            isLoading={isSubmitting}
+          />
+        </AdminModal>
       )}
 
       {/* Modal de Confirmación de Eliminación */}
       {medToDelete && (
-        <div className={styles.modalOverlay} onClick={() => setMedToDelete(null)}>
-          <div 
-            className={styles.modal} 
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "400px", width: "95%", textAlign: "center" }}
-          >
-            <div style={{ padding: "3rem 2rem 2rem" }}>
-              <div style={{ background: "#fee2e2", width: "64px", height: "64px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 2rem", color: "#dc2626" }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 6h18" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-              </div>
-              <h3 style={{ fontSize: "2rem", fontWeight: "700", marginBottom: "1rem" }}>¿Eliminar Recurso?</h3>
-              <p style={{ fontSize: "1.4rem", color: "var(--text-muted)", marginBottom: "2.4rem" }}>
-                Estás a punto de eliminar <strong>{medToDelete.nombre}</strong>. Esta acción borrará permanentemente todos sus lotes asociados y el historial de stock en este sistema.
-              </p>
-              
-              <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
-                <button 
-                  className={styles.btnSecondary}
-                  onClick={() => setMedToDelete(null)}
-                  disabled={isDeleting}
-                >
-                  Cancelar
-                </button>
-                <button 
-                  className={styles.btnPrimary}
-                  style={{ background: "#dc2626" }}
-                  onClick={handleDeleteConfirm}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? "Eliminando..." : "Sí, eliminar"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="¿Eliminar Recurso?"
+          confirmLabel="Sí, eliminar"
+          busyLabel="Eliminando..."
+          busy={isDeleting}
+          onCancel={() => setMedToDelete(null)}
+          onConfirm={handleDeleteConfirm}
+        >
+          Estás a punto de eliminar <strong>{medToDelete.nombre}</strong>. Esta acción borrará permanentemente todos sus lotes asociados y el historial de stock en este sistema.
+        </ConfirmDialog>
       )}
     </div>
   );

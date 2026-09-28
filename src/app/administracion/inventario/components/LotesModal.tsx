@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { CircleAlert, CircleCheck, Pencil, Plus, Trash2 } from "lucide-react";
 import type { LoteMedicamento } from "@/lib/db/inventario";
 import {
   getLotesByMedicamentoAction as getLotesByMedicamento,
@@ -9,6 +10,8 @@ import {
   deleteLoteAction as deleteLote,
 } from "../actions";
 import { LoteForm, LoteFormValues } from "./LoteForm";
+import AdminModal from "@/app/administracion/components/AdminModal";
+import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import styles from "@/styles/pages/admin.module.css";
 
 interface LotesModalProps {
@@ -25,6 +28,8 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedLote, setSelectedLote] = useState<LoteMedicamento | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LoteMedicamento | null>(null);
 
   const fetchLotes = async () => {
     try {
@@ -54,8 +59,6 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
     setSelectedLote(lote || null);
     setIsFormOpen(true);
   };
-
-  const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const handleCloseForm = () => {
     setSelectedLote(null);
@@ -101,8 +104,6 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
     }
   };
 
-  const [deleteTarget, setDeleteTarget] = useState<LoteMedicamento | null>(null);
-
   const handleDelete = (lote: LoteMedicamento) => {
     if (lote.cantidad_actual !== lote.cantidad_inicial) {
       setFeedbackMessage({ type: "error", text: "No se puede eliminar un lote que ya ha sido utilizado." });
@@ -127,20 +128,20 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
 
   const getStatusBadge = (lote: LoteMedicamento) => {
     if (lote.cantidad_actual === 0) {
-      return <span style={{ background: "#e0f2fe", color: "#075985", padding: "0.2rem 0.6rem", borderRadius: "8px", fontSize: "0.9em", fontWeight: 600 }}>Sin existencias</span>;
+      return <span className={`${styles.badge} ${styles.badgeNeutral}`}>Sin existencias</span>;
     }
-    
+
     const hoy = new Date();
     const vencimiento = new Date(lote.fecha_vencimiento);
     const diasVencimiento = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 3600 * 24));
-    
+
     if (diasVencimiento < 0) {
-      return <span style={{ background: "var(--danger)", color: "white", padding: "0.2rem 0.6rem", borderRadius: "8px", fontSize: "0.9em", fontWeight: 600 }}>Vencido</span>;
+      return <span className={`${styles.badge} ${styles.badgeDanger}`}>Vencido</span>;
     }
     if (diasVencimiento <= 30) {
-      return <span style={{ background: "#fef08a", color: "#854d0e", padding: "0.2rem 0.6rem", borderRadius: "8px", fontSize: "0.9em", fontWeight: 600 }}>Próximo a vencer</span>;
+      return <span className={`${styles.badge} ${styles.badgeWarning}`}>Próximo a vencer</span>;
     }
-    return <span style={{ background: "#dcfce7", color: "#166534", padding: "0.2rem 0.6rem", borderRadius: "8px", fontSize: "0.9em", fontWeight: 600 }}>Normal</span>;
+    return <span className={`${styles.badge} ${styles.badgeSuccess}`}>Normal</span>;
   };
 
   const formatDate = (dateStr: string) => {
@@ -152,125 +153,123 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
     }
   };
 
+  const feedbackNotice = feedbackMessage && (
+    <p
+      className={`notice ${feedbackMessage.type === "success" ? "notice-ok" : "notice-bad"}`}
+      role={feedbackMessage.type === "error" ? "alert" : "status"}
+    >
+      {feedbackMessage.type === "success" ? <CircleCheck aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}
+      <span>{feedbackMessage.text}</span>
+    </p>
+  );
+
   return (
-    <div className={styles.modalOverlay} onClick={() => onClose()}>
-      <div 
-        className={styles.modal} 
-        onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: "800px", width: "90%", maxHeight: "90vh", overflowY: "auto" }}
+    <>
+      <AdminModal
+        title={`Lotes - ${medicamentoNombre}`}
+        description="Gestiona los lotes para este medicamento. Política FEFO."
+        size="lg"
+        onClose={onClose}
+        // con la confirmación de borrado abierta, Escape solo cierra la confirmación
+        busy={isSubmitting || deleteTarget !== null}
       >
-        <div className={styles.modalHeader}>
-          <h3>Lotes - {medicamentoNombre}</h3>
-          <button className={styles.modalClose} onClick={onClose}>&times;</button>
-        </div>
+        {!isFormOpen ? (
+          <>
+            <div className={styles.modalBody}>
+              {feedbackNotice}
 
-        <div style={{ padding: "2rem" }}>
-          <p style={{ color: "var(--text-muted)", marginBottom: "2rem", fontSize: "1.4rem" }}>
-            Gestiona los lotes para este medicamento. Política FEFO.
-          </p>
-
-          {feedbackMessage && (
-            <div className={feedbackMessage.type === "success" ? styles.formSuccessBanner : styles.formErrorBanner} style={{ marginBottom: "1.6rem" }}>
-              <span>{feedbackMessage.text}</span>
-            </div>
-          )}
-
-          {!isFormOpen ? (
-            <>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1.6rem" }}>
-                <button className={styles.btnPrimary} onClick={() => handleOpenForm()}>
-                  + Agregar Lote
-                </button>
-              </div>
-
-              <div className={styles.tableContainer}>
-                <table className={styles.adminTable}>
-                  <thead>
-                    <tr>
-                      <th>Lote</th>
-                      <th>Fabricante</th>
-                      <th>Vencimiento</th>
-                      <th>Cantidad</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isLoading ? (
+              {isLoading ? (
+                <div className={`${styles.skeleton} ${styles.skeletonBlock}`} />
+              ) : (
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
                       <tr>
-                        <td colSpan={6} style={{ textAlign: "center", padding: "2rem" }}>
-                          Cargando lotes...
-                        </td>
+                        <th>Lote</th>
+                        <th>Fabricante</th>
+                        <th>Vencimiento</th>
+                        <th className={styles.num}>Cantidad</th>
+                        <th>Estado</th>
+                        <th className={styles.num}>Acciones</th>
                       </tr>
-                    ) : lotes.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
-                          No hay lotes registrados para este medicamento.
-                        </td>
-                      </tr>
-                    ) : (
-                      lotes.map((lote) => (
-                        <tr key={lote.id}>
-                          <td style={{ fontWeight: "bold" }}>{lote.numero_lote}</td>
-                          <td>{lote.fabricante || "-"}</td>
-                          <td>{formatDate(lote.fecha_vencimiento)}</td>
-                          <td style={{ fontWeight: "bold", fontSize: "1.4rem" }}>{lote.cantidad_actual}</td>
-                          <td>{getStatusBadge(lote)}</td>
-                          <td>
-                            <div className={styles.tableActions}>
-                              <button className={styles.linkBtn} onClick={() => handleOpenForm(lote)}>
-                                Editar
-                              </button>
-                              <button className={styles.linkBtnDanger} onClick={() => handleDelete(lote)}>
-                                Eliminar
-                              </button>
-                            </div>
+                    </thead>
+                    <tbody>
+                      {lotes.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className={styles.emptyCell}>
+                            No hay lotes registrados para este medicamento.
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            <div style={{ marginTop: "1rem", padding: "2rem", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-                <h3 style={{ margin: 0, fontSize: "1.6rem" }}>{selectedLote ? "Editar Lote" : "Nuevo Lote"}</h3>
-                <button className={styles.btnSecondary} onClick={handleCloseForm}>Volver a Lotes</button>
-              </div>
-              <LoteForm 
-                initialData={selectedLote} 
-                onSubmit={onSubmitForm} 
-                isLoading={isSubmitting} 
-              />
+                      ) : (
+                        lotes.map((lote) => (
+                          <tr key={lote.id}>
+                            <td className={styles.cellCode}>{lote.numero_lote}</td>
+                            <td>{lote.fabricante || "-"}</td>
+                            <td className={styles.nowrap}>{formatDate(lote.fecha_vencimiento)}</td>
+                            <td className={`${styles.num} ${styles.cellMain}`}>{lote.cantidad_actual}</td>
+                            <td>{getStatusBadge(lote)}</td>
+                            <td>
+                              <div className={styles.rowActions}>
+                                <button
+                                  type="button"
+                                  className="btn-icon"
+                                  onClick={() => handleOpenForm(lote)}
+                                  aria-label={`Editar lote ${lote.numero_lote}`}
+                                  title="Editar"
+                                >
+                                  <Pencil aria-hidden="true" />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-icon btn-icon-danger"
+                                  onClick={() => handleDelete(lote)}
+                                  aria-label={`Eliminar lote ${lote.numero_lote}`}
+                                  title="Eliminar"
+                                >
+                                  <Trash2 aria-hidden="true" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+
+            <div className={styles.modalFooter}>
+              <button type="button" className="btn-primary btn-sm" onClick={() => handleOpenForm()}>
+                <Plus aria-hidden="true" />
+                Agregar Lote
+              </button>
+            </div>
+          </>
+        ) : (
+          <LoteForm
+            initialData={selectedLote}
+            onSubmit={onSubmitForm}
+            isLoading={isSubmitting}
+            onCancel={handleCloseForm}
+          >
+            {feedbackNotice}
+            <h3 className={styles.formSectionTitle}>{selectedLote ? "Editar Lote" : "Nuevo Lote"}</h3>
+          </LoteForm>
+        )}
+      </AdminModal>
 
       {/* Modal Confirmación de Eliminación de Lote */}
       {deleteTarget && (
-        <div className={styles.modalOverlay} onClick={() => setDeleteTarget(null)}>
-          <div className={`${styles.modal} ${styles.modalSm}`} onClick={(e) => e.stopPropagation()} role="alertdialog">
-            <div className={styles.modalHeader}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700", color: "#dc2626" }}>¿Eliminar Lote?</h3>
-            </div>
-            <p style={{ padding: "1.6rem 0", color: "var(--text-color)", fontSize: "1.4rem", lineHeight: "1.6" }}>
-              ¿Estás seguro de que deseas eliminar el lote <strong>{deleteTarget.numero_lote}</strong>? Esta acción no se puede deshacer.
-            </p>
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.btnSecondary} onClick={() => setDeleteTarget(null)}>
-                Cancelar
-              </button>
-              <button type="button" className={styles.btnDanger} onClick={confirmDelete}>
-                Sí, Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title="¿Eliminar Lote?"
+          confirmLabel="Sí, Eliminar"
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        >
+          ¿Estás seguro de que deseas eliminar el lote <strong>{deleteTarget.numero_lote}</strong>? Esta acción no se puede deshacer.
+        </ConfirmDialog>
       )}
-    </div>
+    </>
   );
 }
-

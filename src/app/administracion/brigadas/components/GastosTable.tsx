@@ -2,73 +2,11 @@
 
 import React, { useState, useTransition } from "react";
 import { z } from "zod";
+import { CircleAlert, LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import AdminModal from "@/app/administracion/components/AdminModal";
+import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import styles from "@/styles/pages/admin.module.css";
-
-// SVG Icons (Sin emojis)
-function PlusIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-
-function EditIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  );
-}
-
-function AlertTriangleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  );
-}
-
-function AlertCircleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-
-function SpinnerIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={styles.spinIcon}>
-      <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
-      <path d="M12 2 a 10 10 0 0 1 10 10" strokeLinecap="round" />
-    </svg>
-  );
-}
+import brig from "@/styles/pages/admin-brigadas.module.css";
 
 export type GastoRow = {
   id: string;
@@ -252,155 +190,131 @@ export default function GastosTable({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.6rem" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <h3 style={{ fontSize: "1.6rem", fontWeight: "700" }}>Gastos Registrados ({gastos.length})</h3>
+    <section className={styles.stackSm}>
+      <div className={styles.rowBetween}>
+        <h3 className={styles.subTitle}>
+          Gastos Registrados <span className={styles.count}>{gastos.length}</span>
+        </h3>
         {!isReadOnly && (
-          <button
-            type="button"
-            className={styles.btnPrimary}
-            onClick={openCreate}
-            style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem" }}
-          >
-            <PlusIcon /> Registrar Nuevo Gasto
+          <button type="button" className="btn-primary btn-sm" onClick={openCreate}>
+            <Plus aria-hidden="true" />
+            Registrar Nuevo Gasto
           </button>
         )}
       </div>
 
-      <div className={styles.tableContainer}>
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.adminTable}>
-            <thead>
+      <div className={`${styles.tableWrap} ${brig.bleed}`}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Categoría</th>
+              <th>Descripción / Concepto</th>
+              <th className={styles.num}>Monto (HNL)</th>
+              <th>Fecha de Registro</th>
+              {!isReadOnly && <th className={styles.num}>Acciones</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {gastos.length === 0 ? (
               <tr>
-                <th>Categoría</th>
-                <th>Descripción / Concepto</th>
-                <th>Monto (HNL)</th>
-                <th>Fecha de Registro</th>
-                {!isReadOnly && <th>Acciones</th>}
+                <td colSpan={isReadOnly ? 4 : 5} className={styles.emptyCell}>
+                  Aún no se han registrado gastos presupuestarios para esta brigada médica.
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {gastos.length === 0 ? (
-                <tr>
-                  <td colSpan={isReadOnly ? 4 : 5} className={styles.emptyCell}>
-                    Aún no se han registrado gastos presupuestarios para esta brigada médica.
+            ) : (
+              gastos.map((g) => (
+                <tr key={g.id}>
+                  <td>
+                    <span className={`${styles.badge} ${styles.badgeInfo}`}>
+                      {CATEGORIA_LABELS[g.categoria] || g.categoria}
+                    </span>
                   </td>
-                </tr>
-              ) : (
-                gastos.map((g) => (
-                  <tr key={g.id}>
+                  <td>{g.descripcion}</td>
+                  <td className={`${styles.num} ${brig.valueBad}`}>{formatCurrency(g.monto)}</td>
+                  <td className={styles.nowrap}>{formatDate(g.fecha_gasto)}</td>
+                  {!isReadOnly && (
                     <td>
-                      <span
-                        style={{
-                          background: "var(--bg-light)",
-                          border: "1px solid var(--border-color)",
-                          padding: "0.3rem 0.8rem",
-                          borderRadius: "12px",
-                          fontSize: "1.1rem",
-                          fontWeight: "700",
-                        }}
-                      >
-                        {CATEGORIA_LABELS[g.categoria] || g.categoria}
-                      </span>
+                      <div className={styles.rowActions}>
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          onClick={() => openEdit(g)}
+                          aria-label={`Editar gasto ${g.descripcion}`}
+                          title="Editar"
+                        >
+                          <Pencil aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-icon btn-icon-danger"
+                          onClick={() => setDeleteTarget(g)}
+                          aria-label={`Eliminar gasto ${g.descripcion}`}
+                          title="Eliminar"
+                        >
+                          <Trash2 aria-hidden="true" />
+                        </button>
+                      </div>
                     </td>
-                    <td>{g.descripcion}</td>
-                    <td style={{ fontWeight: "700", color: "#dc2626" }}>{formatCurrency(g.monto)}</td>
-                    <td>{formatDate(g.fecha_gasto)}</td>
-                    {!isReadOnly && (
-                      <td>
-                        <div className={styles.tableActions}>
-                          <button
-                            type="button"
-                            className={styles.linkBtn}
-                            onClick={() => openEdit(g)}
-                            style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
-                          >
-                            <EditIcon /> Editar
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.linkBtnDanger}
-                            onClick={() => setDeleteTarget(g)}
-                            style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
-                          >
-                            <TrashIcon /> Eliminar
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Modal de Registro / Edición de Gasto (Diseño de Columna Única Vertical) */}
       {modalMode && (
-        <div className={styles.modalOverlay} onClick={handleRequestClose}>
-          <div
-            className={styles.modal}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            style={{ maxWidth: "520px", width: "95%" }}
-          >
-            <div className={styles.modalHeader}>
-              <h3 style={{ fontSize: "1.8rem", fontWeight: "700" }}>
-                {modalMode === "create" ? "Registrar Nuevo Gasto" : "Editar Registro de Gasto"}
-              </h3>
-              <button
-                type="button"
-                className={styles.modalClose}
-                onClick={handleRequestClose}
-                title="Cerrar modal"
-                aria-label="Cerrar"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-
-            <form onSubmit={handleFormSubmit} className={styles.adminFormSingleColumn}>
+        <AdminModal
+          title={modalMode === "create" ? "Registrar Nuevo Gasto" : "Editar Registro de Gasto"}
+          size="sm"
+          onClose={handleRequestClose}
+          busy={isPending}
+        >
+          <form onSubmit={handleFormSubmit} className={styles.modalForm}>
+            <div className={styles.modalBody}>
               {/* Banner de errores de validación */}
               {generalError && (
-                <div className={styles.formErrorBanner}>
-                  <AlertCircleIcon />
+                <p className="form-error form-alert" role="alert">
+                  <CircleAlert aria-hidden="true" />
                   <span>{generalError}</span>
-                </div>
+                </p>
               )}
 
               {/* Categoría del Gasto */}
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Categoría del Gasto <strong className={styles.requiredStar}>* (Requerido)</strong>
+              <label className="form-field">
+                <span className="form-label">
+                  Categoría del Gasto <span className="form-required" aria-hidden="true">*</span>
                 </span>
-                <select name="categoria" value={formData.categoria} onChange={handleInputChange} disabled={isPending} required>
+                <select
+                  name="categoria"
+                  className="form-input"
+                  value={formData.categoria}
+                  onChange={handleInputChange}
+                  disabled={isPending}
+                  required
+                >
                   <option value="medicamentos">{CATEGORIA_LABELS.medicamentos}</option>
                   <option value="alimentacion">{CATEGORIA_LABELS.alimentacion}</option>
                   <option value="publicidad">{CATEGORIA_LABELS.publicidad}</option>
                   <option value="otros">{CATEGORIA_LABELS.otros}</option>
                 </select>
                 {formErrors.categoria && (
-                  <span className={styles.formFieldError}>
-                    <AlertCircleIcon /> {formErrors.categoria}
+                  <span className="form-error">
+                    <CircleAlert size={14} aria-hidden="true" />
+                    {formErrors.categoria}
                   </span>
                 )}
               </label>
 
               {/* Descripción / Concepto del Gasto */}
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Descripción / Concepto del Gasto <strong className={styles.requiredStar}>* (Requerido)</strong>
+              <label className="form-field">
+                <span className="form-label">
+                  Descripción / Concepto del Gasto <span className="form-required" aria-hidden="true">*</span>
                 </span>
                 <input
                   name="descripcion"
+                  className="form-input"
                   value={formData.descripcion || ""}
                   onChange={handleInputChange}
                   placeholder="Ej. Adquisición de analgésicos y material de curación"
@@ -409,19 +323,21 @@ export default function GastosTable({
                   required
                 />
                 {formErrors.descripcion && (
-                  <span className={styles.formFieldError}>
-                    <AlertCircleIcon /> {formErrors.descripcion}
+                  <span className="form-error">
+                    <CircleAlert size={14} aria-hidden="true" />
+                    {formErrors.descripcion}
                   </span>
                 )}
               </label>
 
               {/* Monto en Lempiras */}
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Monto Ejecutado (HNL) <strong className={styles.requiredStar}>* (Requerido)</strong>
+              <label className="form-field">
+                <span className="form-label">
+                  Monto Ejecutado (HNL) <span className="form-required" aria-hidden="true">*</span>
                 </span>
                 <input
                   name="monto"
+                  className="form-input"
                   value={formData.monto ?? ""}
                   onChange={handleInputChange}
                   type="number"
@@ -432,19 +348,21 @@ export default function GastosTable({
                   required
                 />
                 {formErrors.monto && (
-                  <span className={styles.formFieldError}>
-                    <AlertCircleIcon /> {formErrors.monto}
+                  <span className="form-error">
+                    <CircleAlert size={14} aria-hidden="true" />
+                    {formErrors.monto}
                   </span>
                 )}
               </label>
 
               {/* Fecha de Ejecución del Gasto */}
-              <label className={styles.formField}>
-                <span className={styles.fieldLabel}>
-                  Fecha de Ejecución del Gasto <strong className={styles.requiredStar}>* (Requerido)</strong>
+              <label className="form-field">
+                <span className="form-label">
+                  Fecha de Ejecución del Gasto <span className="form-required" aria-hidden="true">*</span>
                 </span>
                 <input
                   name="fecha_gasto"
+                  className="form-input"
                   value={formData.fecha_gasto || ""}
                   onChange={handleInputChange}
                   type="date"
@@ -452,121 +370,64 @@ export default function GastosTable({
                   required
                 />
                 {formErrors.fecha_gasto && (
-                  <span className={styles.formFieldError}>
-                    <AlertCircleIcon /> {formErrors.fecha_gasto}
+                  <span className="form-error">
+                    <CircleAlert size={14} aria-hidden="true" />
+                    {formErrors.fecha_gasto}
                   </span>
                 )}
               </label>
-
-              {/* Botones de acción */}
-              <div className={styles.modalActions} style={{ marginTop: "1.6rem" }}>
-                <button
-                  type="button"
-                  className={styles.btnSecondary}
-                  onClick={handleRequestClose}
-                  disabled={isPending}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className={styles.btnPrimary}
-                  disabled={isPending}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "0.8rem" }}
-                >
-                  {isPending && <SpinnerIcon />}
-                  <span>{isPending ? "Guardando Registro..." : "Guardar Gasto"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Advertencia HCI (Descarte de Cambios) */}
-      {showDiscardModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowDiscardModal(false)}>
-          <div
-            className={`${styles.modal} ${styles.modalSm}`}
-            onClick={(e) => e.stopPropagation()}
-            role="alertdialog"
-            aria-labelledby="discard-gasto-title"
-          >
-            <div className={styles.modalHeader}>
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem", color: "#dc2626" }}>
-                <AlertTriangleIcon />
-                <h3 id="discard-gasto-title">¿Descartar Cambios no Guardados?</h3>
-              </div>
             </div>
-            <p className={styles.confirmText}>
-              Has modificado información del gasto. Si cierras la ventana ahora, los datos introducidos se perderán.
-            </p>
-            <div className={styles.modalActions}>
+
+            {/* Botones de acción */}
+            <div className={styles.modalFooter}>
               <button
                 type="button"
-                className={styles.btnSecondary}
-                onClick={() => setShowDiscardModal(false)}
-              >
-                Continuar Editando
-              </button>
-              <button
-                type="button"
-                className={styles.btnDanger}
-                onClick={() => {
-                  setShowDiscardModal(false);
-                  setIsDirty(false);
-                  setModalMode(null);
-                }}
-              >
-                Sí, Descartar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Confirmación HCI para Eliminación */}
-      {deleteTarget && (
-        <div className={styles.modalOverlay} onClick={() => !isPending && setDeleteTarget(null)}>
-          <div
-            className={`${styles.modal} ${styles.modalSm}`}
-            onClick={(e) => e.stopPropagation()}
-            role="alertdialog"
-            aria-labelledby="delete-gasto-title"
-          >
-            <div className={styles.modalHeader}>
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem", color: "#dc2626" }}>
-                <AlertTriangleIcon />
-                <h3 id="delete-gasto-title">¿Eliminar Registro de Gasto?</h3>
-              </div>
-            </div>
-            <p className={styles.confirmText}>
-              ¿Estás seguro de que deseas eliminar permanentemente el gasto por{" "}
-              <strong>{formatCurrency(deleteTarget.monto)}</strong> (Concepto: {deleteTarget.descripcion})? Esta acción recalculará automáticamente el presupuesto restante de la brigada.
-            </p>
-            <div className={styles.modalActions}>
-              <button
-                type="button"
-                className={styles.btnSecondary}
-                onClick={() => setDeleteTarget(null)}
+                className="btn-ghost btn-sm"
+                onClick={handleRequestClose}
                 disabled={isPending}
               >
                 Cancelar
               </button>
-              <button
-                type="button"
-                className={styles.btnDanger}
-                onClick={confirmDelete}
-                disabled={isPending}
-                style={{ display: "inline-flex", alignItems: "center", gap: "0.8rem" }}
-              >
-                {isPending && <SpinnerIcon />}
-                <span>{isPending ? "Eliminando..." : "Sí, Eliminar Gasto"}</span>
+              <button type="submit" className="btn-primary btn-sm" disabled={isPending}>
+                {isPending && <LoaderCircle className="spin" aria-hidden="true" />}
+                {isPending ? "Guardando Registro..." : "Guardar Gasto"}
               </button>
             </div>
-          </div>
-        </div>
+          </form>
+        </AdminModal>
       )}
-    </div>
+
+      {/* Modal de Advertencia HCI (Descarte de Cambios) */}
+      {showDiscardModal && (
+        <ConfirmDialog
+          title="¿Descartar Cambios no Guardados?"
+          confirmLabel="Sí, Descartar"
+          cancelLabel="Continuar Editando"
+          onCancel={() => setShowDiscardModal(false)}
+          onConfirm={() => {
+            setShowDiscardModal(false);
+            setIsDirty(false);
+            setModalMode(null);
+          }}
+        >
+          Has modificado información del gasto. Si cierras la ventana ahora, los datos introducidos se perderán.
+        </ConfirmDialog>
+      )}
+
+      {/* Modal de Confirmación HCI para Eliminación */}
+      {deleteTarget && (
+        <ConfirmDialog
+          title="¿Eliminar Registro de Gasto?"
+          confirmLabel="Sí, Eliminar Gasto"
+          busyLabel="Eliminando..."
+          busy={isPending}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        >
+          ¿Estás seguro de que deseas eliminar permanentemente el gasto por{" "}
+          <strong>{formatCurrency(deleteTarget.monto)}</strong> (Concepto: {deleteTarget.descripcion})? Esta acción recalculará automáticamente el presupuesto restante de la brigada.
+        </ConfirmDialog>
+      )}
+    </section>
   );
 }

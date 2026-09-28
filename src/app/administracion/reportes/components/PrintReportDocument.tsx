@@ -49,17 +49,9 @@ export default function PrintReportDocument({
       {/* Membrete Oficial Institucional */}
       <div className={styles.printHeaderBlock}>
         <div className={styles.printBrandRow}>
+          {/* el tamaño del logo lo fija .printBrandRow img en la hoja de impresión */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/DS-LOGO.png"
-            alt="Logo Fundación Dibujando Sonrisas"
-            style={{
-              width: "52px",
-              height: "52px",
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
-          />
+          <img src="/logo.png" alt="Logo Fundación Dibujando Sonrisas" />
           <div>
             <h1 className={styles.printFoundationTitle}>
               Fundación Dibujando Sonrisas

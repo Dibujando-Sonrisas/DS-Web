@@ -1,5 +1,6 @@
 import { requireRouteAccess } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import PageHeader from "@/app/administracion/components/PageHeader";
 import styles from "@/styles/pages/admin.module.css";
 import BrigadasAdminClient from "./BrigadasAdminClient";
 
@@ -31,14 +32,11 @@ export default async function BrigadasPage() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
-      <div className={styles.pageIntro}>
-        <h2>Gestión de Brigadas</h2>
-        <p>
-          Planifica brigadas médicas, administra presupuestos y gastos, autoriza
-          solicitudes de voluntariado y sube fotografías del evento.
-        </p>
-      </div>
+    <div className={styles.page}>
+      <PageHeader
+        title="Gestión de Brigadas"
+        description="Planifica brigadas médicas, administra presupuestos y gastos, autoriza solicitudes de voluntariado y sube fotografías del evento."
+      />
 
       <BrigadasAdminClient
         initialBrigadas={(brigadas as any) ?? []}

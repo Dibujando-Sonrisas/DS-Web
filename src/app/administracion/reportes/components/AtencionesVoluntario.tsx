@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import styles from "@/styles/pages/reportes.module.css";
+import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
+import styles from "@/styles/pages/admin.module.css";
+import rep from "@/styles/pages/reportes.module.css";
+import listas from "@/styles/pages/admin-reportes-listas.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { supabase } from "@/lib/supabase";
@@ -323,164 +325,146 @@ export default function AtencionesVoluntario() {
   return (
     <div>
       {/* ── VISTA WEB (PAGINADA) ── */}
-      <div className={styles.screenView}>
+      <div className={`${rep.screenView} ${styles.stack} no-print`}>
         {/* Encabezado */}
-        <div className={styles.reportHeader}>
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <div className={styles.reportHeaderText}>
-              <h3>Reporte de Atenciones por Voluntario</h3>
-              <p>
-                Detalle de pacientes atendidos, brigadas y recetas despachadas por voluntario seleccionado.
-              </p>
-            </div>
+        <div className={styles.sectionHead}>
+          <div>
+            <h2 className={styles.sectionTitle}>Reporte de Atenciones por Voluntario</h2>
+            <p className={styles.sectionLead}>
+              Detalle de pacientes atendidos, brigadas y recetas despachadas por voluntario seleccionado.
+            </p>
           </div>
-          <div className={styles.reportHeaderActions}>
-            <button
-              type="button"
-              className={styles.btnActionSecondary}
-              onClick={handlePrint}
-              disabled={loadingVoluntarios || !voluntarioSeleccionado}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            onClick={handlePrint}
+            disabled={loadingVoluntarios || !voluntarioSeleccionado}
+          >
+            <Printer aria-hidden="true" />
+            Imprimir
+          </button>
+        </div>
+
+        <section className={styles.panel}>
+          {/* Filtros */}
+          <div className={styles.toolbar}>
+            <div className={`${styles.filter} ${styles.filterWide}`}>
+              <label className={styles.filterLabel} htmlFor="voluntario-select">Seleccionar Voluntario</label>
+              <select
+                id="voluntario-select"
+                className="form-input form-input-sm"
+                value={voluntarioSeleccionado}
+                onChange={(e) => setVoluntarioSeleccionado(e.target.value)}
+                disabled={loadingVoluntarios}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5Zm-3 0h.008v.008H15V10.5Z"
-                />
-              </svg>
-              Imprimir
-            </button>
-          </div>
-        </div>
-
-        {/* Filtros */}
-        <div className={styles.reportFilters}>
-          <div className={styles.filterGroup}>
-            <label htmlFor="voluntario-select">Seleccionar Voluntario</label>
-            <select
-              id="voluntario-select"
-              value={voluntarioSeleccionado}
-              onChange={(e) => setVoluntarioSeleccionado(e.target.value)}
-              disabled={loadingVoluntarios}
-            >
-              {loadingVoluntarios ? (
-                <option>Cargando voluntarios...</option>
-              ) : voluntarios.length === 0 ? (
-                <option>No hay voluntarios con atenciones</option>
-              ) : (
-                voluntarios.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.nombre} ({v.rol})
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-        </div>
-
-        {/* Barra de Resumen Rápido del Voluntario */}
-        {selectedVol && (
-          <div className={styles.summaryBar}>
-            <div className={styles.summaryBarItem}>
-              <span className={styles.summaryBarLabel}>Rol / Especialidad</span>
-              <span className={styles.summaryBarValue} style={{ fontSize: "1.3rem" }}>
-                {selectedVol.rol}
-              </span>
-            </div>
-            <div className={styles.summaryBarDivider} />
-            <div className={styles.summaryBarItem}>
-              <span className={styles.summaryBarLabel}>Pacientes Atendidos</span>
-              <span className={styles.summaryBarValue}>
-                {atenciones.length}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Tabla Web */}
-        <div className={styles.printableContainer}>
-          <div style={{ overflowX: "auto" }}>
-            <table className={styles.printableTable}>
-              <thead>
-                <tr>
-                  <th style={{ width: "3rem" }}>#</th>
-                  <th>Paciente</th>
-                  <th style={{ textAlign: "center" }}>Edad</th>
-                  <th>Brigada</th>
-                  <th>Detalle / Diagnóstico</th>
-                  <th>Tratamiento / Entrega</th>
-                  <th>Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingVoluntarios || loadingAtenciones ? (
-                  <tr>
-                    <td colSpan={7} style={{ textAlign: "center", padding: "2rem", color: "var(--grayLight)" }}>
-                      Cargando atenciones del voluntario...
-                    </td>
-                  </tr>
-                ) : atenciones.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className={styles.noData}>
-                      No se encontraron atenciones para el voluntario seleccionado.
-                    </td>
-                  </tr>
+                {loadingVoluntarios ? (
+                  <option>Cargando voluntarios...</option>
+                ) : voluntarios.length === 0 ? (
+                  <option>No hay voluntarios con atenciones</option>
                 ) : (
-                  atenciones
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((item, relativeIdx) => {
-                      const absoluteIdx = (currentPage - 1) * itemsPerPage + relativeIdx;
-                      return (
-                        <tr key={item.id}>
-                          <td style={{ color: "var(--grayLight)", fontWeight: 600 }}>
-                            {absoluteIdx + 1}
-                          </td>
-                          <td style={{ fontWeight: 700 }}>{item.pacienteNombre}</td>
-                          <td style={{ textAlign: "center", fontWeight: 600 }}>{item.edad}</td>
-                          <td style={{ fontWeight: 600 }}>{item.brigadaNombre}</td>
-                          <td>{item.detalle}</td>
-                          <td style={{ fontWeight: 600, color: "var(--primaryDark)" }}>{item.tratamiento}</td>
-                          <td>{item.fecha}</td>
-                        </tr>
-                      );
-                    })
+                  voluntarios.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.nombre} ({v.rol})
+                    </option>
+                  ))
                 )}
-              </tbody>
-            </table>
+              </select>
+            </div>
+
+            {/* Resumen rápido del voluntario */}
+            {selectedVol && (
+              <div className={styles.toolbarNote}>
+                <dl className={styles.kv}>
+                  <dt>Rol / Especialidad</dt>
+                  <dd>{selectedVol.rol}</dd>
+                  <dt>Pacientes Atendidos</dt>
+                  <dd>{atenciones.length}</dd>
+                </dl>
+              </div>
+            )}
           </div>
 
-          {atenciones.length > 0 && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", marginTop: "2rem", padding: "1rem" }} className="no-print">
-              <button 
-                disabled={currentPage === 1} 
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                className={styles.btnActionSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}
-              >
-                Anterior
-              </button>
-              <span style={{ fontSize: "1.3rem", fontWeight: "600" }}>Página {currentPage} de {totalPages}</span>
-              <button 
-                disabled={currentPage === totalPages} 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                className={styles.btnActionSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1 }}
-              >
-                Siguiente
-              </button>
+          {/* Tabla Web */}
+          {loadingVoluntarios || loadingAtenciones ? (
+            <div className={styles.panelBody}>
+              <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
+                <span className="sr-only">Cargando atenciones del voluntario...</span>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Paciente</th>
+                    <th className={styles.num}>Edad</th>
+                    <th>Brigada</th>
+                    <th>Detalle / Diagnóstico</th>
+                    <th>Tratamiento / Entrega</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {atenciones.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className={styles.emptyCell}>
+                        No se encontraron atenciones para el voluntario seleccionado.
+                      </td>
+                    </tr>
+                  ) : (
+                    atenciones
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((item, relativeIdx) => {
+                        const absoluteIdx = (currentPage - 1) * itemsPerPage + relativeIdx;
+                        return (
+                          <tr key={item.id}>
+                            <td className={styles.muted}>{absoluteIdx + 1}</td>
+                            <td className={styles.cellMain}>{item.pacienteNombre}</td>
+                            <td className={styles.num}>{item.edad}</td>
+                            <td>{item.brigadaNombre}</td>
+                            <td>{item.detalle}</td>
+                            <td className={listas.cellAccent}>{item.tratamiento}</td>
+                            <td className={styles.nowrap}>{item.fecha}</td>
+                          </tr>
+                        );
+                      })
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
-        </div>
+
+          {atenciones.length > 0 && (
+            <div className={styles.panelFooter}>
+              <span className={styles.pagerInfo}>Página {currentPage} de {totalPages}</span>
+              <div className={styles.row}>
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                >
+                  <ChevronLeft aria-hidden="true" />
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                >
+                  Siguiente
+                  <ChevronRight aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
       {/* ── VISTA DE IMPRESIÓN REUTILIZABLE INSTITUCIONAL ── */}
-      <div className={styles.printView}>
+      <div className={rep.printView}>
         <PrintReportDocument
           title="Reporte de Atenciones por Voluntario"
           userRole={userRole}
@@ -491,40 +475,40 @@ export default function AtencionesVoluntario() {
           ]}
           footerNote="Reporte administrativo de atenciones — Fundación Dibujando Sonrisas"
         >
-          <table className={styles.printTable}>
+          <table className={rep.printTable}>
             <thead>
               <tr>
-                <th style={{ width: "4%" }}>#</th>
-                <th style={{ width: "24%" }}>Paciente</th>
-                <th style={{ width: "6%", textAlign: "center" }}>Edad</th>
-                <th style={{ width: "20%" }}>Brigada</th>
-                <th style={{ width: "22%" }}>Detalle / Diagnóstico</th>
-                <th style={{ width: "14%" }}>Tratamiento / Entrega</th>
-                <th style={{ width: "10%" }}>Fecha</th>
+                <th className={rep.w4}>#</th>
+                <th className={rep.w24}>Paciente</th>
+                <th className={`${rep.w6} ${rep.printCenter}`}>Edad</th>
+                <th className={rep.w20}>Brigada</th>
+                <th className={rep.w22}>Detalle / Diagnóstico</th>
+                <th className={rep.w14}>Tratamiento / Entrega</th>
+                <th className={rep.w10}>Fecha</th>
               </tr>
             </thead>
             <tbody>
               {loadingVoluntarios || loadingAtenciones ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "1.5rem", color: "#000000" }}>
+                  <td colSpan={7} className={rep.printCenter}>
                     Cargando reporte de voluntarios...
                   </td>
                 </tr>
               ) : atenciones.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "1.5rem", color: "#000000" }}>
+                  <td colSpan={7} className={rep.printCenter}>
                     No hay atenciones registradas para el voluntario seleccionado.
                   </td>
                 </tr>
               ) : (
                 atenciones.map((item, idx) => (
                   <tr key={item.id}>
-                    <td style={{ textAlign: "center" }}>{idx + 1}</td>
-                    <td style={{ fontWeight: "bold" }}>{item.pacienteNombre}</td>
-                    <td style={{ textAlign: "center" }}>{item.edad}</td>
+                    <td className={rep.printCenter}>{idx + 1}</td>
+                    <td className={rep.printStrong}>{item.pacienteNombre}</td>
+                    <td className={rep.printCenter}>{item.edad}</td>
                     <td>{item.brigadaNombre}</td>
                     <td>{item.detalle}</td>
-                    <td style={{ fontWeight: "bold" }}>{item.tratamiento}</td>
+                    <td className={rep.printStrong}>{item.tratamiento}</td>
                     <td>{item.fecha}</td>
                   </tr>
                 ))

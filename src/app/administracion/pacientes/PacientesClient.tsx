@@ -1,15 +1,51 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   getPacientesAtendidosAction as getPacientesAtendidos,
   getPacientesDashboardAction as getPacientesDashboard,
 } from "./actions";
 import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
+import {
+  Activity,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCheck,
+  Eye,
+  HeartPulse,
+  Mars,
+  Plus,
+  Search,
+  Stethoscope,
+  UserPlus,
+  Users,
+  Venus,
+} from "lucide-react";
+import StatCard from "@/app/administracion/components/StatCard";
 import styles from "@/styles/pages/admin.module.css";
 import { useRouter } from "next/navigation";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { coincide } from "@/lib/texto";
+
+export const ESTADOS: Record<string, { label: string; badge: string; siguiente?: string }> = {
+  ingresado: { label: "Ingresado", badge: "badgeNeutral", siguiente: "Tomar preclínica" },
+  preclinica: { label: "Preclínica", badge: "badgeWarning", siguiente: "Iniciar consulta" },
+  consulta: { label: "En consulta", badge: "badgeInfo", siguiente: "Continuar consulta" },
+  finalizada: { label: "Finalizada", badge: "badgeSuccess" },
+};
+
+const TABS = [
+  { id: "ingresado", label: ESTADOS.ingresado.label, icon: <UserPlus aria-hidden="true" /> },
+  { id: "preclinica", label: ESTADOS.preclinica.label, icon: <Activity aria-hidden="true" /> },
+  { id: "consulta", label: ESTADOS.consulta.label, icon: <Stethoscope aria-hidden="true" /> },
+  { id: "finalizada", label: ESTADOS.finalizada.label, icon: <ClipboardCheck aria-hidden="true" /> },
+  { id: "todos", label: "Todos", icon: <Users aria-hidden="true" /> },
+];
+
+const TAB_KEY = "pacientes:estado";
 
 export function PacientesClient() {
   const { can } = usePermissions();
@@ -18,13 +54,11 @@ export function PacientesClient() {
   const [dashboard, setDashboard] = useState<any>(null);
   const [todasLasBrigadas, setTodasLasBrigadas] = useState<any[]>([]);
   const [filtroBrigada, setFiltroBrigada] = useState<string>("todas");
+  const [busqueda, setBusqueda] = useState("");
+  const [activeTab, setActiveTab] = useState("todos");
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filtroBrigada]);
 
   const fetchData = async () => {
     try {
@@ -36,7 +70,16 @@ export function PacientesClient() {
       ]);
       setPacientes(pacs);
       setDashboard(dash);
-      setTodasLasBrigadas(brigs.data || []);
+      const brigadas = brigs.data || [];
+      setTodasLasBrigadas(brigadas);
+
+      const ultima = brigadas.find(b => b.estado !== "cancelada");
+      if (ultima) setFiltroBrigada(ultima.id);
+
+      try {
+        const guardada = sessionStorage.getItem(TAB_KEY);
+        if (TABS.some(t => t.id === guardada)) setActiveTab(guardada!);
+      } catch { /* sin sessionStorage (modo privado): se queda en "todos" */ }
     } catch (error) {
       console.error("Error al cargar pacientes", error);
     } finally {
@@ -51,155 +94,226 @@ export function PacientesClient() {
     return () => { mounted = false; };
   }, []);
 
+  const cambiarTab = (id: string) => {
+    setActiveTab(id);
+    setCurrentPage(1);
+    try { sessionStorage.setItem(TAB_KEY, id); } catch { /* sin sessionStorage: solo no se recuerda */ }
+  };
+
+  const visibles = pacientes.filter(p =>
+    (filtroBrigada === "todas" || p.brigada_id === filtroBrigada) &&
+    coincide(p.paciente ?? "", busqueda)
+  );
+  const porEstado = (id: string) => id === "todos" ? visibles : visibles.filter(p => p.estado === id);
+  const filtered = porEstado(activeTab);
+  const tabLabel = TABS.find(t => t.id === activeTab)?.label;
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "2.4rem" }}>
-      
+    <div className={styles.stack}>
       {/* Dashboard Top */}
-      {dashboard && (
-        <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
-            <div className={styles.statHeader}>
-              <h3>Total Pacientes</h3>
-            </div>
-            <p className={styles.statValue}>{dashboard.pacientes}</p>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statHeader}>
-              <h3>Hombres Atendidos</h3>
-            </div>
-            <p className={styles.statValue}>{dashboard.hombres}</p>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statHeader}>
-              <h3>Mujeres Atendidas</h3>
-            </div>
-            <p className={styles.statValue}>{dashboard.mujeres}</p>
-          </div>
+      {dashboard ? (
+        <div className={`${styles.statGrid} tone-rotate`}>
+          <StatCard label="Total Pacientes" value={dashboard.pacientes} icon={<HeartPulse />} />
+          <StatCard label="Hombres Atendidos" value={dashboard.hombres} icon={<Mars />} />
+          <StatCard label="Mujeres Atendidas" value={dashboard.mujeres} icon={<Venus />} />
+        </div>
+      ) : isLoading && (
+        <div className={styles.statGrid}>
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
         </div>
       )}
 
-      {/* Main Table Container */}
-      <div className={styles.tableContainer}>
-        <div className={styles.tableHeader}>
-          <div>
-            <h3>Listado de Atenciones</h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "1.4rem", marginTop: "0.4rem" }}>
-              Historial de expedientes digitados por brigada.
-            </p>
-          </div>
-          <div>
+      <div className={styles.tabs} role="tablist" aria-label="Expedientes por estado">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            className={styles.tab}
+            onClick={() => cambiarTab(tab.id)}
+          >
+            {tab.icon}
+            {tab.label}
+            <span className={styles.tabCount}>{porEstado(tab.id).length}</span>
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
+          <span className="sr-only">Cargando expedientes...</span>
+        </div>
+      ) : (
+        <section className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2 className={styles.panelTitle}>
+                Listado de Atenciones <span className={styles.count}>{filtered.length}</span>
+              </h2>
+              <p className={styles.panelSub}>Historial de expedientes digitados por brigada.</p>
+            </div>
             {can(PERMISSIONS.PACIENTES_CREATE) && (
-              <button 
-                className={styles.btnPrimary} 
+              <button
+                type="button"
+                className="btn-primary btn-sm"
                 onClick={() => router.push("/administracion/pacientes/nuevo")}
               >
-                + Nuevo Expediente
+                <Plus aria-hidden="true" />
+                Nuevo Expediente
               </button>
             )}
           </div>
-        </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.6rem", padding: "0 2.4rem" }}>
-          <label style={{ fontSize: "1.4rem", fontWeight: "600", color: "var(--text-color)" }}>Filtrar por Brigada:</label>
-          <select
-            value={filtroBrigada}
-            onChange={e => setFiltroBrigada(e.target.value)}
-            style={{
-              padding: "0.6rem 1.2rem",
-              borderRadius: "var(--radius)",
-              border: "1px solid var(--border-color)",
-              background: "var(--white)",
-              color: "var(--text-color)",
-              fontSize: "1.4rem"
-            }}
-          >
-            <option value="todas">Todas las Brigadas</option>
-            {todasLasBrigadas.map(b => (
-              <option key={b.id} value={b.id}>{b.nombre}</option>
-            ))}
-          </select>
-        </div>
+          <div className={styles.toolbar}>
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="pacientes-filtro-brigada">
+                Filtrar por Brigada:
+              </label>
+              <select
+                id="pacientes-filtro-brigada"
+                className="form-input form-input-sm"
+                value={filtroBrigada}
+                onChange={e => { setFiltroBrigada(e.target.value); setCurrentPage(1); }}
+              >
+                <option value="todas">Todas las Brigadas</option>
+                {todasLasBrigadas.map(b => (
+                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                ))}
+              </select>
+            </div>
+            <div className={`${styles.filter} ${styles.filterWide}`}>
+              <label className={styles.filterLabel} htmlFor="pacientes-buscar">
+                Buscar por nombre
+              </label>
+              <div className={styles.search}>
+                <Search aria-hidden="true" />
+                <input
+                  id="pacientes-buscar"
+                  type="text"
+                  className="form-input form-input-sm"
+                  placeholder="Nombre del paciente..."
+                  value={busqueda}
+                  onChange={e => { setBusqueda(e.target.value); setCurrentPage(1); }}
+                />
+              </div>
+            </div>
+          </div>
 
-        <div style={{ overflowX: "auto" }}>
-          <table className={styles.adminTable}>
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Paciente</th>
-                <th>Brigada</th>
-                <th>Consulta</th>
-                <th>Médico Atendió</th>
-                <th>Fecha Digitado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
                 <tr>
-                  <td colSpan={6} style={{ textAlign: "center", padding: "2rem" }}>
-                    Cargando expedientes...
-                  </td>
+                  <th>Código</th>
+                  <th>Paciente</th>
+                  <th>Brigada</th>
+                  <th>Consulta</th>
+                  <th>Médico Atendió</th>
+                  <th>Fecha Digitado</th>
+                  <th>Estado</th>
+                  <th className={styles.num}>Acciones</th>
                 </tr>
-              ) : (() => {
-                const filtered = filtroBrigada === "todas"
-                  ? pacientes
-                  : pacientes.filter(p => p.brigada_id === filtroBrigada);
-                const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-                return filtered.length === 0 ? (
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
-                      No hay expedientes registrados en esta brigada.
+                    <td colSpan={8} className={styles.emptyCell}>
+                      {busqueda.trim()
+                        ? `Ningún paciente coincide con "${busqueda.trim()}"`
+                        : activeTab === "todos"
+                          ? "No hay expedientes registrados"
+                          : `No hay expedientes con estado ${tabLabel}`}
+                      {filtroBrigada === "todas" ? "." : " en esta brigada."}
                     </td>
                   </tr>
                 ) : (
-                  paginated.map((p) => (
-                    <tr key={p.id}>
-                      <td style={{ fontWeight: "bold" }}>{p.codigo}</td>
-                      <td>{p.paciente}</td>
-                      <td>{p.brigada}</td>
-                      <td>
-                        <span className={`${styles.badge} ${p.tipo_consulta === 'Odontologica' ? styles.badgeInfo : styles.badgeSuccess}`}>
-                          {p.tipo_consulta}
-                        </span>
-                      </td>
-                      <td>{p.medico || "-"}</td>
-                      <td>{new Date(p.created_at).toLocaleDateString()}</td>
-                    </tr>
-                  ))
-                );
-              })()}
-            </tbody>
-          </table>
-        </div>
+                  paginated.map((p) => {
+                    const estado = ESTADOS[p.estado] ?? ESTADOS.finalizada;
+                    return (
+                      <tr key={p.id}>
+                        <td className={styles.cellCode}>{p.codigo}</td>
+                        <td className={styles.cellMain}>{p.paciente}</td>
+                        <td>{p.brigada}</td>
+                        <td>
+                          {p.tipo_consulta ? (
+                            <span className={`${styles.badge} ${p.tipo_consulta === "Odontologica" ? styles.badgeBrand : styles.badgeInfo}`}>
+                              {p.tipo_consulta}
+                            </span>
+                          ) : "-"}
+                        </td>
+                        <td>{p.medico || "-"}</td>
+                        <td className={styles.nowrap}>{new Date(p.created_at).toLocaleDateString()}</td>
+                        <td>
+                          <span className={`${styles.badge} ${styles[estado.badge]}`}>{estado.label}</span>
+                          {p.estado === "consulta" && p.tomado_por && (
+                            <span className={styles.cellSub}>Con {p.tomado_por}</span>
+                          )}
+                        </td>
+                        <td>
+                          <div className={styles.rowActions}>
+                            {/* en consulta con otro usuario: nadie más lo puede atender */}
+                            {estado.siguiente &&
+                              can(PERMISSIONS.PACIENTES_UPDATE) &&
+                              !(p.estado === "consulta" && !p.tomado_por_mi) && (
+                                <Link
+                                  href={`/administracion/pacientes/nuevo?paciente=${p.id}`}
+                                  className="btn-primary btn-xs"
+                                  aria-label={`${estado.siguiente}: ${p.paciente}`}
+                                >
+                                  {estado.siguiente}
+                                  <ArrowRight aria-hidden="true" />
+                                </Link>
+                              )}
+                            {/* el expediente se consulta cuando ya está completo */}
+                            {p.estado === "finalizada" && (
+                              <Link
+                                href={`/administracion/pacientes/${p.id}`}
+                                className="btn-ghost btn-xs"
+                                aria-label={`Ver expediente de ${p.paciente}`}
+                              >
+                                <Eye aria-hidden="true" />
+                                Ver
+                              </Link>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        {(() => {
-          const filtered = filtroBrigada === "todas"
-            ? pacientes
-            : pacientes.filter(p => p.brigada_id === filtroBrigada);
-          const totalPages = Math.ceil(filtered.length / itemsPerPage);
-          if (totalPages <= 1) return null;
-          return (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", marginTop: "2rem", padding: "1.5rem" }}>
-              <button 
-                disabled={currentPage === 1} 
+          {totalPages > 1 && (
+            <nav className={styles.panelFooter} aria-label="Paginación">
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                disabled={currentPage === 1}
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                className={styles.btnSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}
               >
+                <ChevronLeft aria-hidden="true" />
                 Anterior
               </button>
-              <span style={{ fontSize: "1.3rem", fontWeight: "600" }}>Página {currentPage} de {totalPages}</span>
-              <button 
-                disabled={currentPage === totalPages} 
+              <span className={styles.pagerInfo}>Página {currentPage} de {totalPages}</span>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                className={styles.btnSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1 }}
               >
                 Siguiente
+                <ChevronRight aria-hidden="true" />
               </button>
-            </div>
-          );
-        })()}
-      </div>
+            </nav>
+          )}
+        </section>
+      )}
     </div>
   );
 }

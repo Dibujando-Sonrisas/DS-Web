@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import styles from "@/styles/pages/reportes.module.css";
+import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
+import styles from "@/styles/pages/admin.module.css";
+import rep from "@/styles/pages/reportes.module.css";
+import listas from "@/styles/pages/admin-reportes-listas.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { supabase } from "@/lib/supabase";
@@ -95,16 +97,16 @@ export default function MedicamentosVencer() {
 
         let estado: "critico" | "advertencia" | "seguro" = "seguro";
         let estadoLabel = "Seguro";
-        let statusClass = styles.statusSuccess;
+        let statusClass = styles.badgeSuccess;
 
         if (diasRestantes <= 30) {
           estado = "critico";
           estadoLabel = diasRestantes <= 0 ? "Vencido" : `Crítico (<30d)`;
-          statusClass = styles.statusCritical;
+          statusClass = styles.badgeDanger;
         } else if (diasRestantes <= 90) {
           estado = "advertencia";
           estadoLabel = "Advertencia (30-90d)";
-          statusClass = styles.statusWarning;
+          statusClass = styles.badgeWarning;
         } else {
           estadoLabel = "Seguro (>90d)";
         }
@@ -170,185 +172,161 @@ export default function MedicamentosVencer() {
   return (
     <div>
       {/* ── VISTA WEB (PAGINADA) ── */}
-      <div className={styles.screenView}>
+      <div className={`${rep.screenView} ${styles.stack} no-print`}>
         {/* Encabezado */}
-        <div className={styles.reportHeader}>
-          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-            <div className={styles.reportHeaderText}>
-              <h3>Reporte de Medicamentos Próximos a Vencer</h3>
-              <p>
-                Supervisa las fechas de caducidad del inventario para su
-                distribución prioritaria o descarte seguro.
-              </p>
+        <div className={styles.sectionHead}>
+          <div>
+            <h2 className={styles.sectionTitle}>Reporte de Medicamentos Próximos a Vencer</h2>
+            <p className={styles.sectionLead}>
+              Supervisa las fechas de caducidad del inventario para su
+              distribución prioritaria o descarte seguro.
+            </p>
+          </div>
+          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+            <Printer aria-hidden="true" />
+            Imprimir
+          </button>
+        </div>
+
+        <section className={styles.panel}>
+          {/* Filtros */}
+          <div className={styles.toolbar}>
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="dias-vence">Vence en menos de</label>
+              <select
+                id="dias-vence"
+                className="form-input form-input-sm"
+                value={diasFiltro}
+                onChange={(e) => setDiasFiltro(Number(e.target.value))}
+              >
+                <option value={30}>30 días (Crítico)</option>
+                <option value={60}>60 días</option>
+                <option value={90}>90 días</option>
+                <option value={180}>180 días (Semestre)</option>
+              </select>
             </div>
-          </div>
-          <div className={styles.reportHeaderActions}>
-            <button
-              type="button"
-              className={styles.btnActionSecondary}
-              onClick={handlePrint}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
+
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="alerta-filtro">Alerta/Estado</label>
+              <select
+                id="alerta-filtro"
+                className="form-input form-input-sm"
+                value={filtroAlerta}
+                onChange={(e) => setFiltroAlerta(e.target.value)}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0 .229 2.523a1.125 1.125 0 0 1-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0 0 21 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 0 0-1.913-.247M6.34 18H5.25A2.25 2.25 0 0 1 3 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 0 1 1.913-.247m10.5 0a48.536 48.536 0 0 0-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5Zm-3 0h.008v.008H15V10.5Z"
-                />
-              </svg>
-              Imprimir
-            </button>
-          </div>
-        </div>
+                <option value="todos">Todos los estados</option>
+                <option value="critico"> Crítico / Vencido</option>
+                <option value="advertencia"> Advertencia</option>
+                <option value="seguro"> Seguro</option>
+              </select>
+            </div>
 
-        {/* Filtros */}
-        <div className={styles.reportFilters}>
-          <div className={styles.filterGroup}>
-            <label htmlFor="dias-vence">Vence en menos de</label>
-            <select
-              id="dias-vence"
-              value={diasFiltro}
-              onChange={(e) => setDiasFiltro(Number(e.target.value))}
-            >
-              <option value={30}>30 días (Crítico)</option>
-              <option value={60}>60 días</option>
-              <option value={90}>90 días</option>
-              <option value={180}>180 días (Semestre)</option>
-            </select>
+            <p className={styles.toolbarNote}>
+              Fecha de Control: <strong>{hoy.toLocaleDateString("es-HN", { day: "2-digit", month: "short", year: "numeric" })}</strong>
+            </p>
           </div>
 
-          <div className={styles.filterGroup}>
-            <label htmlFor="alerta-filtro">Alerta/Estado</label>
-            <select
-              id="alerta-filtro"
-              value={filtroAlerta}
-              onChange={(e) => setFiltroAlerta(e.target.value)}
-            >
-              <option value="todos">Todos los estados</option>
-              <option value="critico"> Crítico / Vencido</option>
-              <option value="advertencia"> Advertencia</option>
-              <option value="seguro"> Seguro</option>
-            </select>
-          </div>
-
-          <p
-            style={{
-              margin: "auto 0 0",
-              fontSize: "1.35rem",
-              color: "var(--gray)",
-              fontStyle: "italic",
-            }}
-          >
-            Fecha de Control: <strong>{hoy.toLocaleDateString("es-HN", { day: "2-digit", month: "short", year: "numeric" })}</strong>
-          </p>
-        </div>
-
-        {/* Tabla Web */}
-        <div className={styles.printableContainer}>
-          <div style={{ overflowX: "auto" }}>
-            <table className={styles.printableTable}>
-              <thead>
-                <tr>
-                  <th style={{ width: "3rem" }}>#</th>
-                  <th>Medicamento / Suministro</th>
-                  <th>Categoría</th>
-                  <th>Lote</th>
-                  <th>Fecha Vencimiento</th>
-                  <th>Días Restantes</th>
-                  <th>Stock Disponible</th>
-                  <th>Estado de Alerta</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
+          {/* Tabla Web */}
+          {loading ? (
+            <div className={styles.panelBody}>
+              <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
+                <span className="sr-only">Cargando información de lotes...</span>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
                   <tr>
-                    <td colSpan={8} style={{ textAlign: "center", padding: "2rem", color: "var(--grayLight)" }}>
-                      Cargando información de lotes...
-                    </td>
+                    <th>#</th>
+                    <th>Medicamento / Suministro</th>
+                    <th>Categoría</th>
+                    <th>Lote</th>
+                    <th>Fecha Vencimiento</th>
+                    <th className={styles.num}>Días Restantes</th>
+                    <th className={styles.num}>Stock Disponible</th>
+                    <th>Estado de Alerta</th>
                   </tr>
-                ) : medicamentosFiltrados.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className={styles.noData}>
-                      No hay medicamentos que venzan en el rango seleccionado.
-                    </td>
-                  </tr>
-                ) : (
-                  medicamentosFiltrados
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((m, relativeIdx) => {
-                      const absoluteIdx = (currentPage - 1) * itemsPerPage + relativeIdx;
-                      return (
-                        <tr key={m.id}>
-                          <td style={{ color: "var(--grayLight)", fontWeight: 600 }}>
-                            {absoluteIdx + 1}
-                          </td>
-                          <td style={{ fontWeight: 700 }}>{m.nombre}</td>
-                          <td>{m.categoria}</td>
-                          <td style={{ fontFamily: "monospace" }}>{m.lote}</td>
-                          <td style={{ fontWeight: 600 }}>
-                            {new Date(m.fechaVencimiento).toLocaleDateString("es-HN", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            })}
-                          </td>
-                          <td
-                            style={{
-                              color: m.diasRestantes <= 30 ? "#dc2626" : "inherit",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {m.diasRestantes <= 0
-                              ? "Vencido"
-                              : `${m.diasRestantes} días`}
-                          </td>
-                          <td style={{ fontWeight: 700 }}>{m.stock}</td>
-                          <td>
-                            <span
-                              className={`${styles.badgeStatus} ${m.statusClass}`}
+                </thead>
+                <tbody>
+                  {medicamentosFiltrados.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className={styles.emptyCell}>
+                        No hay medicamentos que venzan en el rango seleccionado.
+                      </td>
+                    </tr>
+                  ) : (
+                    medicamentosFiltrados
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((m, relativeIdx) => {
+                        const absoluteIdx = (currentPage - 1) * itemsPerPage + relativeIdx;
+                        return (
+                          <tr key={m.id}>
+                            <td className={styles.muted}>{absoluteIdx + 1}</td>
+                            <td className={styles.cellMain}>{m.nombre}</td>
+                            <td>{m.categoria}</td>
+                            <td className={styles.cellCode}>{m.lote}</td>
+                            <td className={styles.nowrap}>
+                              {new Date(m.fechaVencimiento).toLocaleDateString("es-HN", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              })}
+                            </td>
+                            <td
+                              className={`${styles.num} ${
+                                m.diasRestantes <= 30 ? listas.cellBad : styles.cellMain
+                              }`}
                             >
-                              {m.estadoLabel}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {medicamentosFiltrados.length > 0 && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "1rem", marginTop: "2rem", padding: "1rem" }} className="no-print">
-              <button 
-                disabled={currentPage === 1} 
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                className={styles.btnActionSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1 }}
-              >
-                Anterior
-              </button>
-              <span style={{ fontSize: "1.3rem", fontWeight: "600" }}>Página {currentPage} de {totalPages}</span>
-              <button 
-                disabled={currentPage === totalPages} 
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                className={styles.btnActionSecondary}
-                style={{ padding: "0.6rem 1.2rem", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1 }}
-              >
-                Siguiente
-              </button>
+                              {m.diasRestantes <= 0
+                                ? "Vencido"
+                                : `${m.diasRestantes} días`}
+                            </td>
+                            <td className={`${styles.num} ${styles.cellMain}`}>{m.stock}</td>
+                            <td>
+                              <span className={`${styles.badge} ${m.statusClass}`}>
+                                {m.estadoLabel}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
-        </div>
+
+          {medicamentosFiltrados.length > 0 && (
+            <div className={styles.panelFooter}>
+              <span className={styles.pagerInfo}>Página {currentPage} de {totalPages}</span>
+              <div className={styles.row}>
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                >
+                  <ChevronLeft aria-hidden="true" />
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                >
+                  Siguiente
+                  <ChevronRight aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
       {/* ── VISTA DE IMPRESIÓN REUTILIZABLE INSTITUCIONAL ── */}
-      <div className={styles.printView}>
+      <div className={rep.printView}>
         <PrintReportDocument
           title="Reporte de Vencimiento de Medicamentos"
           userRole={userRole}
@@ -359,38 +337,38 @@ export default function MedicamentosVencer() {
           ]}
           footerNote="Reporte de control interno — Fundación Dibujando Sonrisas"
         >
-          <table className={styles.printTable}>
+          <table className={rep.printTable}>
             <thead>
               <tr>
-                <th style={{ width: "4%" }}>#</th>
-                <th style={{ width: "28%" }}>Medicamento / Suministro</th>
-                <th style={{ width: "18%" }}>Categoría</th>
-                <th style={{ width: "12%" }}>Lote</th>
-                <th style={{ width: "14%" }}>Fecha Vencimiento</th>
-                <th style={{ width: "12%" }}>Días Restantes</th>
-                <th style={{ width: "12%" }}>Stock Disponible</th>
+                <th className={rep.w4}>#</th>
+                <th className={rep.w28}>Medicamento / Suministro</th>
+                <th className={rep.w18}>Categoría</th>
+                <th className={rep.w12}>Lote</th>
+                <th className={rep.w14}>Fecha Vencimiento</th>
+                <th className={rep.w12}>Días Restantes</th>
+                <th className={rep.w12}>Stock Disponible</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "1.5rem", color: "#000000" }}>
+                  <td colSpan={7} className={rep.printCenter}>
                     Cargando información de lotes...
                   </td>
                 </tr>
               ) : printData.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "1.5rem", color: "#000000" }}>
+                  <td colSpan={7} className={rep.printCenter}>
                     No hay medicamentos que venzan en el rango seleccionado.
                   </td>
                 </tr>
               ) : (
                 printData.map((m, idx) => (
                   <tr key={m.id}>
-                    <td style={{ textAlign: "center" }}>{idx + 1}</td>
-                    <td style={{ fontWeight: "bold" }}>{m.nombre}</td>
+                    <td className={rep.printCenter}>{idx + 1}</td>
+                    <td className={rep.printStrong}>{m.nombre}</td>
                     <td>{m.categoria}</td>
-                    <td style={{ fontFamily: "monospace" }}>{m.lote}</td>
+                    <td className={rep.printMono}>{m.lote}</td>
                     <td>
                       {new Date(m.fechaVencimiento).toLocaleDateString("es-HN", {
                         day: "2-digit",
@@ -398,10 +376,10 @@ export default function MedicamentosVencer() {
                         year: "numeric",
                       })}
                     </td>
-                    <td style={{ fontWeight: "bold", color: m.diasRestantes <= 30 ? "#dc2626" : "inherit" }}>
+                    <td className={rep.printStrong}>
                       {m.diasRestantes <= 0 ? "Vencido" : `${m.diasRestantes} días`}
                     </td>
-                    <td style={{ textAlign: "right", fontWeight: "bold" }}>{m.stock}</td>
+                    <td className={`${rep.printRight} ${rep.printStrong}`}>{m.stock}</td>
                   </tr>
                 ))
               )}
@@ -412,4 +390,3 @@ export default function MedicamentosVencer() {
     </div>
   );
 }
-

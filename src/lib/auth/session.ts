@@ -54,7 +54,7 @@ export async function getAuthContext(): Promise<AuthContext | null> {
       .insert({
         id: user.id,
         nombre_completo: user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuario",
-        rol: null,
+        // sin rol: la base asigna el predeterminado ("voluntario"), igual que el trigger handle_new_user
         activo: true,
         created_at: now,
         updated_at: now,

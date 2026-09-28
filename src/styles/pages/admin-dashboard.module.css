@@ -1,0 +1,266 @@
+/* =====================================================
+   DASHBOARD DEL PANEL — admin-dashboard.module.css
+   Solo lo propio del inicio: bienvenida, accesos rápidos,
+   próxima brigada y listas de actividad y alertas.
+   Paneles, métricas y tablas vienen de admin.module.css.
+===================================================== */
+
+/* ── BIENVENIDA ── */
+.welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem 3.2rem;
+}
+
+.welcomeMain {
+  display: flex;
+  align-items: center;
+  gap: 2.4rem;
+  min-width: 0;
+}
+
+/* el avatar lleva un aro de color, como las fotos del equipo en /sobre-nosotros */
+.welcomeMain > :first-child {
+  box-shadow:
+    0 0 0 0.4rem var(--bg-light),
+    0 0 0 0.7rem var(--primaryColor);
+}
+
+.profileCard {
+  min-width: min(100%, 30rem);
+  padding: 1.6rem 2rem;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+/* ── ACCESOS RÁPIDOS ── */
+.quickActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.quickAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 1.8rem 0.7rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 99rem;
+  background: var(--white);
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--dark);
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.quickAction:hover {
+  border-color: var(--tone);
+  color: var(--tone-ink);
+}
+
+.quickIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 50%;
+  background: var(--tone);
+  color: var(--tone-on);
+}
+
+.quickIcon svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+/* ── PRÓXIMA BRIGADA (verde oscuro con borde de boleto, como en el inicio del sitio) ── */
+.countdown {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 2.4rem;
+  padding: clamp(2.4rem, 4vw, 3.2rem) clamp(2.4rem, 4vw, 4rem);
+  border-radius: var(--radius-lg);
+  background: var(--primaryDark);
+  color: var(--white);
+  outline: 2px dashed rgba(247, 203, 112, 0.55);
+  outline-offset: -1rem;
+}
+
+@media (min-width: 900px) {
+  .countdown {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.countdownTitle {
+  margin: 0;
+  font-size: clamp(2.4rem, 3vw, 3.2rem);
+  line-height: 1.15;
+  color: var(--white);
+  text-wrap: balance;
+}
+
+.countdownTitle span {
+  color: var(--secondaryColor);
+}
+
+.countdownMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.6rem 0 2rem;
+}
+
+.countdownMsg {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+  font-family: var(--fontHeading);
+  font-size: 2.2rem;
+  color: var(--secondaryColor);
+}
+
+.countdownMsg svg {
+  width: 2.4rem;
+  height: 2.4rem;
+  flex-shrink: 0;
+}
+
+.countdownEmpty {
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  padding: 2.4rem;
+}
+
+.countdownEmpty h2 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.countdownEmpty p {
+  margin: 0.2rem 0 0;
+  font-size: 1.45rem;
+}
+
+/* ── SOLICITUDES ── */
+.widgetHead {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  min-width: 0;
+}
+
+/* ── ACTIVIDAD RECIENTE: un punto de color por evento ── */
+.feed {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 2.4rem 1.2rem;
+  list-style: none;
+}
+
+.feedItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.2rem;
+  padding: 1.2rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.feedItem:first-child {
+  border-top: 0;
+}
+
+.feedDot {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.5rem;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.feedTitle {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--dark);
+}
+
+.feedText {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  line-height: 1.5;
+}
+
+.feedTime {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--gray);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── ALERTAS ── */
+.alertList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0;
+  padding: 0 2.4rem 2.4rem;
+  list-style: none;
+}
+
+.alertItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.2rem;
+  padding: 1.2rem 1.4rem;
+  border-radius: var(--radius-md);
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+}
+
+.alertItem > svg {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.alertTitle {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--dark);
+}
+
+.alertText {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  line-height: 1.5;
+  color: var(--warn-ink);
+}
+
+@media (max-width: 767px) {
+  .welcomeMain {
+    gap: 1.6rem;
+  }
+
+  .feed,
+  .alertList {
+    padding-inline: 1.6rem;
+  }
+}

@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Check, Inbox, Phone, X } from "lucide-react";
 import { aceptarInscripcion, rechazarInscripcion } from "@/app/administracion/brigadas/actions";
+import ConfirmDialog from "../ConfirmDialog";
+import EmptyState from "../EmptyState";
 import styles from "@/styles/pages/admin.module.css";
 
 export type SolicitudItem = {
@@ -30,6 +33,8 @@ export default function SolicitudesWidgetClient({
   const [solicitudes, setSolicitudes] = useState<SolicitudItem[]>(initialSolicitudes);
   const [isPending, startTransition] = useTransition();
   const [processingId, setProcessingId] = useState<string | null>(null);
+  // solicitud que espera confirmación antes de rechazarse
+  const [rejectTarget, setRejectTarget] = useState<SolicitudItem | null>(null);
 
   const handleAccept = (id: string) => {
     setProcessingId(id);
@@ -49,11 +54,7 @@ export default function SolicitudesWidgetClient({
   };
 
   const handleReject = (id: string) => {
-    const confirm = window.confirm(
-      "¿Estás seguro de que deseas rechazar esta solicitud de inscripción?"
-    );
-    if (!confirm) return;
-
+    setRejectTarget(null);
     setProcessingId(id);
     startTransition(async () => {
       // Optimistic update
@@ -83,181 +84,105 @@ export default function SolicitudesWidgetClient({
 
   if (solicitudes.length === 0) {
     return (
-      <div
-        style={{
-          padding: "3rem 2rem",
-          textAlign: "center",
-          background: "var(--bg-light)",
-          borderRadius: "var(--radius-md)",
-          border: "1px dashed var(--border-color)",
-        }}
-      >
-        <p style={{ margin: 0, color: "var(--gray)", fontSize: "1.45rem" }}>
-          No hay solicitudes de voluntariado registradas aún para esta brigada.
-        </p>
-      </div>
+      <EmptyState icon={<Inbox />} title="Sin solicitudes todavía">
+        No hay solicitudes de voluntariado registradas aún para esta brigada.
+      </EmptyState>
     );
   }
 
-  return (
-    <div style={{ overflowX: "auto" }}>
-      <table className={styles.adminTable} style={{ width: "100%", margin: 0 }}>
-        <thead>
-          <tr>
-            <th>Voluntario</th>
-            <th>Contacto</th>
-            <th>Área de Interés</th>
-            <th>Fecha Envío</th>
-            <th>Estado</th>
-            <th style={{ textAlign: "right" }}>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {solicitudes.map((sol) => {
-            const isItemPending = isPending && processingId === sol.id;
-            const estadoStr = sol.estado || "pendiente";
+  const ESTADO_CLASSES: Record<string, string> = {
+    aceptado: styles.badgeSuccess,
+    rechazado: styles.badgeDanger,
+  };
 
-            return (
-              <tr key={sol.id}>
-                <td>
-                  <strong>{sol.nombre_completo}</strong>
-                  {sol.profesion && (
-                    <span
-                      style={{
-                        display: "block",
-                        fontSize: "1.2rem",
-                        color: "var(--gray)",
-                      }}
-                    >
-                      {sol.profesion}
-                    </span>
-                  )}
-                </td>
-                <td>
-                  <span style={{ display: "block", fontSize: "1.3rem" }}>
+  return (
+    <>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Voluntario</th>
+              <th>Contacto</th>
+              <th>Área de Interés</th>
+              <th>Fecha Envío</th>
+              <th>Estado</th>
+              <th className={styles.num}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {solicitudes.map((sol) => {
+              const isItemPending = isPending && processingId === sol.id;
+              const estadoStr = sol.estado || "pendiente";
+
+              return (
+                <tr key={sol.id}>
+                  <td>
+                    <span className={styles.cellMain}>{sol.nombre_completo}</span>
+                    {sol.profesion && <span className={styles.cellSub}>{sol.profesion}</span>}
+                  </td>
+                  <td>
                     {sol.correo}
-                  </span>
-                  {sol.telefono && (
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        fontSize: "1.2rem",
-                        color: "var(--gray)",
-                        marginTop: "0.2rem",
-                      }}
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                      </svg>
-                      {sol.telefono}
+                    {sol.telefono && (
+                      <span className={styles.cellSub}>
+                        <Phone size={12} aria-hidden="true" /> {sol.telefono}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    <span className={`${styles.badge} ${styles.badgeInfo}`}>
+                      {sol.area_interes || "Sin área"}
                     </span>
-                  )}
-                </td>
-                <td>
-                  <span
-                    style={{
-                      background: "#f0fdfa",
-                      border: "1px solid #ccfbf1",
-                      padding: "0.3rem 0.9rem",
-                      borderRadius: "9999px",
-                      fontSize: "1.2rem",
-                      fontWeight: 600,
-                      color: "var(--primaryDark)",
-                      display: "inline-block",
-                    }}
-                  >
-                    {sol.area_interes || "Sin área"}
-                  </span>
-                </td>
-                <td style={{ fontSize: "1.3rem", color: "#64748b" }}>
-                  {formatDate(sol.created_at)}
-                </td>
-                <td>
-                  <span
-                    className={`${styles.badge} ${
-                      estadoStr === "aceptado"
-                        ? styles.badgeSuccess
-                        : estadoStr === "rechazado"
-                        ? styles.badgeDanger
-                        : styles.badgeWarning
-                    }`}
-                  >
-                    {estadoStr.charAt(0).toUpperCase() + estadoStr.slice(1)}
-                  </span>
-                </td>
-                <td style={{ textAlign: "right" }}>
-                  {estadoStr === "pendiente" ? (
-                    <div
-                      style={{
-                        display: "inline-flex",
-                        gap: "0.8rem",
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleAccept(sol.id)}
-                        disabled={isItemPending}
-                        style={{
-                          background: "var(--primaryColor)",
-                          color: "#ffffff",
-                          border: "none",
-                          borderRadius: "1rem",
-                          padding: "0.6rem 1.2rem",
-                          fontSize: "1.25rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                          boxShadow: "0 2px 8px rgba(10, 140, 136, 0.2)",
-                        }}
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        Aceptar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleReject(sol.id)}
-                        disabled={isItemPending}
-                        style={{
-                          background: "#fff1f2",
-                          color: "#be123c",
-                          border: "1px solid #fecdd3",
-                          borderRadius: "1rem",
-                          padding: "0.6rem 1.1rem",
-                          fontSize: "1.25rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          transition: "all 0.2s ease",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                        }}
-                      >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <line x1="18" y1="6" x2="6" y2="18" />
-                          <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                        Rechazar
-                      </button>
-                    </div>
-                  ) : (
-                    <span style={{ fontSize: "1.2rem", color: "#94a3b8", fontWeight: 500 }}>
-                      Revisado
+                  </td>
+                  <td className={styles.nowrap}>{formatDate(sol.created_at)}</td>
+                  <td>
+                    <span className={`${styles.badge} ${ESTADO_CLASSES[estadoStr] ?? styles.badgeWarning}`}>
+                      {estadoStr.charAt(0).toUpperCase() + estadoStr.slice(1)}
                     </span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  </td>
+                  <td>
+                    {estadoStr === "pendiente" ? (
+                      <div className={styles.rowActions}>
+                        <button
+                          type="button"
+                          className="btn-primary btn-xs"
+                          onClick={() => handleAccept(sol.id)}
+                          disabled={isItemPending}
+                        >
+                          <Check aria-hidden="true" />
+                          Aceptar
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-ghost btn-xs"
+                          onClick={() => setRejectTarget(sol)}
+                          disabled={isItemPending}
+                        >
+                          <X aria-hidden="true" />
+                          Rechazar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={`${styles.rowActions} ${styles.muted}`}>Revisado</div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {rejectTarget && (
+        <ConfirmDialog
+          title="¿Rechazar solicitud?"
+          confirmLabel="Sí, rechazar"
+          onConfirm={() => handleReject(rejectTarget.id)}
+          onCancel={() => setRejectTarget(null)}
+        >
+          ¿Estás seguro de que deseas rechazar la solicitud de inscripción de{" "}
+          <strong>{rejectTarget.nombre_completo}</strong>?
+        </ConfirmDialog>
+      )}
+    </>
   );
 }

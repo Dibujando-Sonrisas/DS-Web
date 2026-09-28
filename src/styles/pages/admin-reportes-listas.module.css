@@ -1,0 +1,28 @@
+/* =====================================================
+   REPORTES DETALLADOS Y DE EXCEPCIÓN — admin-reportes-listas.module.css
+   Pacientes por brigada, medicamentos a vencer, stock mínimo
+   y atenciones por voluntario. Paneles, filtros, tablas,
+   etiquetas y barras vienen de admin.module.css; el documento
+   impreso, de reportes.module.css.
+===================================================== */
+
+/* ── TABLAS ── */
+/* cifra en alerta: bajo el mínimo o a menos de 30 días */
+.cellBad {
+  font-weight: 700;
+  color: var(--bad-ink);
+}
+
+/* tratamiento o entrega registrada */
+.cellAccent {
+  font-weight: 600;
+  color: var(--primaryDark);
+}
+
+/* medicamentos recetados como etiquetas */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
