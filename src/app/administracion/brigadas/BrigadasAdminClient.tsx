@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, CircleAlert, ClipboardList, Lock, Pencil, Plus, Tent, UserPlus, Wallet } from "lucide-react";
+import { Camera, CircleAlert, ClipboardList, LayoutList, Lock, Pencil, Plus, Tent, UserPlus, Wallet } from "lucide-react";
 import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
 import {
   crearBrigada,
@@ -66,6 +66,7 @@ export default function BrigadasAdminClient({
     initialBrigadas.length > 0 ? initialBrigadas[0].id : null
   );
   const [activeTab, setActiveTab] = useState<TabName>("finanzas");
+  const [view, setView] = useState<"listado" | "detalle">("listado");
 
   // Modals / Dialog state
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
@@ -108,6 +109,15 @@ export default function BrigadasAdminClient({
   }, [initialBrigadas, selectedId]);
 
   const isReadOnly = activeBrigada?.estado === "finalizada";
+
+  // sin brigada seleccionada (p. ej. tras eliminarla) se vuelve al listado
+  const showDetail = view === "detalle" && activeBrigada !== null;
+
+  const openBrigada = (id: string) => {
+    setSelectedId(id);
+    setView("detalle");
+    window.scrollTo({ top: 0 });
+  };
 
   // Filtered lists for the active selected brigade
   const activeExpenses = useMemo(() => {
@@ -279,38 +289,72 @@ export default function BrigadasAdminClient({
         </p>
       )}
 
-      {/* 1. Tabla de listado y filtros */}
-      <BrigadasTable
-        actions={
-          can(PERMISSIONS.BRIGADAS_CREATE) && (
-            <button
-              type="button"
-              className="btn-primary btn-sm"
-              onClick={() => {
-                setEditingBrigada(null);
-                setModalMode("create");
-              }}
-            >
-              <Plus aria-hidden="true" />
-              Nueva Brigada
-            </button>
-          )
-        }
-        brigadas={initialBrigadas}
-        budgets={budgetsMap}
-        spent={spentMap}
-        registrationsCount={registrationsCountMap}
-        selectedBrigadaId={selectedId}
-        onSelect={setSelectedId}
-        onEdit={(b) => {
-          setEditingBrigada(b);
-          setModalMode("edit");
-        }}
-        onDelete={setDeleteTarget}
-      />
+      <div className={styles.tabs} role="tablist" aria-label="Vista de brigadas">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!showDetail}
+          className={styles.tab}
+          onClick={() => setView("listado")}
+        >
+          <LayoutList aria-hidden="true" />
+          Brigadas
+          <span className={styles.tabCount}>{initialBrigadas.length}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={showDetail}
+          className={styles.tab}
+          disabled={!activeBrigada}
+          onClick={() => setView("detalle")}
+        >
+          <Tent aria-hidden="true" />
+          Brigada Activa
+          {activeBrigada && <span className={styles.tabCount}>{activeBrigada.codigo}</span>}
+        </button>
+      </div>
 
-      {/* 2. Sección de Detalles y Gestión del Evento Seleccionado */}
-      {activeBrigada ? (
+      {!showDetail ? (
+        <>
+          {/* 1. Tabla de listado y filtros */}
+          <BrigadasTable
+            actions={
+              can(PERMISSIONS.BRIGADAS_CREATE) && (
+                <button
+                  type="button"
+                  className="btn-primary btn-sm"
+                  onClick={() => {
+                    setEditingBrigada(null);
+                    setModalMode("create");
+                  }}
+                >
+                  <Plus aria-hidden="true" />
+                  Nueva Brigada
+                </button>
+              )
+            }
+            brigadas={initialBrigadas}
+            budgets={budgetsMap}
+            spent={spentMap}
+            registrationsCount={registrationsCountMap}
+            selectedBrigadaId={selectedId}
+            onSelect={openBrigada}
+            onEdit={(b) => {
+              setEditingBrigada(b);
+              setModalMode("edit");
+            }}
+            onDelete={setDeleteTarget}
+          />
+
+          {!activeBrigada && (
+            <EmptyState dashed icon={<Tent />} title="No hay brigadas registradas">
+              Haz clic en &quot;+ Nueva Brigada&quot; para registrar la primera.
+            </EmptyState>
+          )}
+        </>
+      ) : (
+        /* 2. Sección de Detalles y Gestión del Evento Seleccionado */
         <section className={styles.panel} aria-labelledby="brigada-detalle">
           <div className={styles.panelHeader}>
             <h2 id="brigada-detalle" className={styles.panelTitle}>
@@ -419,10 +463,6 @@ export default function BrigadasAdminClient({
             )}
           </div>
         </section>
-      ) : (
-        <EmptyState dashed icon={<Tent />} title="No hay brigadas registradas">
-          Haz clic en &quot;+ Nueva Brigada&quot; para registrar la primera.
-        </EmptyState>
       )}
 
       {/* 3. Form Modal */}

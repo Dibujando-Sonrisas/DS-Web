@@ -1285,6 +1285,13 @@
   color: var(--dark);
 }
 
+.tab:disabled {
+  background: none;
+  color: var(--gray);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .tab[aria-selected="true"] {
   color: var(--primaryDark);
 }
