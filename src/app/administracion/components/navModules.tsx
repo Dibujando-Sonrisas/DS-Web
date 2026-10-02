@@ -23,22 +23,10 @@ export type AdminModule = {
 
 export const adminModules: AdminModule[] = [
   {
-    name: "Login y Usuarios",
-    href: "/administracion/usuarios",
-    available: true,
-    icon: <UserCog aria-hidden="true" />,
-  },
-  {
     name: "Dashboard General",
     href: "/administracion",
     available: true,
     icon: <LayoutDashboard aria-hidden="true" />,
-  },
-  {
-    name: "Mi Perfil",
-    href: "/administracion/perfil",
-    available: true,
-    icon: <CircleUserRound aria-hidden="true" />,
   },
   {
     name: "Gestión de Brigadas",
@@ -96,9 +84,23 @@ export const adminModules: AdminModule[] = [
   },
 ];
 
+/** Páginas de la cuenta: se abren desde el menú del usuario en el encabezado. */
+export const accountModules: AdminModule[] = [
+  {
+    name: "Mi Perfil",
+    href: "/administracion/perfil",
+    icon: <CircleUserRound aria-hidden="true" />,
+  },
+  {
+    name: "Gestión de Usuarios",
+    href: "/administracion/usuarios",
+    icon: <UserCog aria-hidden="true" />,
+  },
+];
+
 /** Módulo al que pertenece una ruta (el dashboard solo coincide exacto). */
 export function findModule(pathname: string) {
-  return adminModules.find((m) =>
+  return [...adminModules, ...accountModules].find((m) =>
     m.href === "/administracion" ? pathname === m.href : pathname.startsWith(m.href)
   );
 }
