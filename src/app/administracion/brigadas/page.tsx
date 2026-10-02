@@ -4,8 +4,14 @@ import PageHeader from "@/app/administracion/components/PageHeader";
 import styles from "@/styles/pages/admin.module.css";
 import BrigadasAdminClient from "./BrigadasAdminClient";
 
-export default async function BrigadasPage() {
+export default async function BrigadasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ brigada?: string | string[] }>;
+}) {
   await requireRouteAccess("/administracion/brigadas");
+  // ?brigada=<id> abre esa brigada (enlace desde la búsqueda)
+  const { brigada } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
   // Load all required data in parallel using Promise.all
@@ -47,6 +53,7 @@ export default async function BrigadasPage() {
         initialProfiles={(profiles as any) ?? []}
         initialImages={(images as any) ?? []}
         fetchError={bError?.message ?? null}
+        initialSelectedId={typeof brigada === "string" ? brigada : null}
       />
     </div>
   );

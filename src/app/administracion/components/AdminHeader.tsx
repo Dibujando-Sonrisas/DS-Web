@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Form from "next/form";
 import { usePathname } from "next/navigation";
 import {
   CalendarDays,
@@ -43,6 +44,7 @@ const MODULE_TITLES: { prefix: string; title: string; subtitle: string }[] = [
   { prefix: "/administracion/usuarios", title: "Gestión de Usuarios", subtitle: "Administración de accesos y credenciales" },
   { prefix: "/administracion/perfil", title: "Mi Perfil", subtitle: "Información personal y cuenta" },
   { prefix: "/administracion/contacto", title: "Mensajes de Contacto", subtitle: "Bandeja de mensajes del sitio web" },
+  { prefix: "/administracion/buscar", title: "Búsqueda", subtitle: "Pacientes, brigadas e inventario" },
   { prefix: "/administracion", title: "Dashboard General", subtitle: "Resumen ejecutivo y métricas globales" },
 ];
 
@@ -65,6 +67,10 @@ export default function AdminHeader({
     m.prefix === "/administracion" ? pathname === "/administracion" : pathname.startsWith(m.prefix)
   ) || { title: "Sistema Integral", subtitle: "Fundación Dibujando Sonrisas" };
   const moduleIcon = findModule(pathname)?.icon;
+  // mismos módulos que consulta /administracion/buscar
+  const canSearch = ["/administracion/pacientes", "/administracion/brigadas", "/administracion/inventario"].some(
+    (ruta) => canAccessRoute(role, ruta, specialtyName)
+  );
 
   // Cerrar el menú al hacer clic fuera o con Escape
   useEffect(() => {
@@ -126,15 +132,20 @@ export default function AdminHeader({
         </div>
       </div>
 
-      <div className={styles.headerSearch} role="search">
-        <Search aria-hidden="true" />
-        <input
-          type="search"
-          placeholder="Buscar paciente, brigada o medicina..."
-          className={styles.headerSearchInput}
-          aria-label="Buscar en el sistema"
-        />
-      </div>
+      {canSearch && (
+        <Form action="/administracion/buscar" className={styles.headerSearch} role="search">
+          <Search aria-hidden="true" />
+          <input
+            type="search"
+            name="q"
+            placeholder="Buscar paciente, brigada o medicina..."
+            className={styles.headerSearchInput}
+            aria-label="Buscar en el sistema"
+            minLength={2}
+            required
+          />
+        </Form>
+      )}
 
       <div className={styles.headerRight}>
         {/* la fecha del servidor puede diferir de la del navegador */}

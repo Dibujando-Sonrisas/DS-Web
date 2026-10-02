@@ -115,23 +115,22 @@ export async function requireAnyPermission(
   return ctx;
 }
 
+export async function getSpecialtyName(especialidadId: string | null): Promise<string | null> {
+  if (!especialidadId) return null;
+  const supabase = await createSupabaseServerClient();
+  const { data: specialty } = await supabase
+    .from("especialidades")
+    .select("nombre")
+    .eq("id", especialidadId)
+    .maybeSingle();
+  return specialty?.nombre || null;
+}
+
 export async function requireRouteAccess(
   pathname: string
 ): Promise<AuthContext> {
   const ctx = await requireAuthContext();
-  
-  let specialtyName: string | null = null;
-  if (ctx.profile.especialidad_id) {
-    const supabase = await createSupabaseServerClient();
-    const { data: specialty } = await supabase
-      .from("especialidades")
-      .select("nombre")
-      .eq("id", ctx.profile.especialidad_id)
-      .maybeSingle();
-    if (specialty?.nombre) {
-      specialtyName = specialty.nombre;
-    }
-  }
+  const specialtyName = await getSpecialtyName(ctx.profile.especialidad_id);
 
   if (!canAccessRoute(ctx.role, pathname, specialtyName)) {
     redirect("/administracion/no-autorizado");

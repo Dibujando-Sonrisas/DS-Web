@@ -44,7 +44,7 @@ import {
   actualizarPacienteAction,
   actualizarSignosAction,
 } from "../actions";
-import { ESTADOS } from "../PacientesClient";
+import { ESTADOS } from "../estados";
 import {
   CampoDiagnosticos,
   CamposConsulta,
