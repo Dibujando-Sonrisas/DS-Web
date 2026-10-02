@@ -48,6 +48,8 @@ type BrigadasAdminClientProps = {
   initialProfiles: PerfilRow[];
   initialImages: BrigadaImagenRow[];
   fetchError: string | null;
+  /** brigada que se abre directamente en "Brigada Activa" */
+  initialSelectedId?: string | null;
 };
 
 export default function BrigadasAdminClient({
@@ -59,14 +61,17 @@ export default function BrigadasAdminClient({
   initialProfiles,
   initialImages,
   fetchError,
+  initialSelectedId,
 }: BrigadasAdminClientProps) {
   const { can } = usePermissions();
   const router = useRouter();
+  // un id que ya no existe cae en la primera brigada del listado
+  const linked = initialBrigadas.find((b) => b.id === initialSelectedId);
   const [selectedId, setSelectedId] = useState<string | null>(
-    initialBrigadas.length > 0 ? initialBrigadas[0].id : null
+    linked?.id ?? (initialBrigadas.length > 0 ? initialBrigadas[0].id : null)
   );
   const [activeTab, setActiveTab] = useState<TabName>("finanzas");
-  const [view, setView] = useState<"listado" | "detalle">("listado");
+  const [view, setView] = useState<"listado" | "detalle">(linked ? "detalle" : "listado");
 
   // Modals / Dialog state
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);

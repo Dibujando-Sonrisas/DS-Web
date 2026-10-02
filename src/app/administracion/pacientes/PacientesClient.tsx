@@ -29,13 +29,7 @@ import { useRouter } from "next/navigation";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { coincide } from "@/lib/texto";
-
-export const ESTADOS: Record<string, { label: string; badge: string; siguiente?: string }> = {
-  ingresado: { label: "Ingresado", badge: "badgeNeutral", siguiente: "Tomar preclínica" },
-  preclinica: { label: "Preclínica", badge: "badgeWarning", siguiente: "Iniciar consulta" },
-  consulta: { label: "En consulta", badge: "badgeInfo", siguiente: "Continuar consulta" },
-  finalizada: { label: "Finalizada", badge: "badgeSuccess" },
-};
+import { ESTADOS } from "./estados";
 
 const TABS = [
   { id: "ingresado", label: ESTADOS.ingresado.label, icon: <UserPlus aria-hidden="true" /> },

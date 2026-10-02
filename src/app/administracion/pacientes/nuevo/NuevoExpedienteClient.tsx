@@ -14,7 +14,7 @@ import {
   registrarPreclinicaAction as registrarPreclinica,
   tomarConsultaAction as tomarConsulta,
 } from "../actions";
-import { ESTADOS } from "../PacientesClient";
+import { ESTADOS } from "../estados";
 import {
   CampoDiagnosticos,
   CamposConsulta,

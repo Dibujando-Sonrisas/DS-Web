@@ -30,12 +30,17 @@ function generarCodigoRecurso(nombre: string, tipo: string): string {
   return `INV-${prefijo}-${tokenLimpio}`;
 }
 
-export function InventarioClient() {
+export function InventarioClient({
+  initialLotes = null,
+}: {
+  /** recurso cuyos lotes se abren al entrar */
+  initialLotes?: { id: string; nombre: string } | null;
+}) {
   const { can } = usePermissions();
   const [medicamentos, setMedicamentos] = useState<Record<string, unknown>[]>([]);
   const [categorias, setCategorias] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMedLotes, setSelectedMedLotes] = useState<{ id: string; nombre: string } | null>(null);
+  const [selectedMedLotes, setSelectedMedLotes] = useState(initialLotes);
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "medicamento" | "insumo_medico" | "material_brigada">("todos");
 
   const [isMedModalOpen, setIsMedModalOpen] = useState(false);

@@ -1215,12 +1215,13 @@
   cursor: not-allowed;
 }
 
-.tab[aria-selected="true"] {
+/* aria-current: pestañas que son enlaces (p. ej. filtros de la búsqueda) */
+.tab:is([aria-selected="true"], [aria-current="page"]) {
   color: var(--primaryDark);
 }
 
 /* trazo de crayón bajo la pestaña activa */
-.tab[aria-selected="true"]::after {
+.tab:is([aria-selected="true"], [aria-current="page"])::after {
   content: "";
   position: absolute;
   right: 1rem;
@@ -1241,7 +1242,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.tab[aria-selected="true"] .tabCount {
+.tab:is([aria-selected="true"], [aria-current="page"]) .tabCount {
   background: var(--info-bg);
   color: var(--info-ink);
 }
