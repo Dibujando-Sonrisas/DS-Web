@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   ChevronDown,
-  CircleUserRound,
   LogOut,
   Menu,
   PanelLeftClose,
@@ -14,7 +13,9 @@ import {
   Search,
 } from "lucide-react";
 import { logoutAction } from "@/app/auth/actions";
-import { findModule } from "./navModules";
+import { canAccessRoute } from "@/lib/auth/permissions";
+import { accountModules, findModule } from "./navModules";
+import { usePermissions } from "./PermissionsProvider";
 import UserAvatar from "./UserAvatar";
 import NotificacionesStockBtn from "./NotificacionesStockBtn";
 import styles from "@/styles/pages/admin.module.css";
@@ -39,7 +40,7 @@ const MODULE_TITLES: { prefix: string; title: string; subtitle: string }[] = [
   { prefix: "/administracion/actividades-infantiles", title: "Actividades Infantiles", subtitle: "Recreación, apoyo y dinámicas comunitarias" },
   { prefix: "/administracion/ventas", title: "Ventas de Apoyo", subtitle: "Kits, artículos institucionales y recaudación" },
   { prefix: "/administracion/reportes", title: "Reportes y Estadísticas", subtitle: "Análisis de datos, atenciones y brigadas" },
-  { prefix: "/administracion/usuarios", title: "Login y Usuarios", subtitle: "Administración de accesos y credenciales" },
+  { prefix: "/administracion/usuarios", title: "Gestión de Usuarios", subtitle: "Administración de accesos y credenciales" },
   { prefix: "/administracion/perfil", title: "Mi Perfil", subtitle: "Información personal y cuenta" },
   { prefix: "/administracion/contacto", title: "Mensajes de Contacto", subtitle: "Bandeja de mensajes del sitio web" },
   { prefix: "/administracion", title: "Dashboard General", subtitle: "Resumen ejecutivo y métricas globales" },
@@ -55,6 +56,7 @@ export default function AdminHeader({
   onToggleMobile,
 }: AdminHeaderProps) {
   const pathname = usePathname();
+  const { role, specialtyName } = usePermissions();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -171,15 +173,20 @@ export default function AdminHeader({
                 <span className={styles.dropdownName}>{displayName}</span>
                 <span className={styles.dropdownEmail}>{email}</span>
               </div>
-              <Link
-                href="/administracion/perfil"
-                role="menuitem"
-                className={styles.dropdownItem}
-                onClick={() => setDropdownOpen(false)}
-              >
-                <CircleUserRound aria-hidden="true" />
-                Mi Perfil
-              </Link>
+              {accountModules
+                .filter((m) => canAccessRoute(role, m.href, specialtyName))
+                .map((m) => (
+                  <Link
+                    key={m.href}
+                    href={m.href}
+                    role="menuitem"
+                    className={styles.dropdownItem}
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    {m.icon}
+                    {m.name}
+                  </Link>
+                ))}
               <form action={logoutAction}>
                 <button
                   type="submit"

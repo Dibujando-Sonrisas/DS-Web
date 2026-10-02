@@ -156,83 +156,6 @@
   font-weight: 700;
 }
 
-.sidebarFooter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding: 1rem 1.2rem 1.4rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.sidebarProfile {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.8rem;
-  border-radius: var(--radius-md);
-  color: var(--white);
-  transition: background-color 0.2s ease;
-}
-
-.sidebarProfile:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.profileText {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.profileName {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--white);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profileRole {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--secondaryColor);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.logoutBtn {
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
-  width: 100%;
-  padding: 1rem 1.2rem;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: none;
-  font-family: var(--fontBody);
-  font-size: 1.45rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.82);
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.logoutBtn svg {
-  width: 2rem;
-  height: 2rem;
-  flex-shrink: 0;
-}
-
-.logoutBtn:hover {
-  background: rgba(205, 70, 58, 0.28);
-  color: var(--white);
-}
-
 .mobileOverlay {
   display: none;
 }
@@ -243,11 +166,11 @@
     width: 7.6rem;
   }
 
-  .sidebarCollapsed :is(.brandText, .navLabel, .navSoon, .profileText, .logoutLabel) {
+  .sidebarCollapsed :is(.brandText, .navLabel, .navSoon) {
     display: none;
   }
 
-  .sidebarCollapsed :is(.navItem, .logoutBtn, .sidebarProfile) {
+  .sidebarCollapsed .navItem {
     justify-content: center;
     padding-inline: 0;
   }
