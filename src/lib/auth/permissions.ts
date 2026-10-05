@@ -1,10 +1,15 @@
-import type { AppRole } from "./roles";
-
 /**
- * CATÁLOGO ÚNICO DE PERMISOS DEL SISTEMA
- * Define las capacidades granulares por módulo.
+ * CATÁLOGO DE PERMISOS DEL SISTEMA
+ * Los permisos viven en código: cada apartado nuevo agrega aquí los suyos.
+ * Qué permisos tiene cada rol se guarda en la base (tablas roles y rol_permisos)
+ * y se edita desde Usuarios → Roles. El rol con es_superadmin recibe siempre
+ * el catálogo completo, también los permisos que se agreguen después.
+ * Las políticas RLS de la base usan las mismas claves "modulo.accion".
  */
 export const PERMISSIONS = {
+  // Panel principal
+  DASHBOARD_RESUMEN: "dashboard.resumen",
+
   // Módulo de Inventario
   INVENTARIO_READ: "inventario.read",
   INVENTARIO_CREATE: "inventario.create",
@@ -24,7 +29,7 @@ export const PERMISSIONS = {
   PACIENTES_UPDATE: "pacientes.update",
   PACIENTES_DELETE: "pacientes.delete",
 
-  // Módulo de Brigadas Médicas (Restringido EXCLUSIVAMENTE a Administrador)
+  // Módulo de Brigadas Médicas
   BRIGADAS_READ: "brigadas.read",
   BRIGADAS_CREATE: "brigadas.create",
   BRIGADAS_UPDATE: "brigadas.update",
@@ -39,6 +44,12 @@ export const PERMISSIONS = {
   USUARIOS_CREATE: "usuarios.create",
   USUARIOS_UPDATE: "usuarios.update",
   USUARIOS_DELETE: "usuarios.delete",
+
+  // Roles y permisos (pestaña Roles dentro de Usuarios)
+  ROLES_READ: "roles.read",
+  ROLES_CREATE: "roles.create",
+  ROLES_UPDATE: "roles.update",
+  ROLES_DELETE: "roles.delete",
 
   // Módulo de Voluntariado
   VOLUNTARIADO_READ: "voluntariado.read",
@@ -64,6 +75,11 @@ export const PERMISSIONS = {
   VENTAS_UPDATE: "ventas.update",
   VENTAS_DELETE: "ventas.delete",
 
+  // Mensajes del formulario de contacto del sitio
+  CONTACTO_READ: "contacto.read",
+  CONTACTO_UPDATE: "contacto.update",
+  CONTACTO_DELETE: "contacto.delete",
+
   // Módulo de Perfil de Usuario (Permiso Mínimo)
   PERFIL_READ: "perfil.read",
   PERFIL_UPDATE: "perfil.update",
@@ -71,150 +87,79 @@ export const PERMISSIONS = {
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
-/**
- * MATRIZ CENTRALIZADA DE PERMISOS POR ROL
- * Restricción estricta: Módulo de Brigadas EXCLUSIVO para Administrador (admin).
- */
-const ROLE_PERMISSIONS: Record<AppRole, readonly Permission[]> = {
-  // 1. Administrador: Control Total en todos los módulos (incluyendo Brigadas)
-  admin: Object.values(PERMISSIONS),
+export const ALL_PERMISSIONS: readonly Permission[] = Object.values(PERMISSIONS);
 
-  // 2. Coordinador: Acceso general excepto Brigadas
-  coordinador: [
-    PERMISSIONS.PERFIL_READ,
-    PERMISSIONS.PERFIL_UPDATE,
-    PERMISSIONS.INVENTARIO_READ,
-    PERMISSIONS.FARMACIA_READ,
-    PERMISSIONS.PACIENTES_READ,
-    PERMISSIONS.REPORTES_READ,
-    PERMISSIONS.VOLUNTARIADO_READ,
-    PERMISSIONS.VOLUNTARIADO_CREATE,
-    PERMISSIONS.VOLUNTARIADO_UPDATE,
-    PERMISSIONS.VOLUNTARIADO_DELETE,
-    PERMISSIONS.DONACIONES_READ,
-    PERMISSIONS.DONACIONES_CREATE,
-    PERMISSIONS.DONACIONES_UPDATE,
-    PERMISSIONS.DONACIONES_DELETE,
-    PERMISSIONS.ACTIVIDADES_READ,
-    PERMISSIONS.ACTIVIDADES_CREATE,
-    PERMISSIONS.ACTIVIDADES_UPDATE,
-    PERMISSIONS.ACTIVIDADES_DELETE,
-    PERMISSIONS.VENTAS_READ,
-    PERMISSIONS.VENTAS_CREATE,
-    PERMISSIONS.VENTAS_UPDATE,
-    PERMISSIONS.VENTAS_DELETE,
-  ],
+/** Descarta claves que ya no existen en el catálogo (p. ej. guardadas antes de quitar un permiso). */
+export function isPermission(value: string): value is Permission {
+  return (ALL_PERMISSIONS as readonly string[]).includes(value);
+}
 
-  // 3. Atención de Pacientes (Médicos / Odontólogos)
-  atencion_pacientes: [
-    PERMISSIONS.PERFIL_READ,
-    PERMISSIONS.PERFIL_UPDATE,
-    PERMISSIONS.FARMACIA_READ,
-    PERMISSIONS.FARMACIA_PROCESS,
-    PERMISSIONS.PACIENTES_READ,
-    PERMISSIONS.PACIENTES_CREATE,
-    PERMISSIONS.PACIENTES_UPDATE,
-    PERMISSIONS.PACIENTES_DELETE,
-    PERMISSIONS.REPORTES_PROCESS,
-    PERMISSIONS.VOLUNTARIADO_READ,
-    PERMISSIONS.DONACIONES_READ,
-    PERMISSIONS.DONACIONES_CREATE,
-    PERMISSIONS.DONACIONES_UPDATE,
-    PERMISSIONS.DONACIONES_DELETE,
-    PERMISSIONS.ACTIVIDADES_READ,
-    PERMISSIONS.ACTIVIDADES_CREATE,
-    PERMISSIONS.ACTIVIDADES_UPDATE,
-    PERMISSIONS.ACTIVIDADES_DELETE,
-  ],
-
-  // 4. Encargado de Farmacia
-  encargado_farmacia: [
-    PERMISSIONS.PERFIL_READ,
-    PERMISSIONS.PERFIL_UPDATE,
-    PERMISSIONS.INVENTARIO_READ,
-    PERMISSIONS.FARMACIA_READ,
-    PERMISSIONS.FARMACIA_CREATE,
-    PERMISSIONS.FARMACIA_UPDATE,
-    PERMISSIONS.FARMACIA_DELETE,
-    PERMISSIONS.FARMACIA_PROCESS,
-    PERMISSIONS.PACIENTES_READ,
-    PERMISSIONS.REPORTES_PROCESS,
-    PERMISSIONS.DONACIONES_READ,
-    PERMISSIONS.DONACIONES_CREATE,
-    PERMISSIONS.DONACIONES_UPDATE,
-    PERMISSIONS.DONACIONES_DELETE,
-    PERMISSIONS.ACTIVIDADES_READ,
-    PERMISSIONS.ACTIVIDADES_CREATE,
-    PERMISSIONS.ACTIVIDADES_UPDATE,
-    PERMISSIONS.ACTIVIDADES_DELETE,
-  ],
-
-  // 5. Encargado de Bodega
-  encargado_bodega: [
-    PERMISSIONS.PERFIL_READ,
-    PERMISSIONS.PERFIL_UPDATE,
-    PERMISSIONS.INVENTARIO_READ,
-    PERMISSIONS.INVENTARIO_CREATE,
-    PERMISSIONS.INVENTARIO_UPDATE,
-    PERMISSIONS.INVENTARIO_DELETE,
-    PERMISSIONS.FARMACIA_READ,
-    PERMISSIONS.REPORTES_PROCESS,
-    PERMISSIONS.DONACIONES_READ,
-    PERMISSIONS.DONACIONES_CREATE,
-    PERMISSIONS.DONACIONES_UPDATE,
-    PERMISSIONS.DONACIONES_DELETE,
-    PERMISSIONS.ACTIVIDADES_READ,
-    PERMISSIONS.ACTIVIDADES_CREATE,
-    PERMISSIONS.ACTIVIDADES_UPDATE,
-    PERMISSIONS.ACTIVIDADES_DELETE,
-  ],
-
-  // 6. Voluntario (Nivel inicial / Por defecto): ÚNICAMENTE Dashboard y Perfil
-  voluntario: [
-    PERMISSIONS.PERFIL_READ,
-    PERMISSIONS.PERFIL_UPDATE,
-  ],
+/** Rol tal como lo trae la base, con sus permisos anidados. */
+export type RolConPermisos = {
+  es_superadmin: boolean;
+  rol_permisos?: { permiso: string }[] | null;
 };
 
 /**
- * Obtiene la lista completa de permisos asignados a un rol.
+ * Permisos efectivos de un rol: el superadmin tiene el catálogo completo y todos
+ * tienen perfil.read (entrar al panel); igual que tiene_permiso() en la base.
  */
-export function getPermissionsForRole(role: AppRole): readonly Permission[] {
-  return ROLE_PERMISSIONS[role] || [];
+export function resolvePermissions(rol: RolConPermisos | null | undefined): Permission[] {
+  if (!rol) return [];
+  if (rol.es_superadmin) return [...ALL_PERMISSIONS];
+  const propios = (rol.rol_permisos ?? []).map((p) => p.permiso).filter(isPermission);
+  return [...new Set<Permission>([PERMISSIONS.PERFIL_READ, ...propios])];
 }
 
-/**
- * Verifica si un rol tiene un permiso específico.
- */
-export function hasPermission(
-  role: AppRole | null | undefined,
-  permission: Permission
-): boolean {
-  if (!role || !ROLE_PERMISSIONS[role]) return false;
-  return ROLE_PERMISSIONS[role].includes(permission);
+/** Permisos que todo rol tiene sin poder quitarlos. */
+export const IMPLICIT_PERMISSIONS: readonly Permission[] = [PERMISSIONS.PERFIL_READ];
+
+/* ── ETIQUETAS PARA LA PANTALLA DE ROLES ── */
+
+/** Módulos en el orden en que se muestran en la matriz de permisos. */
+export const PERMISSION_MODULES: { id: string; label: string }[] = [
+  { id: "dashboard", label: "Panel principal" },
+  { id: "pacientes", label: "Atención de Pacientes" },
+  { id: "farmacia", label: "Farmacia" },
+  { id: "inventario", label: "Inventario Médico" },
+  { id: "brigadas", label: "Brigadas" },
+  { id: "voluntariado", label: "Voluntariado" },
+  { id: "donaciones", label: "Donaciones y Ropa" },
+  { id: "actividades", label: "Actividades Infantiles" },
+  { id: "ventas", label: "Ventas de Apoyo" },
+  { id: "reportes", label: "Reportes y Estadísticas" },
+  { id: "contacto", label: "Mensajes de Contacto" },
+  { id: "usuarios", label: "Usuarios" },
+  { id: "roles", label: "Roles y Permisos" },
+  { id: "perfil", label: "Mi Perfil" },
+];
+
+/** Acciones con columna propia en la matriz; el resto va en "Otros" con su etiqueta. */
+export const STANDARD_ACTIONS = ["read", "create", "update", "delete"] as const;
+
+export const ACTION_LABELS: Record<string, string> = {
+  read: "Ver",
+  create: "Crear",
+  update: "Editar",
+  delete: "Eliminar",
+};
+
+/** Etiqueta de los permisos que no son ver/crear/editar/eliminar. */
+export const SPECIAL_PERMISSION_LABELS: Partial<Record<Permission, string>> = {
+  "dashboard.resumen": "Ver resumen general",
+  "farmacia.process": "Entregar recetas",
+  "reportes.process": "Generar reportes",
+};
+
+/** Nombre legible de un permiso, p. ej. "Farmacia · Entregar recetas". */
+export function permissionLabel(permission: Permission): string {
+  const [modulo, accion] = permission.split(".");
+  const moduleLabel = PERMISSION_MODULES.find((m) => m.id === modulo)?.label ?? modulo;
+  const actionLabel = SPECIAL_PERMISSION_LABELS[permission] ?? ACTION_LABELS[accion] ?? accion;
+  return `${moduleLabel} · ${actionLabel}`;
 }
 
-/**
- * Verifica si un rol posee AL MENOS UNO de los permisos provistos.
- */
-export function hasAnyPermission(
-  role: AppRole | null | undefined,
-  permissions: Permission[]
-): boolean {
-  if (!role || !ROLE_PERMISSIONS[role]) return false;
-  return permissions.some((p) => hasPermission(role, p));
-}
-
-/**
- * Verifica si un rol posee TODOS los permisos provistos.
- */
-export function hasAllPermissions(
-  role: AppRole | null | undefined,
-  permissions: Permission[]
-): boolean {
-  if (!role || !ROLE_PERMISSIONS[role]) return false;
-  return permissions.every((p) => hasPermission(role, p));
-}
+/* ── ACCESO A RUTAS ── */
 
 /**
  * Permiso requerido mínimo para acceder a una ruta de navegación
@@ -231,6 +176,7 @@ export const MODULE_PERMISSIONS: Record<string, Permission | Permission[]> = {
   "/administracion/donaciones": PERMISSIONS.DONACIONES_READ,
   "/administracion/actividades-infantiles": PERMISSIONS.ACTIVIDADES_READ,
   "/administracion/ventas": PERMISSIONS.VENTAS_READ,
+  "/administracion/contacto": PERMISSIONS.CONTACTO_READ,
   "/administracion/reportes": [
     PERMISSIONS.REPORTES_READ,
     PERMISSIONS.REPORTES_PROCESS,
@@ -238,143 +184,12 @@ export const MODULE_PERMISSIONS: Record<string, Permission | Permission[]> = {
 };
 
 /**
- * Evaluador de permisos por Especialidad (filtro secundario de seguridad).
- * Si el usuario no tiene una especialidad vinculada (y no es admin), solo se permite
- * el acceso a los módulos generales (Dashboard /administracion y Perfil /administracion/perfil).
+ * ¿Los permisos dados abren esta ruta? Las rutas sin entrada propia piden el permiso mínimo (perfil.read).
  */
-export function evaluarEspecialidad(
-  role: AppRole | null | undefined,
-  specialtyName: string | null | undefined,
-  pathname: string
-): boolean {
-  // REGLA CRÍTICA: Los permisos basados en Especialidad se aplican ÚNICAMENTE al rol de Voluntario.
-  // Para los demás roles (admin, coordinador, atención de pacientes, farmacia, bodega),
-  // sus permisos de rol se mantienen globales e intactos sin filtro de especialidad.
-  if (role !== "voluntario") return true;
-
-  // Rutas generales permitidas para todo usuario autenticado con rol
-  if (pathname === "/administracion" || pathname.startsWith("/administracion/perfil")) {
-    return true;
-  }
-
-  // Módulo de Brigadas reservado EXCLUSIVAMENTE para Administrador
-  if (pathname.startsWith("/administracion/brigadas")) {
-    return false;
-  }
-
-  // Si no tiene especialidad vinculada, se restringe a solo Dashboard y Perfil
-  if (!specialtyName || specialtyName.trim() === "" || specialtyName.includes("Ninguna")) {
-    return false;
-  }
-
-  const specLower = specialtyName.toLowerCase();
-
-  // Mapeo de palabras clave por Especialidad / Área
-  if (pathname.startsWith("/administracion/pacientes")) {
-    return (
-      specLower.includes("médic") ||
-      specLower.includes("medic") ||
-      specLower.includes("odontól") ||
-      specLower.includes("odontol") ||
-      specLower.includes("salud") ||
-      specLower.includes("atención") ||
-      specLower.includes("atencion") ||
-      specLower.includes("enfermer") ||
-      specLower.includes("paciente")
-    );
-  }
-
-  if (pathname.startsWith("/administracion/farmacia")) {
-    return (
-      specLower.includes("farmac") ||
-      specLower.includes("fármac") ||
-      specLower.includes("médic") ||
-      specLower.includes("medic") ||
-      specLower.includes("salud")
-    );
-  }
-
-  if (pathname.startsWith("/administracion/inventario")) {
-    return (
-      specLower.includes("farmac") ||
-      specLower.includes("bodeg") ||
-      specLower.includes("inventari") ||
-      specLower.includes("logístic") ||
-      specLower.includes("logistica")
-    );
-  }
-
-  if (pathname.startsWith("/administracion/donaciones")) {
-    return (
-      specLower.includes("donac") ||
-      specLower.includes("ropa") ||
-      specLower.includes("vestuari") ||
-      specLower.includes("apoyo") ||
-      specLower.includes("coordinac")
-    );
-  }
-
-  if (pathname.startsWith("/administracion/actividades-infantiles")) {
-    return (
-      specLower.includes("activida") ||
-      specLower.includes("infantil") ||
-      specLower.includes("niñ") ||
-      specLower.includes("recreac") ||
-      specLower.includes("piñat")
-    );
-  }
-
-  if (pathname.startsWith("/administracion/ventas")) {
-    return (
-      specLower.includes("ventas") ||
-      specLower.includes("bazar") ||
-      specLower.includes("comerc") ||
-      specLower.includes("finanz") ||
-      specLower.includes("tienda")
-    );
-  }
-
-  if (pathname.startsWith("/administracion/voluntarios") || pathname.startsWith("/administracion/reportes")) {
-    return (
-      specLower.includes("coordinac") ||
-      specLower.includes("gestión") ||
-      specLower.includes("gestion") ||
-      specLower.includes("voluntari") ||
-      specLower.includes("logístic")
-    );
-  }
-
-  return true;
-}
-
-/**
- * Verifica si un usuario (combinando Rol + Especialidad) puede acceder a una ruta protegida.
- */
-export function canAccessRoute(
-  role: AppRole | null | undefined,
-  pathname: string,
-  specialtyName?: string | null
-): boolean {
-  // 1. Restricción de Brigadas y Reportes EXCLUSIVAMENTE para Administrador
-  if (pathname.startsWith("/administracion/brigadas") || pathname.startsWith("/administracion/reportes")) {
-    if (role !== "admin") return false;
-  }
-
+export function canAccessRoute(permissions: readonly Permission[], pathname: string): boolean {
   const entry = Object.entries(MODULE_PERMISSIONS).find(([route]) =>
-    route === "/administracion"
-      ? pathname === "/administracion"
-      : pathname.startsWith(route)
+    route === "/administracion" ? pathname === "/administracion" : pathname.startsWith(route)
   );
-
-  if (!entry) return hasPermission(role, PERMISSIONS.PERFIL_READ);
-
-  const [, required] = entry;
-  const permissions = [...getPermissionsForRole(role || "voluntario")];
-  const requiredArray = Array.isArray(required) ? required : [required];
-
-  const hasRolePermission = requiredArray.some((p) => permissions.includes(p));
-  if (!hasRolePermission) return false;
-
-  // 2. Filtro Secundario por Especialidad
-  return evaluarEspecialidad(role, specialtyName, pathname);
+  const required = entry ? entry[1] : PERMISSIONS.PERFIL_READ;
+  return (Array.isArray(required) ? required : [required]).some((p) => permissions.includes(p));
 }

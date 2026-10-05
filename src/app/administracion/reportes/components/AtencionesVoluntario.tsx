@@ -6,7 +6,6 @@ import styles from "@/styles/pages/admin.module.css";
 import rep from "@/styles/pages/reportes.module.css";
 import listas from "@/styles/pages/admin-reportes-listas.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { ROLE_LABELS } from "@/lib/auth/roles";
 import { supabase } from "@/lib/supabase";
 import PrintReportDocument from "./PrintReportDocument";
 
@@ -43,7 +42,7 @@ function parseHours(llegada?: string, salida?: string) {
 
 export default function AtencionesVoluntario() {
   const { role } = usePermissions();
-  const userRole = role ? ROLE_LABELS[role] : "ADMINISTRADOR";
+  const userRole = role.nombre;
   const [voluntarios, setVoluntarios] = useState<AtencionVoluntarioData[]>([]);
   const [voluntarioSeleccionado, setVoluntarioSeleccionado] = useState<string>("");
   const [atenciones, setAtenciones] = useState<AtencionDetail[]>([]);
@@ -93,7 +92,6 @@ export default function AtencionesVoluntario() {
         interface PerfilRow {
           id: string;
           nombre_completo: string | null;
-          rol: string | null;
           especialidades: { nombre: string } | null;
           participaciones_voluntarios: Participation[] | null;
         }
@@ -103,7 +101,6 @@ export default function AtencionesVoluntario() {
           .select(`
             id,
             nombre_completo,
-            rol,
             especialidades (
               nombre
             ),

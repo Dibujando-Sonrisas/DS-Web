@@ -19,7 +19,7 @@ export default async function VoluntarioDetallePage({ params }: { params: Promis
   // Fetch voluntario
   const { data: voluntario, error: volError } = await supabase
     .from("perfiles")
-    .select("*, especialidades:especialidad_id(id, nombre)")
+    .select("*, rol:rol_id(id, nombre, color), especialidades:especialidad_id(id, nombre)")
     .eq("id", id)
     .single();
 

@@ -8,7 +8,7 @@ import brig from "@/styles/pages/admin-brigadas.module.css";
 export type PerfilRow = {
   id: string;
   nombre_completo: string | null;
-  rol: string;
+  rol: { nombre: string } | null;
   cargo?: string | null;
   especialidad_id?: string | null;
   activo: boolean;
@@ -36,12 +36,6 @@ const AREAS_MAP: Record<string, string> = {
   actividades: "Actividades Infantiles",
   logistica: "Logística",
   coordinacion: "Coordinación",
-};
-
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Administrador",
-  coordinador: "Coordinador",
-  voluntario: "Voluntario",
 };
 
 export default function AsignacionesTable({
@@ -150,7 +144,7 @@ export default function AsignacionesTable({
                     <tr key={p.id}>
                       <td className={styles.cellMain}>{p.nombre_completo || "Usuario Sin Nombre"}</td>
                       <td>
-                        <span className={styles.cellMain}>{ROLE_LABELS[p.rol] || p.rol}</span>
+                        <span className={styles.cellMain}>{p.rol?.nombre ?? "—"}</span>
                         {p.cargo && <span className={styles.cellSub}>{p.cargo}</span>}
                       </td>
                       <td>

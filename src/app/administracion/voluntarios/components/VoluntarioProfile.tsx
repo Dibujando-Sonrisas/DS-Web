@@ -41,7 +41,7 @@ export default function VoluntarioProfile({ voluntario }: VoluntarioProfileProps
         <dl className={styles.kv}>
           <dt>Rol Asignado</dt>
           <dd>
-            <RoleBadge role={voluntario.rol as any} />
+            <RoleBadge role={voluntario.rol} />
           </dd>
           <dt>Especialidad / Área</dt>
           <dd>

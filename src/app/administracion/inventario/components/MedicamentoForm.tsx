@@ -14,8 +14,6 @@ interface MedicamentoFormProps {
 export function MedicamentoForm({ initialData, categorias = [], onSubmit, onCancel, isLoading }: MedicamentoFormProps) {
   const isEditing = Boolean(initialData?.id || initialData?.medicamento_id);
 
-  console.log("MedicamentoForm - categorias prop:", categorias);
-
   const [cantidadInicial, setCantidadInicial] = useState<number>(0);
   const [formData, setFormData] = useState<InsertMedicamento>({
     nombre: initialData?.nombre || "",

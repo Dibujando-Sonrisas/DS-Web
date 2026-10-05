@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
-import { isAppRole } from "@/lib/auth/roles";
-import { canAccessRoute } from "@/lib/auth/permissions";
+import { canAccessRoute, resolvePermissions, type RolConPermisos } from "@/lib/auth/permissions";
 
 export default async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -56,19 +55,19 @@ export default async function proxy(request: NextRequest) {
       return response;
     }
 
+    // rol y permisos en la misma consulta; misma regla que getAuthContext (src/lib/auth/session.ts)
     const { data: profile } = await supabase
       .from("perfiles")
-      .select("rol, activo, especialidad_id, especialidades:especialidad_id(nombre)")
+      .select("activo, rol:rol_id(es_superadmin, rol_permisos(permiso))")
       .eq("id", user.id)
       .maybeSingle();
 
-    if (!profile || !profile.activo || !isAppRole(profile.rol)) {
+    const rol = (profile?.rol ?? null) as RolConPermisos | null;
+    if (!profile || !profile.activo || !rol) {
       return NextResponse.redirect(new URL("/auth/sin-acceso", request.url));
     }
 
-    const specialtyName = (profile.especialidades as any)?.nombre || null;
-
-    if (!canAccessRoute(profile.rol, pathname, specialtyName)) {
+    if (!canAccessRoute(resolvePermissions(rol), pathname)) {
       return NextResponse.redirect(
         new URL("/administracion/no-autorizado", request.url)
       );

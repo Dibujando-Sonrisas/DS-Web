@@ -47,11 +47,8 @@ export default async function Voluntariado() {
   };
 
   if (activeBrigada) {
-    const { count } = await supabase
-      .from("inscripciones_voluntarios")
-      .select("*", { count: "exact", head: true })
-      .eq("brigada_id", activeBrigada.id)
-      .neq("estado", "rechazado");
+    // anon no lee inscripciones: la base cuenta los cupos ocupados
+    const { data: count } = await supabase.rpc("cupos_ocupados", { p_brigada: activeBrigada.id });
 
     const totalCupos = activeBrigada.capacidad_voluntarios ?? null;
     const registrados = count || 0;

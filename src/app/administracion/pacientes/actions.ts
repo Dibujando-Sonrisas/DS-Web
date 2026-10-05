@@ -8,6 +8,7 @@ import {
   getPacientesDashboard as getPacientesDashboardDB,
   getPacientesAtendidos as getPacientesAtendidosDB,
   getPacienteDetalle as getPacienteDetalleDB,
+  getProfesionalesConsulta as getProfesionalesConsultaDB,
   registrarPaciente as registrarPacienteDB,
   registrarPreclinica as registrarPreclinicaDB,
   registrarConsulta as registrarConsultaDB,
@@ -59,6 +60,12 @@ export async function getPacientesAtendidosAction() {
 export async function getPacienteDetalleAction(id: string) {
   const supabase = await getAuthedSupabase();
   return await getPacienteDetalleDB(id, supabase);
+}
+
+export async function getProfesionalesConsultaAction() {
+  await assertPermission(PERMISSIONS.PACIENTES_READ);
+  const supabase = await getAuthedSupabase();
+  return await getProfesionalesConsultaDB(supabase);
 }
 
 export async function registrarPacienteAction(paciente: Datos) {
