@@ -29,7 +29,7 @@ export default async function BrigadasPage({
     supabase.from("gastos_brigada").select("*").order("fecha_gasto", { ascending: false }),
     supabase.from("inscripciones_voluntarios").select("*").order("created_at", { ascending: false }),
     supabase.from("asignaciones_voluntarios").select("*"),
-    supabase.from("perfiles").select("*, especialidades:especialidad_id(id, nombre)").order("nombre_completo", { ascending: true }),
+    supabase.from("perfiles").select("*, rol:rol_id(nombre), especialidades:especialidad_id(id, nombre)").order("nombre_completo", { ascending: true }),
     supabase.from("brigada_imagenes").select("*").order("orden", { ascending: true }),
   ]);
 

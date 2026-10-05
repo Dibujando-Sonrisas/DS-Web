@@ -14,7 +14,6 @@ import {
   Search,
 } from "lucide-react";
 import { logoutAction } from "@/app/auth/actions";
-import { canAccessRoute } from "@/lib/auth/permissions";
 import { accountModules, findModule } from "./navModules";
 import { usePermissions } from "./PermissionsProvider";
 import UserAvatar from "./UserAvatar";
@@ -58,7 +57,7 @@ export default function AdminHeader({
   onToggleMobile,
 }: AdminHeaderProps) {
   const pathname = usePathname();
-  const { role, specialtyName } = usePermissions();
+  const { canRoute } = usePermissions();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +68,7 @@ export default function AdminHeader({
   const moduleIcon = findModule(pathname)?.icon;
   // mismos módulos que consulta /administracion/buscar
   const canSearch = ["/administracion/pacientes", "/administracion/brigadas", "/administracion/inventario"].some(
-    (ruta) => canAccessRoute(role, ruta, specialtyName)
+    (ruta) => canRoute(ruta)
   );
 
   // Cerrar el menú al hacer clic fuera o con Escape
@@ -185,7 +184,7 @@ export default function AdminHeader({
                 <span className={styles.dropdownEmail}>{email}</span>
               </div>
               {accountModules
-                .filter((m) => canAccessRoute(role, m.href, specialtyName))
+                .filter((m) => canRoute(m.href))
                 .map((m) => (
                   <Link
                     key={m.href}

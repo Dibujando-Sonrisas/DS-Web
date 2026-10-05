@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 import { Database } from "../database.types";
 import { assertPermission } from "@/lib/auth/session";
@@ -72,6 +73,24 @@ export async function getPacienteDetalle(id: string, client: any = supabase) {
     .order("created_at", { ascending: false });
 
   return { paciente, signos, consultas: consultas || [] };
+}
+
+/** Médicos y odontólogos activos: los define el tipo_consulta de la especialidad del perfil. */
+export async function getProfesionalesConsulta(client: SupabaseClient<Database> = supabase) {
+  const { data, error } = await client
+    .from("perfiles")
+    .select("id, nombre_completo, especialidades:especialidad_id!inner(tipo_consulta)")
+    .eq("activo", true)
+    .in("especialidades.tipo_consulta", ["Medica", "Odontologica"])
+    .order("nombre_completo");
+
+  if (error) console.error("Error al obtener profesionales:", error);
+  const porTipo = (tipo: string) =>
+    (data ?? [])
+      .filter((p) => p.especialidades.tipo_consulta === tipo)
+      .map(({ id, nombre_completo }) => ({ id, nombre_completo }));
+
+  return { medicos: porTipo("Medica"), odontologos: porTipo("Odontologica") };
 }
 
 /** Etapa 1 (ingresado): crea el paciente con su código correlativo por brigada. */

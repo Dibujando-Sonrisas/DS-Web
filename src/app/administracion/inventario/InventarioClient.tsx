@@ -20,10 +20,6 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 
 import { generateCleanToken } from "@/lib/coding/codingUtils";
 
-/**
- * Algoritmo generador de código de recurso que garantiza un formato estructurado
- * y limpio sin caracteres ambiguos (evita 0/O, 1/I, 2/Z).
- */
 function generarCodigoRecurso(nombre: string, tipo: string): string {
   const prefijo = tipo === "insumo_medico" ? "INS" : (tipo === "material_brigada" ? "MAT" : "MED");
   const tokenLimpio = generateCleanToken(5);

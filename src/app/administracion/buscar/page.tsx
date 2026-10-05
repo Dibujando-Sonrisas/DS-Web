@@ -3,7 +3,7 @@ import Link from "next/link";
 import Form from "next/form";
 import { redirect } from "next/navigation";
 import { ArrowRight, Boxes, CircleAlert, Eye, HeartPulse, Layers, Search, SearchX, Settings2, Tent } from "lucide-react";
-import { getSpecialtyName, requireAuthContext } from "@/lib/auth/session";
+import { requireAuthContext } from "@/lib/auth/session";
 import { canAccessRoute } from "@/lib/auth/permissions";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { coincide } from "@/lib/texto";
@@ -55,8 +55,7 @@ export default async function BuscarPage({
   searchParams: Promise<{ q?: string | string[]; tipo?: string | string[] }>;
 }) {
   const ctx = await requireAuthContext();
-  const specialtyName = await getSpecialtyName(ctx.profile.especialidad_id);
-  const puede = (ruta: string) => canAccessRoute(ctx.role, ruta, specialtyName);
+  const puede = (ruta: string) => canAccessRoute(ctx.permissions, ruta);
   const acceso = {
     pacientes: puede("/administracion/pacientes"),
     brigadas: puede("/administracion/brigadas"),

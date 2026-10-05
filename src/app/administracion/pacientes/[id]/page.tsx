@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { requirePermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getPacienteDetalle } from "@/lib/db/pacientes";
+import { getPacienteDetalle, getProfesionalesConsulta } from "@/lib/db/pacientes";
 import PageHeader from "@/app/administracion/components/PageHeader";
 import styles from "@/styles/pages/admin.module.css";
 import { ExpedienteClient } from "./ExpedienteClient";
@@ -14,7 +14,7 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const [expediente, { data: resumen }, { data: profesionales }] = await Promise.all([
+  const [expediente, { data: resumen }, { medicos, odontologos }] = await Promise.all([
     getPacienteDetalle(id, supabase).catch(() => null),
     // estado y brigada salen de la misma vista que el listado
     supabase
@@ -24,18 +24,12 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
       .limit(1)
       .maybeSingle(),
     // para corregir quién atendió la consulta
-    supabase
-      .from("perfiles")
-      .select("id, nombre_completo, rol")
-      .in("rol", ["medico", "odontologo"])
-      .eq("activo", true)
-      .order("nombre_completo"),
+    getProfesionalesConsulta(supabase),
   ]);
 
   if (!expediente || !resumen) notFound();
 
   const { paciente } = expediente;
-  const porRol = (rol: string) => (profesionales ?? []).filter((p) => p.rol === rol);
 
   return (
     <div className={styles.page}>
@@ -55,8 +49,8 @@ export default async function ExpedientePage({ params }: { params: Promise<{ id:
         estado={resumen.estado ?? "ingresado"}
         tomadoPor={resumen.tomado_por}
         tomadoPorMi={!!resumen.tomado_por_mi}
-        medicos={porRol("medico")}
-        odontologos={porRol("odontologo")}
+        medicos={medicos}
+        odontologos={odontologos}
       />
     </div>
   );

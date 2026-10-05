@@ -6,10 +6,7 @@ import { ArrowRight, Bell, CircleCheck, TriangleAlert } from "lucide-react";
 import { usePermissions } from "./PermissionsProvider";
 import { createBrowserClient } from "@supabase/ssr";
 import styles from "@/styles/pages/admin.module.css";
-import type { AppRole } from "@/lib/auth/roles";
-
-/** Roles que pueden ver las alertas de stock mínimo */
-const ROLES_CON_ACCESO: AppRole[] = ["admin", "encargado_farmacia", "encargado_bodega"];
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 interface AlertaStockItem {
   id: string;
@@ -21,14 +18,20 @@ interface AlertaStockItem {
 }
 
 export default function NotificacionesStockBtn() {
-  const { role } = usePermissions();
+  const { canAny, canRoute } = usePermissions();
   const [open, setOpen] = useState(false);
   const [alertas, setAlertas] = useState<AlertaStockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Solo renderizar para los roles autorizados
-  const tieneAcceso = ROLES_CON_ACCESO.includes(role as AppRole);
+  // Solo quien gestiona stock ve las alertas
+  const tieneAcceso = canAny([PERMISSIONS.INVENTARIO_UPDATE, PERMISSIONS.FARMACIA_UPDATE]);
+  // el pie lleva a reportes si puede abrirlo; si no, al inventario
+  const enlacePie = canRoute("/administracion/reportes")
+    ? { href: "/administracion/reportes", label: "Ver reporte completo de stock" }
+    : canRoute("/administracion/inventario")
+    ? { href: "/administracion/inventario", label: "Ver inventario" }
+    : null;
 
   useEffect(() => {
     if (!tieneAcceso) return;
@@ -158,14 +161,16 @@ export default function NotificacionesStockBtn() {
             )}
           </div>
 
-          <Link
-            href="/administracion/reportes"
-            className={styles.notifFooter}
-            onClick={() => setOpen(false)}
-          >
-            Ver reporte completo de stock
-            <ArrowRight aria-hidden="true" />
-          </Link>
+          {enlacePie && (
+            <Link
+              href={enlacePie.href}
+              className={styles.notifFooter}
+              onClick={() => setOpen(false)}
+            >
+              {enlacePie.label}
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          )}
         </div>
       )}
     </div>

@@ -2,10 +2,9 @@ import Link from "next/link";
 import { Banknote, Gift, PackagePlus, Plus, UserPlus } from "lucide-react";
 import styles from "@/styles/pages/admin.module.css";
 import dash from "@/styles/pages/admin-dashboard.module.css";
-import { AppRole } from "@/lib/auth/roles";
-import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
+import { PERMISSIONS, type Permission } from "@/lib/auth/permissions";
 
-export default function QuickActions({ role }: { role: AppRole }) {
+export default function QuickActions({ permissions }: { permissions: readonly Permission[] }) {
   const actions = [
     {
       label: "Nueva Brigada",
@@ -39,7 +38,7 @@ export default function QuickActions({ role }: { role: AppRole }) {
     },
   ];
 
-  const visibleActions = actions.filter((a) => hasPermission(role, a.perm));
+  const visibleActions = actions.filter((a) => permissions.includes(a.perm));
 
   if (visibleActions.length === 0) return null;
 

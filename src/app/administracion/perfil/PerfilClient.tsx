@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition, useRef } from "react";
 import { z } from "zod";
-import type { Perfil } from "@/lib/auth/session";
+import type { Perfil, RolResumen } from "@/lib/auth/session";
 import { updateProfileAction, updateAvatarAction } from "../usuarios/actions";
 import { supabase } from "@/lib/supabase";
 import { Camera, CircleAlert, LoaderCircle } from "lucide-react";
@@ -36,12 +36,14 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 
 type PerfilClientProps = {
   profile: Perfil;
+  role: RolResumen;
   email: string;
   specialtyName: string;
 };
 
 export default function PerfilClient({
   profile,
+  role,
   email,
   specialtyName,
 }: PerfilClientProps) {
@@ -326,11 +328,7 @@ export default function PerfilClient({
               <dd>{email}</dd>
               <dt>Rol</dt>
               <dd>
-                {profile.rol ? (
-                  <RoleBadge role={profile.rol} />
-                ) : (
-                  <span className={`${styles.badge} ${styles.badgeWarning}`}>Pendiente</span>
-                )}
+                <RoleBadge role={role} />
               </dd>
               <dt>Especialidad</dt>
               <dd>{specialtyName}</dd>

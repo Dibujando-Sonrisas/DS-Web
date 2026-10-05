@@ -16,6 +16,13 @@ export type Specialty = {
   nombre: string;
   activo?: boolean;
   activa?: boolean;
+  tipo_consulta?: string | null;
+};
+
+/** Valores de especialidades.tipo_consulta; sin valor = la especialidad no atiende consultas. */
+export const TIPO_CONSULTA_LABELS: Record<string, string> = {
+  Medica: "Médica",
+  Odontologica: "Odontológica",
 };
 
 export default function EspecialidadesTable({
@@ -61,18 +68,18 @@ export default function EspecialidadesTable({
     }
   };
 
-  const handleSave = async (nombre: string) => {
+  const handleSave = async (nombre: string, tipoConsulta: string | null) => {
     setError(null);
     try {
       if (editingSpecialty) {
-        const res = await editarEspecialidad(editingSpecialty.id, nombre);
+        const res = await editarEspecialidad(editingSpecialty.id, nombre, tipoConsulta);
         if (res.error) throw new Error(res.error);
-        
-        setSpecialties(prev => prev.map(s => 
-          s.id === editingSpecialty.id ? { ...s, nombre } : s
+
+        setSpecialties(prev => prev.map(s =>
+          s.id === editingSpecialty.id ? { ...s, nombre, tipo_consulta: tipoConsulta } : s
         ));
       } else {
-        const res = await crearEspecialidad(nombre);
+        const res = await crearEspecialidad(nombre, tipoConsulta);
         if (res.error) throw new Error(res.error);
         
         // Since we don't have the new ID immediately, we should ideally refresh the route
@@ -114,6 +121,7 @@ export default function EspecialidadesTable({
             <thead>
               <tr>
                 <th>Nombre</th>
+                <th>Tipo de consulta</th>
                 <th>Estado</th>
                 <th className={styles.num}>Acciones</th>
               </tr>
@@ -121,7 +129,7 @@ export default function EspecialidadesTable({
             <tbody>
               {specialties.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className={styles.emptyCell}>
+                  <td colSpan={4} className={styles.emptyCell}>
                     No hay especialidades registradas.
                   </td>
                 </tr>
@@ -133,6 +141,19 @@ export default function EspecialidadesTable({
                   return (
                     <tr key={sp.id}>
                       <td className={styles.cellMain}>{sp.nombre}</td>
+                      <td>
+                        {sp.tipo_consulta ? (
+                          <span
+                            className={`${styles.badge} ${
+                              sp.tipo_consulta === "Odontologica" ? styles.badgeBrand : styles.badgeInfo
+                            }`}
+                          >
+                            {TIPO_CONSULTA_LABELS[sp.tipo_consulta] ?? sp.tipo_consulta}
+                          </span>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
                       <td>
                         <span
                           className={`${styles.badge} ${styles.badgeDot} ${

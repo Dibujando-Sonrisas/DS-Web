@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { canAccessRoute } from "@/lib/auth/permissions";
 import { adminModules } from "./navModules";
 import { usePermissions } from "./PermissionsProvider";
 import styles from "@/styles/pages/admin.module.css";
@@ -17,7 +16,7 @@ interface SideBarProps {
 
 export default function SideBar({ isCollapsed, isMobileOpen, onCloseMobile }: SideBarProps) {
   const pathname = usePathname();
-  const { role, specialtyName } = usePermissions();
+  const { canRoute } = usePermissions();
 
   // en móvil, Escape cierra el menú abierto
   useEffect(() => {
@@ -29,9 +28,7 @@ export default function SideBar({ isCollapsed, isMobileOpen, onCloseMobile }: Si
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isMobileOpen, onCloseMobile]);
 
-  const visibleModules = adminModules.filter((link) =>
-    canAccessRoute(role, link.href, specialtyName)
-  );
+  const visibleModules = adminModules.filter((link) => canRoute(link.href));
 
   return (
     <>

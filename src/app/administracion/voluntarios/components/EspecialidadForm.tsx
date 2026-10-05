@@ -4,16 +4,17 @@ import { useState } from "react";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import styles from "@/styles/pages/admin.module.css";
-import type { Specialty } from "./EspecialidadesTable";
+import { TIPO_CONSULTA_LABELS, type Specialty } from "./EspecialidadesTable";
 
 type EspecialidadFormProps = {
   specialty: Specialty | null;
   onClose: () => void;
-  onSave: (nombre: string) => Promise<void>;
+  onSave: (nombre: string, tipoConsulta: string | null) => Promise<void>;
 };
 
 export default function EspecialidadForm({ specialty, onClose, onSave }: EspecialidadFormProps) {
   const [nombre, setNombre] = useState(specialty?.nombre || "");
+  const [tipoConsulta, setTipoConsulta] = useState(specialty?.tipo_consulta || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +28,7 @@ export default function EspecialidadForm({ specialty, onClose, onSave }: Especia
     setLoading(true);
     setError(null);
     try {
-      await onSave(nombre);
+      await onSave(nombre, tipoConsulta || null);
     } catch (err: any) {
       setError(err.message || "Ocurrió un error.");
     } finally {
@@ -63,6 +64,23 @@ export default function EspecialidadForm({ specialty, onClose, onSave }: Especia
                 {error}
               </span>
             )}
+          </label>
+          {/* define quién aparece como médico u odontólogo en el expediente */}
+          <label className="form-field">
+            <span className="form-label">Tipo de consulta</span>
+            <select
+              className="form-input"
+              value={tipoConsulta}
+              onChange={(e) => setTipoConsulta(e.target.value)}
+              disabled={loading}
+            >
+              <option value="">Ninguna</option>
+              {Object.entries(TIPO_CONSULTA_LABELS).map(([valor, label]) => (
+                <option key={valor} value={valor}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
