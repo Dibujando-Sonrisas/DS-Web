@@ -604,8 +604,7 @@
   :global([class*="Topbar"]),
   :global([class*="topbar"]),
   :global([class*="AdminHeader"]),
-  :global([class*="adminHeader"]),
-  :global([class*="logoutBtn"]) {
+  :global([class*="adminHeader"]) {
     display: none !important;
   }
 

@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Eye } from "lucide-react";
-import { ROLE_LABELS, type AppRole } from "@/lib/auth/roles";
 import StatusBadge from "@/app/administracion/components/StatusBadge";
 import UserAvatar from "@/app/administracion/components/UserAvatar";
 import styles from "@/styles/pages/admin.module.css";
@@ -12,7 +11,7 @@ import VolunteerFilters from "./VolunteerFilters";
 export type VoluntarioRow = {
   id: string;
   nombre_completo: string | null;
-  rol: string | null;
+  rol: { id: string; nombre: string; color: string } | null;
   avatar_url: string | null;
   activo: boolean;
   cargo: string | null;
@@ -102,7 +101,7 @@ export default function VoluntariosTable({ voluntarios }: VoluntariosTableProps)
                           <span className={styles.cellMain}>{nombre}</span>
                           {v.rol && (
                             <span className={styles.cellSub}>
-                              Rol: {ROLE_LABELS[v.rol as AppRole] ?? v.rol}
+                              Rol: {v.rol.nombre}
                             </span>
                           )}
                         </div>

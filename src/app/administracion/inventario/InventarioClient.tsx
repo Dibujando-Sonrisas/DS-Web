@@ -20,22 +20,23 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 
 import { generateCleanToken } from "@/lib/coding/codingUtils";
 
-/**
- * Algoritmo generador de código de recurso que garantiza un formato estructurado
- * y limpio sin caracteres ambiguos (evita 0/O, 1/I, 2/Z).
- */
 function generarCodigoRecurso(nombre: string, tipo: string): string {
   const prefijo = tipo === "insumo_medico" ? "INS" : (tipo === "material_brigada" ? "MAT" : "MED");
   const tokenLimpio = generateCleanToken(5);
   return `INV-${prefijo}-${tokenLimpio}`;
 }
 
-export function InventarioClient() {
+export function InventarioClient({
+  initialLotes = null,
+}: {
+  /** recurso cuyos lotes se abren al entrar */
+  initialLotes?: { id: string; nombre: string } | null;
+}) {
   const { can } = usePermissions();
   const [medicamentos, setMedicamentos] = useState<Record<string, unknown>[]>([]);
   const [categorias, setCategorias] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMedLotes, setSelectedMedLotes] = useState<{ id: string; nombre: string } | null>(null);
+  const [selectedMedLotes, setSelectedMedLotes] = useState(initialLotes);
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "medicamento" | "insumo_medico" | "material_brigada">("todos");
 
   const [isMedModalOpen, setIsMedModalOpen] = useState(false);

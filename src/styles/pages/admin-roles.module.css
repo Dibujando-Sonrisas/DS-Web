@@ -1,0 +1,289 @@
+/* =====================================================
+   ROLES Y PERMISOS — admin-roles.module.css
+   Solo lo propio de la pestaña Roles de Usuarios: la
+   lista de roles, el selector de color y la matriz de
+   permisos. Paneles, tablas, badges y modales vienen de
+   admin.module.css.
+===================================================== */
+
+/* ── LISTA + EDITOR ── */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 2.4rem;
+}
+
+@media (min-width: 1100px) {
+  .layout {
+    grid-template-columns: 30rem minmax(0, 1fr);
+  }
+
+  .listPanel {
+    position: sticky;
+    top: 9.6rem;
+  }
+}
+
+/* al elegir un rol en pantallas angostas se baja al editor sin que lo tape el encabezado */
+.editor {
+  scroll-margin-top: 9.6rem;
+}
+
+/* el cuerpo va dentro del <form>: sin el espacio extra bajo el título */
+.editor .editorBody {
+  padding-top: 0;
+}
+
+.roleList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0 1.2rem 1.2rem;
+  list-style: none;
+}
+
+.roleItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.2rem;
+  width: 100%;
+  min-height: 4.4rem;
+  padding: 1.2rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: none;
+  font-family: var(--fontBody);
+  text-align: left;
+  color: var(--dark);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.roleItem:hover {
+  background: var(--surface-muted);
+}
+
+.roleItem[aria-current="true"] {
+  border-color: var(--line-strong);
+  background: var(--bg-light);
+}
+
+/* punto del color del rol: mismo tono que su badge */
+.roleDot {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.6rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(26, 35, 50, 0.12);
+}
+
+.roleText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.roleName {
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.roleItem[aria-current="true"] .roleName {
+  color: var(--primaryDark);
+}
+
+.roleMeta {
+  font-size: 1.25rem;
+  color: var(--gray);
+  font-variant-numeric: tabular-nums;
+}
+
+.roleFlags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+/* ── SELECTOR DE COLOR (radios con la vista previa del badge) ── */
+.tones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.tone {
+  position: relative;
+  display: inline-flex;
+  border-radius: 99rem;
+  cursor: pointer;
+}
+
+/* el radio queda accesible por teclado; lo visible es el badge */
+.tone input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tone > span {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color 0.15s ease;
+}
+
+.tone input:checked + span {
+  outline-color: var(--primaryDark);
+}
+
+.tone input:focus-visible + span {
+  outline: 3px solid var(--primaryDark);
+  outline-offset: 3px;
+}
+
+.tone input:disabled,
+.tone input:disabled + span {
+  cursor: not-allowed;
+}
+
+/* ── MATRIZ DE PERMISOS ── */
+.matrixHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.6rem;
+}
+
+.matrixCount {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--gray);
+  font-variant-numeric: tabular-nums;
+}
+
+/* la tabla va de borde a borde del panel, como las demás */
+.matrixWrap {
+  margin-inline: -2.4rem;
+}
+
+/* celdas de casilla: centradas y con área de toque de 44px */
+.matrixWrap .check {
+  width: 1%;
+  text-align: center;
+}
+
+.matrixWrap td.check {
+  padding: 0;
+}
+
+.cellToggle {
+  display: grid;
+  place-items: center;
+  min-width: 4.4rem;
+  min-height: 4.8rem;
+  cursor: pointer;
+}
+
+.cellToggle input,
+.moduleToggle input,
+.special input {
+  width: 1.8rem;
+  height: 1.8rem;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.cellToggle:has(input:disabled),
+.moduleToggle:has(input:disabled),
+.special:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+.cellToggle input:disabled,
+.moduleToggle input:disabled,
+.special input:disabled {
+  cursor: not-allowed;
+}
+
+/* nombre del módulo con la casilla de "todos" */
+.moduleToggle {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 600;
+  color: var(--dark);
+  cursor: pointer;
+}
+
+.moduleCount {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--gray);
+  font-variant-numeric: tabular-nums;
+}
+
+.special {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 4.4rem;
+  font-size: 1.35rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.na {
+  color: var(--line-strong);
+}
+
+/* ── BARRA DE GUARDADO ── */
+/* se queda abajo mientras se recorre la matriz */
+.saveBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: var(--white);
+  border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
+}
+
+.saveState {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+
+.saveStateDirty {
+  color: var(--warn-ink);
+}
+
+.saveActions {
+  display: flex;
+  gap: 0.8rem;
+  margin-left: auto;
+}
+
+@media (max-width: 767px) {
+  .matrixWrap {
+    margin-inline: -1.6rem;
+  }
+
+  .roleList {
+    padding-inline: 0.8rem;
+  }
+}

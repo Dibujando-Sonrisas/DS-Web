@@ -4,35 +4,19 @@ import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
-import { logoutAction } from "@/app/auth/actions";
-import { canAccessRoute } from "@/lib/auth/permissions";
 import { adminModules } from "./navModules";
 import { usePermissions } from "./PermissionsProvider";
-import UserAvatar from "./UserAvatar";
 import styles from "@/styles/pages/admin.module.css";
 
 interface SideBarProps {
   isCollapsed: boolean;
   isMobileOpen: boolean;
   onCloseMobile: () => void;
-  displayName?: string;
-  roleLabel?: string;
-  avatarUrl?: string | null;
-  email?: string | null;
 }
 
-export default function SideBar({
-  isCollapsed,
-  isMobileOpen,
-  onCloseMobile,
-  displayName,
-  roleLabel,
-  avatarUrl,
-  email,
-}: SideBarProps) {
+export default function SideBar({ isCollapsed, isMobileOpen, onCloseMobile }: SideBarProps) {
   const pathname = usePathname();
-  const { role, specialtyName } = usePermissions();
+  const { canRoute } = usePermissions();
 
   // en móvil, Escape cierra el menú abierto
   useEffect(() => {
@@ -44,9 +28,7 @@ export default function SideBar({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isMobileOpen, onCloseMobile]);
 
-  const visibleModules = adminModules.filter((link) =>
-    canAccessRoute(role, link.href, specialtyName)
-  );
+  const visibleModules = adminModules.filter((link) => canRoute(link.href));
 
   return (
     <>
@@ -102,34 +84,6 @@ export default function SideBar({
             );
           })}
         </nav>
-
-        <div className={styles.sidebarFooter}>
-          {displayName && (
-            <Link
-              href="/administracion/perfil"
-              onClick={onCloseMobile}
-              className={styles.sidebarProfile}
-              title={isCollapsed ? displayName : undefined}
-            >
-              <UserAvatar avatarUrl={avatarUrl} nombres={displayName} email={email} size={36} />
-              <span className={styles.profileText}>
-                <span className={styles.profileName}>{displayName}</span>
-                <span className={styles.profileRole}>{roleLabel || "Personal"}</span>
-              </span>
-            </Link>
-          )}
-
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className={styles.logoutBtn}
-              title={isCollapsed ? "Cerrar Sesión" : undefined}
-            >
-              <LogOut aria-hidden="true" />
-              <span className={styles.logoutLabel}>Cerrar Sesión</span>
-            </button>
-          </form>
-        </div>
       </aside>
     </>
   );

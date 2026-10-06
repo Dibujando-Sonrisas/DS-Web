@@ -2,11 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Form from "next/form";
 import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   ChevronDown,
-  CircleUserRound,
   LogOut,
   Menu,
   PanelLeftClose,
@@ -14,7 +14,8 @@ import {
   Search,
 } from "lucide-react";
 import { logoutAction } from "@/app/auth/actions";
-import { findModule } from "./navModules";
+import { accountModules, findModule } from "./navModules";
+import { usePermissions } from "./PermissionsProvider";
 import UserAvatar from "./UserAvatar";
 import NotificacionesStockBtn from "./NotificacionesStockBtn";
 import styles from "@/styles/pages/admin.module.css";
@@ -39,9 +40,10 @@ const MODULE_TITLES: { prefix: string; title: string; subtitle: string }[] = [
   { prefix: "/administracion/actividades-infantiles", title: "Actividades Infantiles", subtitle: "Recreación, apoyo y dinámicas comunitarias" },
   { prefix: "/administracion/ventas", title: "Ventas de Apoyo", subtitle: "Kits, artículos institucionales y recaudación" },
   { prefix: "/administracion/reportes", title: "Reportes y Estadísticas", subtitle: "Análisis de datos, atenciones y brigadas" },
-  { prefix: "/administracion/usuarios", title: "Login y Usuarios", subtitle: "Administración de accesos y credenciales" },
+  { prefix: "/administracion/usuarios", title: "Gestión de Usuarios", subtitle: "Administración de accesos y credenciales" },
   { prefix: "/administracion/perfil", title: "Mi Perfil", subtitle: "Información personal y cuenta" },
   { prefix: "/administracion/contacto", title: "Mensajes de Contacto", subtitle: "Bandeja de mensajes del sitio web" },
+  { prefix: "/administracion/buscar", title: "Búsqueda", subtitle: "Pacientes, brigadas e inventario" },
   { prefix: "/administracion", title: "Dashboard General", subtitle: "Resumen ejecutivo y métricas globales" },
 ];
 
@@ -55,6 +57,7 @@ export default function AdminHeader({
   onToggleMobile,
 }: AdminHeaderProps) {
   const pathname = usePathname();
+  const { canRoute } = usePermissions();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +66,10 @@ export default function AdminHeader({
     m.prefix === "/administracion" ? pathname === "/administracion" : pathname.startsWith(m.prefix)
   ) || { title: "Sistema Integral", subtitle: "Fundación Dibujando Sonrisas" };
   const moduleIcon = findModule(pathname)?.icon;
+  // mismos módulos que consulta /administracion/buscar
+  const canSearch = ["/administracion/pacientes", "/administracion/brigadas", "/administracion/inventario"].some(
+    (ruta) => canRoute(ruta)
+  );
 
   // Cerrar el menú al hacer clic fuera o con Escape
   useEffect(() => {
@@ -124,15 +131,20 @@ export default function AdminHeader({
         </div>
       </div>
 
-      <div className={styles.headerSearch} role="search">
-        <Search aria-hidden="true" />
-        <input
-          type="search"
-          placeholder="Buscar paciente, brigada o medicina..."
-          className={styles.headerSearchInput}
-          aria-label="Buscar en el sistema"
-        />
-      </div>
+      {canSearch && (
+        <Form action="/administracion/buscar" className={styles.headerSearch} role="search">
+          <Search aria-hidden="true" />
+          <input
+            type="search"
+            name="q"
+            placeholder="Buscar paciente, brigada o medicina..."
+            className={styles.headerSearchInput}
+            aria-label="Buscar en el sistema"
+            minLength={2}
+            required
+          />
+        </Form>
+      )}
 
       <div className={styles.headerRight}>
         {/* la fecha del servidor puede diferir de la del navegador */}
@@ -171,15 +183,20 @@ export default function AdminHeader({
                 <span className={styles.dropdownName}>{displayName}</span>
                 <span className={styles.dropdownEmail}>{email}</span>
               </div>
-              <Link
-                href="/administracion/perfil"
-                role="menuitem"
-                className={styles.dropdownItem}
-                onClick={() => setDropdownOpen(false)}
-              >
-                <CircleUserRound aria-hidden="true" />
-                Mi Perfil
-              </Link>
+              {accountModules
+                .filter((m) => canRoute(m.href))
+                .map((m) => (
+                  <Link
+                    key={m.href}
+                    href={m.href}
+                    role="menuitem"
+                    className={styles.dropdownItem}
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    {m.icon}
+                    {m.name}
+                  </Link>
+                ))}
               <form action={logoutAction}>
                 <button
                   type="submit"

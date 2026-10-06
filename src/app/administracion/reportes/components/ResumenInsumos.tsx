@@ -7,7 +7,6 @@ import StatCard from "@/app/administracion/components/StatCard";
 import admin from "@/styles/pages/admin.module.css";
 import styles from "@/styles/pages/reportes.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { ROLE_LABELS } from "@/lib/auth/roles";
 import { supabase } from "@/lib/supabase";
 import PrintReportDocument from "./PrintReportDocument";
 
@@ -24,7 +23,7 @@ export interface BrigadeReportData {
 
 export default function ResumenInsumos() {
   const { role } = usePermissions();
-  const userRole = role ? ROLE_LABELS[role] : "ADMINISTRADOR";
+  const userRole = role.nombre;
 
   const [brigadasData, setBrigadasData] = useState<BrigadeReportData[]>([]);
   const [selectedBrigadaId, setSelectedBrigadaId] = useState<string>("todas");

@@ -5,16 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
 import { getMedicamentosAction as getMedicamentos } from "@/app/administracion/inventario/actions";
-import { supabase } from "@/lib/supabase";
 import {
   getPacienteDetalleAction as getPacienteDetalle,
+  getProfesionalesConsultaAction as getProfesionalesConsulta,
   liberarConsultaAction as liberarConsulta,
   registrarConsultaAction as registrarConsulta,
   registrarPacienteAction as registrarPaciente,
   registrarPreclinicaAction as registrarPreclinica,
   tomarConsultaAction as tomarConsulta,
 } from "../actions";
-import { ESTADOS } from "../PacientesClient";
+import { ESTADOS } from "../estados";
 import {
   CampoDiagnosticos,
   CamposConsulta,
@@ -146,10 +146,7 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
         const [bRes, mRes, pRes, det] = await Promise.all([
           getBrigadas(),
           getMedicamentos(),
-          supabase
-            .from("perfiles")
-            .select("*, especialidades:especialidad_id(id, nombre)")
-            .order("nombre_completo", { ascending: true }),
+          getProfesionalesConsulta(),
           pacienteInicial ? getPacienteDetalle(pacienteInicial) : null,
         ]);
         const etapa = det ? (det.consultas.length > 0 ? 3 : det.signos ? 2 : 1) : 0;
@@ -172,16 +169,8 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
           const prescribibles = (mRes || []).filter((m: any) => m.tipo_recurso !== "material_brigada");
           setMedicamentosList(prescribibles);
 
-          const allProfiles = pRes.data || [];
-          // médicos y odontólogos activos, por rol, ordenados por nombre
-          const activos = allProfiles.filter((v: any) => v.activo !== false);
-          const porRol = (rol: string) =>
-            activos
-              .filter((v: any) => (v.rol || "").toLowerCase() === rol)
-              .sort((a: any, b: any) => (a.nombre_completo || "").localeCompare(b.nombre_completo || ""));
-
-          setMedicos(porRol("medico"));
-          setOdontologos(porRol("odontologo"));
+          setMedicos(pRes.medicos);
+          setOdontologos(pRes.odontologos);
         }
       } catch (e) {
         console.error(e);

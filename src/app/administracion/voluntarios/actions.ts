@@ -17,9 +17,19 @@ export type ActionResponse = {
 // -----------------------------------------------------------------------------
 // Especialidades (CRUD administradores)
 // -----------------------------------------------------------------------------
-export async function crearEspecialidad(nombre: string): Promise<ActionResponse> {
+
+// tipo de consulta que atiende la especialidad en el expediente: ninguna, médica u odontológica
+function validarTipoConsulta(tipo: string | null): string | null {
+  if (tipo !== null && tipo !== "Medica" && tipo !== "Odontologica") {
+    throw new Error("Tipo de consulta no válido.");
+  }
+  return tipo;
+}
+
+export async function crearEspecialidad(nombre: string, tipoConsulta: string | null): Promise<ActionResponse> {
   try {
     await assertPermission(PERMISSIONS.VOLUNTARIADO_UPDATE);
+    const tipo_consulta = validarTipoConsulta(tipoConsulta);
     const supabase = await createSupabaseServerClient();
 
     const nombreTrim = nombre.trim();
@@ -28,6 +38,7 @@ export async function crearEspecialidad(nombre: string): Promise<ActionResponse>
     const { error } = await supabase.from("especialidades").insert({
       nombre: nombreTrim,
       codigo: codigo,
+      tipo_consulta,
     });
 
     if (error) throw new Error(error.message);
@@ -39,14 +50,19 @@ export async function crearEspecialidad(nombre: string): Promise<ActionResponse>
   }
 }
 
-export async function editarEspecialidad(id: string, nombre: string): Promise<ActionResponse> {
+export async function editarEspecialidad(
+  id: string,
+  nombre: string,
+  tipoConsulta: string | null
+): Promise<ActionResponse> {
   try {
     await assertPermission(PERMISSIONS.VOLUNTARIADO_UPDATE);
+    const tipo_consulta = validarTipoConsulta(tipoConsulta);
     const supabase = await createSupabaseServerClient();
 
     const { error } = await supabase
       .from("especialidades")
-      .update({ nombre: nombre.trim() })
+      .update({ nombre: nombre.trim(), tipo_consulta })
       .eq("id", id);
 
     if (error) throw new Error(error.message);
@@ -113,7 +129,7 @@ export async function obtenerVoluntarios() {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("perfiles")
-    .select("*, especialidades:especialidad_id(id, nombre), asignaciones_voluntarios!asignaciones_voluntarios_perfil_id_fkey(id, brigada_id), participaciones_voluntarios!participaciones_voluntarios_perfil_id_fkey(id, brigada_id)")
+    .select("*, rol:rol_id(id, nombre, color), especialidades:especialidad_id(id, nombre), asignaciones_voluntarios!asignaciones_voluntarios_perfil_id_fkey(id, brigada_id), participaciones_voluntarios!participaciones_voluntarios_perfil_id_fkey(id, brigada_id)")
     .order("nombre_completo", { ascending: true });
 
   if (error) {
@@ -127,7 +143,7 @@ export async function obtenerVoluntario(id: string) {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("perfiles")
-    .select("*, especialidades:especialidad_id(id, nombre)")
+    .select("*, rol:rol_id(id, nombre, color), especialidades:especialidad_id(id, nombre)")
     .eq("id", id)
     .single();
 

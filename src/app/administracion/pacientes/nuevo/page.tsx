@@ -9,10 +9,11 @@ export default async function NuevoExpedientePage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  await requirePermission(PERMISSIONS.PACIENTES_READ);
   // ?paciente=<id>: otro usuario continúa un expediente ya ingresado
   const { paciente } = await searchParams;
   const pacienteId = typeof paciente === "string" ? paciente : undefined;
+  // crear pide pacientes.create; continuar, pacientes.update (igual que el botón del listado)
+  await requirePermission(pacienteId ? PERMISSIONS.PACIENTES_UPDATE : PERMISSIONS.PACIENTES_CREATE);
 
   return (
     <div className={styles.page}>

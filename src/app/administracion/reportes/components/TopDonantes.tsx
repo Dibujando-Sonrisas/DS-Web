@@ -17,7 +17,6 @@ import UserAvatar from "@/app/administracion/components/UserAvatar";
 import admin from "@/styles/pages/admin.module.css";
 import styles from "@/styles/pages/reportes.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { ROLE_LABELS } from "@/lib/auth/roles";
 import { supabase } from "@/lib/supabase";
 import PrintReportDocument from "./PrintReportDocument";
 
@@ -88,7 +87,7 @@ function getHeuristicTipo(name: string): "Empresa" | "Persona Natural" | "ONG" |
 
 export default function TopDonantes() {
   const { role } = usePermissions();
-  const userRole = role ? ROLE_LABELS[role] : "ADMINISTRADOR";
+  const userRole = role.nombre;
   const [anioFiltro, setAnioFiltro] = useState<string>("todos");
   const [rawDonaciones, setRawDonaciones] = useState<Array<{
     id: string;

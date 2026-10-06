@@ -6,7 +6,6 @@ import styles from "@/styles/pages/admin.module.css";
 import rep from "@/styles/pages/reportes.module.css";
 import listas from "@/styles/pages/admin-reportes-listas.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { ROLE_LABELS } from "@/lib/auth/roles";
 import { supabase } from "@/lib/supabase";
 import PrintReportDocument from "./PrintReportDocument";
 
@@ -22,7 +21,7 @@ export interface StockMinimoData {
 
 export default function StockMinimo() {
   const { role } = usePermissions();
-  const userRole = role ? ROLE_LABELS[role] : "ADMINISTRADOR";
+  const userRole = role.nombre;
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
   const [estadoFiltro, setEstadoFiltro] = useState<string>("todos");
   const [rawStock, setRawStock] = useState<StockMinimoData[]>([]);

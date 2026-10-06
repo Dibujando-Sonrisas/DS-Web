@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { ProfileWithSpecialty, SpecialtyRow } from "./page";
-import { APP_ROLES, ROLE_LABELS, type AppRole } from "@/lib/auth/roles";
+import type { ProfileWithSpecialty, RolDetalle, SpecialtyRow } from "./page";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 import {
   changeRoleAction,
   changeSpecialtyAction,
   activateUserAction,
   deactivateUserAction,
 } from "./actions";
-import { LoaderCircle, Pencil, Search, TriangleAlert } from "lucide-react";
+import { LoaderCircle, Pencil, Search, ShieldCheck, TriangleAlert, Users } from "lucide-react";
 import AdminModal from "../components/AdminModal";
 import { useToast } from "../components/AdminToast";
+import { usePermissions } from "../components/PermissionsProvider";
+import RolesPanel from "./components/RolesPanel";
 import RoleBadge from "../components/RoleBadge";
 import StatusBadge from "../components/StatusBadge";
 import UserAvatar from "../components/UserAvatar";
@@ -20,16 +22,26 @@ import styles from "@/styles/pages/admin.module.css";
 type UsuariosAdminClientProps = {
   rows: ProfileWithSpecialty[];
   specialties: SpecialtyRow[];
+  roles: RolDetalle[];
   fetchError: string | null;
   currentUserId: string;
+  initialTab: "miembros" | "roles";
 };
 
 export default function UsuariosAdminClient({
   rows,
   specialties,
+  roles,
   fetchError,
   currentUserId,
+  initialTab,
 }: UsuariosAdminClientProps) {
+  const { can, role: myRole } = usePermissions();
+  const canSeeRoles = can(PERMISSIONS.ROLES_READ);
+  const [activeTab, setActiveTab] = useState<"miembros" | "roles">(
+    initialTab === "roles" && canSeeRoles ? "roles" : "miembros"
+  );
+
   // Search & Filters State
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -40,7 +52,7 @@ export default function UsuariosAdminClient({
   const [editTarget, setEditTarget] = useState<ProfileWithSpecialty | null>(
     null
   );
-  const [selectedRole, setSelectedRole] = useState<AppRole>("admin");
+  const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedSpecialtyId, setSelectedSpecialtyId] =
     useState<string>("none");
   const [selectedActive, setSelectedActive] = useState<boolean>(true);
@@ -52,7 +64,7 @@ export default function UsuariosAdminClient({
   // Open Edit Modal
   const openEditModal = (user: ProfileWithSpecialty) => {
     setEditTarget(user);
-    setSelectedRole(user.rol);
+    setSelectedRole(user.rol_id);
     setSelectedSpecialtyId(user.especialidad_id || "none");
     setSelectedActive(user.activo);
   };
@@ -71,7 +83,7 @@ export default function UsuariosAdminClient({
     startTransition(async () => {
       try {
         // 1. Check and update Role if changed
-        if (selectedRole !== editTarget.rol) {
+        if (selectedRole !== editTarget.rol_id) {
           const res = await changeRoleAction(editTarget.id, selectedRole);
           if (res?.error) throw new Error(res.error);
         }
@@ -111,7 +123,7 @@ export default function UsuariosAdminClient({
       fullName.includes(searchTerm.toLowerCase()) ||
       user.id.includes(searchTerm.toLowerCase());
 
-    const matchesRole = roleFilter === "all" || user.rol === roleFilter;
+    const matchesRole = roleFilter === "all" || user.rol_id === roleFilter;
 
     const matchesSpecialty =
       specialtyFilter === "all" ||
@@ -127,9 +139,11 @@ export default function UsuariosAdminClient({
   });
 
   const isSelf = editTarget?.id === currentUserId;
+  // el rol de administrador solo lo da o quita otro administrador (la base lo exige igual)
+  const lockedSuperadmin = !myRole.es_superadmin && !!editTarget?.rol?.es_superadmin;
 
   return (
-    <>
+    <div className={styles.stack}>
       {fetchError && (
         <p className="notice notice-bad" role="alert">
           <TriangleAlert aria-hidden="true" />
@@ -139,166 +153,199 @@ export default function UsuariosAdminClient({
         </p>
       )}
 
-      <section className={styles.panel} aria-labelledby="miembros-registrados">
-        <div className={styles.panelHeader}>
-          <h2 id="miembros-registrados" className={styles.panelTitle}>
-            Miembros Registrados <span className={styles.count}>{filteredRows.length}</span>
-          </h2>
+      {canSeeRoles && (
+        <div className={styles.tabs} role="tablist" aria-label="Miembros y roles">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "miembros"}
+            className={styles.tab}
+            onClick={() => setActiveTab("miembros")}
+          >
+            <Users aria-hidden="true" />
+            Miembros
+            <span className={styles.tabCount}>{rows.length}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "roles"}
+            className={styles.tab}
+            onClick={() => setActiveTab("roles")}
+          >
+            <ShieldCheck aria-hidden="true" />
+            Roles
+            <span className={styles.tabCount}>{roles.length}</span>
+          </button>
         </div>
+      )}
 
-        {/* Filtros */}
-        <div className={styles.toolbar}>
-          <div className={`${styles.filter} ${styles.filterWide}`}>
-            <label className={styles.filterLabel} htmlFor="usuarios-buscar">
-              Buscar por nombre
-            </label>
-            <div className={styles.search}>
-              <Search aria-hidden="true" />
-              <input
-                id="usuarios-buscar"
-                type="text"
+      {activeTab === "roles" ? (
+        <RolesPanel roles={roles} />
+      ) : (
+        <section className={styles.panel} aria-labelledby="miembros-registrados">
+          <div className={styles.panelHeader}>
+            <h2 id="miembros-registrados" className={styles.panelTitle}>
+              Miembros Registrados <span className={styles.count}>{filteredRows.length}</span>
+            </h2>
+          </div>
+
+          {/* Filtros */}
+          <div className={styles.toolbar}>
+            <div className={`${styles.filter} ${styles.filterWide}`}>
+              <label className={styles.filterLabel} htmlFor="usuarios-buscar">
+                Buscar por nombre
+              </label>
+              <div className={styles.search}>
+                <Search aria-hidden="true" />
+                <input
+                  id="usuarios-buscar"
+                  type="text"
+                  className="form-input form-input-sm"
+                  placeholder="Buscar..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="usuarios-rol">
+                Rol
+              </label>
+              <select
+                id="usuarios-rol"
                 className="form-input form-input-sm"
-                placeholder="Buscar..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <option value="all">Todos los roles</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="usuarios-especialidad">
+                Especialidad
+              </label>
+              <select
+                id="usuarios-especialidad"
+                className="form-input form-input-sm"
+                value={specialtyFilter}
+                onChange={(e) => setSpecialtyFilter(e.target.value)}
+              >
+                <option value="all">Todas las especialidades</option>
+                <option value="none">Sin especialidad</option>
+                {specialties.map((spec) => (
+                  <option key={spec.id} value={spec.id}>
+                    {spec.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.filter}>
+              <label className={styles.filterLabel} htmlFor="usuarios-estado">
+                Estado
+              </label>
+              <select
+                id="usuarios-estado"
+                className="form-input form-input-sm"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">Todos los estados</option>
+                <option value="active">Activos</option>
+                <option value="inactive">Inactivos</option>
+              </select>
             </div>
           </div>
 
-          <div className={styles.filter}>
-            <label className={styles.filterLabel} htmlFor="usuarios-rol">
-              Rol
-            </label>
-            <select
-              id="usuarios-rol"
-              className="form-input form-input-sm"
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-            >
-              <option value="all">Todos los roles</option>
-              {APP_ROLES.map((role) => (
-                <option key={role} value={role}>
-                  {ROLE_LABELS[role]}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.filter}>
-            <label className={styles.filterLabel} htmlFor="usuarios-especialidad">
-              Especialidad
-            </label>
-            <select
-              id="usuarios-especialidad"
-              className="form-input form-input-sm"
-              value={specialtyFilter}
-              onChange={(e) => setSpecialtyFilter(e.target.value)}
-            >
-              <option value="all">Todas las especialidades</option>
-              <option value="none">Sin especialidad</option>
-              {specialties.map((spec) => (
-                <option key={spec.id} value={spec.id}>
-                  {spec.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.filter}>
-            <label className={styles.filterLabel} htmlFor="usuarios-estado">
-              Estado
-            </label>
-            <select
-              id="usuarios-estado"
-              className="form-input form-input-sm"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Todos los estados</option>
-              <option value="active">Activos</option>
-              <option value="inactive">Inactivos</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Tabla de Usuarios */}
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Miembro</th>
-                <th>Rol</th>
-                <th>Cargo</th>
-                <th>Especialidad</th>
-                <th>Estado</th>
-                <th className={styles.num}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.length === 0 ? (
+          {/* Tabla de Usuarios */}
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
                 <tr>
-                  <td colSpan={6} className={styles.emptyCell}>
-                    No se encontraron miembros con los filtros seleccionados.
-                  </td>
+                  <th>Miembro</th>
+                  <th>Rol</th>
+                  <th>Cargo</th>
+                  <th>Especialidad</th>
+                  <th>Estado</th>
+                  <th className={styles.num}>Acciones</th>
                 </tr>
-              ) : (
-                filteredRows.map((user) => {
-                  const nameDisplay =
-                    user.nombre_completo
-                      ? user.nombre_completo.trim()
-                      : "Usuario Nuevo (Sin Perfil)";
-                  return (
-                    <tr key={user.id}>
-                      <td>
-                        <div className={styles.cellPerson}>
-                          <UserAvatar
-                            avatarUrl={user.avatar_url}
-                            nombres={user.nombre_completo}
-                            size={36}
-                          />
-                          <div>
-                            <span className={styles.cellMain}>{nameDisplay}</span>
-                            <span className={styles.cellSub}>
-                              ID: <code>{user.id.substring(0, 8)}...</code>
-                            </span>
+              </thead>
+              <tbody>
+                {filteredRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className={styles.emptyCell}>
+                      No se encontraron miembros con los filtros seleccionados.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRows.map((user) => {
+                    const nameDisplay =
+                      user.nombre_completo
+                        ? user.nombre_completo.trim()
+                        : "Usuario Nuevo (Sin Perfil)";
+                    return (
+                      <tr key={user.id}>
+                        <td>
+                          <div className={styles.cellPerson}>
+                            <UserAvatar
+                              avatarUrl={user.avatar_url}
+                              nombres={user.nombre_completo}
+                              size={36}
+                            />
+                            <div>
+                              <span className={styles.cellMain}>{nameDisplay}</span>
+                              <span className={styles.cellSub}>
+                                ID: <code>{user.id.substring(0, 8)}...</code>
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td>
-                        <RoleBadge role={user.rol} />
-                      </td>
-                      <td>
-                        {user.cargo || <span className={styles.muted}>—</span>}
-                      </td>
-                      <td>
-                        {user.especialidades?.nombre || (
-                          <span className={styles.muted}>—</span>
-                        )}
-                      </td>
-                      <td>
-                        <StatusBadge activo={user.activo} />
-                      </td>
-                      <td>
-                        <div className={styles.rowActions}>
-                          <button
-                            type="button"
-                            className="btn-icon"
-                            onClick={() => openEditModal(user)}
-                            aria-label={`Editar ${nameDisplay}`}
-                            title="Editar"
-                          >
-                            <Pencil aria-hidden="true" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                        </td>
+                        <td>
+                          <RoleBadge role={user.rol} />
+                        </td>
+                        <td>
+                          {user.cargo || <span className={styles.muted}>—</span>}
+                        </td>
+                        <td>
+                          {user.especialidades?.nombre || (
+                            <span className={styles.muted}>—</span>
+                          )}
+                        </td>
+                        <td>
+                          <StatusBadge activo={user.activo} />
+                        </td>
+                        <td>
+                          <div className={styles.rowActions}>
+                            {can(PERMISSIONS.USUARIOS_UPDATE) && (
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                onClick={() => openEditModal(user)}
+                                aria-label={`Editar ${nameDisplay}`}
+                                title="Editar"
+                              >
+                                <Pencil aria-hidden="true" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* Modal de Edición de Usuario */}
       {editTarget && (
@@ -335,20 +382,26 @@ export default function UsuariosAdminClient({
                 <select
                   className="form-input"
                   value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value as AppRole)}
-                  disabled={isPending || isSelf}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  disabled={isPending || isSelf || lockedSuperadmin}
                 >
-                  {APP_ROLES.map((role) => (
-                    <option key={role} value={role}>
-                      {ROLE_LABELS[role]}
+                  {roles.map((role) => (
+                    <option
+                      key={role.id}
+                      value={role.id}
+                      disabled={role.es_superadmin && !myRole.es_superadmin}
+                    >
+                      {role.nombre}
                     </option>
                   ))}
                 </select>
-                {isSelf && (
+                {isSelf ? (
+                  <span className="form-hint">No puedes cambiar tu propio rol.</span>
+                ) : lockedSuperadmin ? (
                   <span className="form-hint">
-                    No puedes cambiar tu propio rol de administrador.
+                    Solo un administrador puede quitar el rol de administrador.
                   </span>
-                )}
+                ) : null}
               </label>
 
               {/* Editar Especialidad */}
@@ -417,7 +470,6 @@ export default function UsuariosAdminClient({
           </form>
         </AdminModal>
       )}
-
-    </>
+    </div>
   );
 }

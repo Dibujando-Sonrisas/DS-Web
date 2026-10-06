@@ -1,8 +1,7 @@
 import styles from "@/styles/pages/admin.module.css";
 import dash from "@/styles/pages/admin-dashboard.module.css";
 import { requirePermission } from "@/lib/auth/session";
-import { PERMISSIONS } from "@/lib/auth/permissions";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { PERMISSIONS, type Permission } from "@/lib/auth/permissions";
 import RoleBadge from "./components/RoleBadge";
 import UserAvatar from "./components/UserAvatar";
 import { Suspense } from "react";
@@ -26,38 +25,19 @@ function StatsSkeleton() {
 
 export default async function DashboardPage() {
   const ctx = await requirePermission(PERMISSIONS.PERFIL_READ);
-  const supabase = await createSupabaseServerClient();
-
-  // Fetch user's specialty name if set
-  let specialtyName = "Ninguna / Administrativo";
-  if (ctx.profile.especialidad_id) {
-    const { data: specialty } = await supabase
-      .from("especialidades")
-      .select("nombre")
-      .eq("id", ctx.profile.especialidad_id)
-      .maybeSingle();
-
-    if (specialty?.nombre) {
-      specialtyName = specialty.nombre;
-    }
-  }
-
+  const specialtyName = ctx.specialtyName ?? "Ninguna / Administrativo";
   const nameDisplay = ctx.profile.nombre_completo || "Usuario";
-  const role = ctx.profile.rol;
+  const can = (p: Permission) => ctx.permissions.includes(p);
 
-  // Determine what dashboard to show
-  let view = "admin";
-  if (role === "admin" || role === "coordinador") {
-    view = "admin";
-  } else if (role === "atencion_pacientes") {
-    view = "clinico";
-  } else if (role === "encargado_farmacia") {
-    view = "farmacia";
-  } else if (role === "encargado_bodega") {
-    view = "bodega";
-  } else if (role === "voluntario") {
-    view = "voluntario";
-  }
+  // la vista sale de los permisos, nunca del nombre del rol: un rol nuevo cae en "voluntario"
+  // (bodega usa la de voluntario mientras no tenga tarjetas propias)
+  const view = can(PERMISSIONS.DASHBOARD_RESUMEN)
+    ? "admin"
+    : can(PERMISSIONS.PACIENTES_CREATE)
+    ? "clinico"
+    : can(PERMISSIONS.FARMACIA_PROCESS)
+    ? "farmacia"
+    : "voluntario";
 
   return (
     <div className={styles.page}>
@@ -86,7 +66,7 @@ export default async function DashboardPage() {
         <dl className={`${styles.kv} ${dash.profileCard}`}>
           <dt>Rol</dt>
           <dd>
-            <RoleBadge role={ctx.profile.rol} />
+            <RoleBadge role={ctx.role} />
           </dd>
           <dt>Especialidad</dt>
           <dd>
@@ -95,7 +75,7 @@ export default async function DashboardPage() {
         </dl>
       </header>
 
-      <QuickActions role={role} />
+      <QuickActions permissions={ctx.permissions} />
 
       <Suspense fallback={<div className={`${styles.skeleton} ${styles.skeletonStat}`} />}>
         <CountdownBrigada />
@@ -117,7 +97,6 @@ export default async function DashboardPage() {
           <Suspense fallback={<StatsSkeleton />}>
             {view === "admin" && <AdminStats />}
             {view === "clinico" && <ClinicoStats />}
-            {view === "enfermeria" && <ClinicoStats isEnfermeria={true} />}
             {view === "farmacia" && <FarmaciaStats />}
             {view === "voluntario" && <VoluntarioStats />}
           </Suspense>
@@ -131,7 +110,7 @@ export default async function DashboardPage() {
         </Suspense>
       )}
 
-      {/* Alertas y Actividad Reciente solo para admin/coord */}
+      {/* Alertas y Actividad Reciente solo con el resumen general */}
       {view === "admin" && (
         <div className={styles.grid2}>
           <Suspense fallback={<div className={`${styles.skeleton} ${styles.skeletonBlock}`} />}>

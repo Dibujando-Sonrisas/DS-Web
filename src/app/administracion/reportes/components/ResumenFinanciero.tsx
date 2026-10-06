@@ -7,7 +7,6 @@ import StatCard from "@/app/administracion/components/StatCard";
 import admin from "@/styles/pages/admin.module.css";
 import styles from "@/styles/pages/reportes.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { ROLE_LABELS } from "@/lib/auth/roles";
 import { supabase } from "@/lib/supabase";
 import PrintReportDocument from "./PrintReportDocument";
 
@@ -42,7 +41,7 @@ const MESES_NOMBRES: Record<number, string> = {
 
 export default function ResumenFinanciero() {
   const { role } = usePermissions();
-  const userRole = role ? ROLE_LABELS[role] : "ADMINISTRADOR";
+  const userRole = role.nombre;
 
   const [periodosData, setPeriodosData] = useState<FinancialPeriodData[]>([]);
   const [anioFiltro, setAnioFiltro] = useState<string>("todos");

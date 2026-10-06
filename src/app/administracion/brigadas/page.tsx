@@ -4,8 +4,14 @@ import PageHeader from "@/app/administracion/components/PageHeader";
 import styles from "@/styles/pages/admin.module.css";
 import BrigadasAdminClient from "./BrigadasAdminClient";
 
-export default async function BrigadasPage() {
+export default async function BrigadasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ brigada?: string | string[] }>;
+}) {
   await requireRouteAccess("/administracion/brigadas");
+  // ?brigada=<id> abre esa brigada (enlace desde la búsqueda)
+  const { brigada } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
   // Load all required data in parallel using Promise.all
@@ -23,7 +29,7 @@ export default async function BrigadasPage() {
     supabase.from("gastos_brigada").select("*").order("fecha_gasto", { ascending: false }),
     supabase.from("inscripciones_voluntarios").select("*").order("created_at", { ascending: false }),
     supabase.from("asignaciones_voluntarios").select("*"),
-    supabase.from("perfiles").select("*, especialidades:especialidad_id(id, nombre)").order("nombre_completo", { ascending: true }),
+    supabase.from("perfiles").select("*, rol:rol_id(nombre), especialidades:especialidad_id(id, nombre)").order("nombre_completo", { ascending: true }),
     supabase.from("brigada_imagenes").select("*").order("orden", { ascending: true }),
   ]);
 
@@ -47,6 +53,7 @@ export default async function BrigadasPage() {
         initialProfiles={(profiles as any) ?? []}
         initialImages={(images as any) ?? []}
         fetchError={bError?.message ?? null}
+        initialSelectedId={typeof brigada === "string" ? brigada : null}
       />
     </div>
   );
