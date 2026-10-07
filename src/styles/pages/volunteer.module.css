@@ -265,24 +265,3 @@
 .fieldset {
   border: none;
 }
-
-/* ── CUPO LLENO ── */
-.fullCard {
-  max-width: 64rem;
-  margin: 0 auto;
-}
-
-.fullIcon {
-  margin: 0 auto 1.6rem;
-}
-
-.fullCard p {
-  margin-bottom: 2rem;
-}
-
-.fullActions {
-  display: flex;
-  gap: 1.2rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
