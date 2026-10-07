@@ -6,7 +6,11 @@
 
 # La anon key de Supabase es pública por diseño (va al bundle de Next como NEXT_PUBLIC_*).
 # Netlify la marca en el output de build; hay que omitirla del escaneo de secretos.
+# .next/cache es la caché de Turbopack entre builds (Next 16.3+): guarda los valores
+# de las variables que leyó el build, pero no se publica. Se omite solo esa carpeta;
+# el resto del output se sigue revisando.
 # https://ntl.fyi/configure-secrets-scanning
 
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+  SECRETS_SCAN_OMIT_PATHS = ".next/cache/"
