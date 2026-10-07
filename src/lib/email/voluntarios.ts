@@ -1,5 +1,6 @@
 import "server-only";
-import { COLOR, FUENTE, botonCorreo, escapeHtml, filaCorreo, layoutCorreo } from "./layout";
+import { COLOR, FUENTE, SITIO, botonCorreo, escapeHtml, filaCorreo, layoutCorreo } from "./layout";
+import { pieAviso } from "./avisos";
 
 /** Lo que el voluntario llenó en el formulario (con la brigada, si eligió una). */
 export type SolicitudVoluntario = {
@@ -18,7 +19,7 @@ const parrafo = (html: string, extra = "") =>
 
 const nota = (html: string) => parrafo(html, "font-size:14px;margin:20px 0 0;");
 
-function datos(s: SolicitudVoluntario, conCorreo: boolean) {
+function datos(s: SolicitudVoluntario, conCorreo: boolean, extra: [string, string | null][] = []) {
   const filas: [string, string | null][] = [
     ["Nombre", s.nombre_completo],
     ["Correo", conCorreo ? s.correo : null],
@@ -29,6 +30,7 @@ function datos(s: SolicitudVoluntario, conCorreo: boolean) {
       s.brigada &&
         `${s.brigada.nombre} · ${formatFecha.format(new Date(s.brigada.fecha_brigada))} · ${s.brigada.lugar}`,
     ],
+    ...extra,
   ];
   const presentes = filas.filter((f): f is [string, string] => Boolean(f[1]));
   return {
@@ -107,6 +109,43 @@ export function correoSolicitudAceptada(
               `El enlace es personal y vence pronto. Si ya no funciona, pide uno nuevo en <a href="${escapeHtml(recuperar)}" style="color:${COLOR.primario};font-weight:600;text-decoration:none;">Recuperar contraseña</a>.`
             )),
       pie: "Te llega este correo porque te inscribiste como voluntario en nuestro sitio web.",
+    }),
+  };
+}
+
+/** Aviso "voluntario_inscripcion" al equipo (Ajustes → Correos). */
+export function correoAvisoInscripcion(
+  s: SolicitudVoluntario & {
+    brigada_id: string | null;
+    lugar: string | null;
+    profesion: string | null;
+    comentarios: string | null;
+  }
+) {
+  const tabla = datos(s, true, [
+    ["Vive en", s.lugar],
+    ["Profesión", s.profesion],
+    ["Comentarios", s.comentarios],
+  ]);
+  const titulo = s.brigada ? `Nueva inscripción a la brigada ${s.brigada.nombre}` : "Nueva solicitud de voluntariado";
+  const intro = s.brigada
+    ? `${s.nombre_completo} se inscribió como voluntario a la brigada ${s.brigada.nombre}.`
+    : `${s.nombre_completo} quiere ser voluntario. Es una solicitud general, sin brigada.`;
+  const panel = s.brigada_id
+    ? `${SITIO}/administracion/brigadas?brigada=${s.brigada_id}`
+    : `${SITIO}/administracion/voluntarios`;
+
+  return {
+    subject: `${titulo}: ${s.nombre_completo}`,
+    text: [intro, "", ...tabla.text, "", `Revisar la solicitud: ${panel}`].join("\n"),
+    html: layoutCorreo({
+      titulo,
+      preheader: intro,
+      cuerpo:
+        parrafo(escapeHtml(intro)) +
+        tabla.html +
+        `<div style="font-size:0;">${botonCorreo(panel, "Revisar la solicitud")}${botonCorreo(`mailto:${s.correo}`, `Escribir a ${primerNombre(s)}`, "secundario")}</div>`,
+      pie: pieAviso("voluntario_inscripcion"),
     }),
   };
 }

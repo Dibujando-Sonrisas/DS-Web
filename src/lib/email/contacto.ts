@@ -1,6 +1,5 @@
 import "server-only";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { enviarCorreo } from "./enviarCorreo";
+import { enviarAviso, pieAviso } from "./avisos";
 import { COLOR, FUENTE, SITIO, botonCorreo, escapeHtml, filaCorreo, layoutCorreo } from "./layout";
 
 export type MensajeContacto = {
@@ -11,11 +10,6 @@ export type MensajeContacto = {
   asunto: string;
   mensaje: string;
 };
-
-/** Variables del servidor que faltan para avisar por correo de los mensajes de contacto. */
-export function configuracionFaltante(): string[] {
-  return ["RESEND_API_KEY", "CORREOS_CONTACTO_CLAVE"].filter((v) => !process.env[v]);
-}
 
 const formatFecha = new Intl.DateTimeFormat("es-HN", {
   day: "numeric",
@@ -66,23 +60,15 @@ export function armarCorreoContacto(m: MensajeContacto, recibido = new Date()) {
       titulo: `Nuevo mensaje de ${m.nombre}`,
       preheader: `${m.asunto} · ${m.mensaje.slice(0, 90)}`,
       cuerpo,
-      pie: `Te llega este aviso porque estás en la lista de
-      <a href="${SITIO}/administracion/ajustes/correos" style="color:${COLOR.primario};font-weight:600;text-decoration:none;">Ajustes → Correos</a>
-      del panel.<br>Si respondes este correo, la respuesta le llega directo a ${escapeHtml(m.nombre)}.`,
+      pie: pieAviso(
+        "contacto",
+        `<br>Si respondes este correo, la respuesta le llega directo a ${escapeHtml(m.nombre)}.`
+      ),
     }),
   };
 }
 
 /** Avisa a los usuarios de Ajustes → Correos que llegó un mensaje del formulario de contacto. */
 export async function notificarMensajeContacto(m: MensajeContacto): Promise<void> {
-  const clave = process.env.CORREOS_CONTACTO_CLAVE;
-  if (!clave) throw new Error("Falta CORREOS_CONTACTO_CLAVE en las variables de entorno.");
-
-  // el visitante no tiene sesión: la clave solo abre la lista de destinatarios
-  const supabase = await createSupabaseServerClient();
-  const { data: destinatarios, error } = await supabase.rpc("correos_contacto", { p_clave: clave });
-  if (error) throw new Error(error.message);
-  if (!destinatarios.length) return;
-
-  await enviarCorreo({ to: destinatarios, replyTo: m.email, ...armarCorreoContacto(m) });
+  await enviarAviso("contacto", { replyTo: m.email, ...armarCorreoContacto(m) });
 }

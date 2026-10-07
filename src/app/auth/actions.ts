@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { enviarRestablecerContrasena } from "@/lib/cuentas";
+import { avisarUsuarioNuevo, enviarRestablecerContrasena } from "@/lib/cuentas";
 import { emailSchema } from "@/lib/validation/validationUtils";
 
 export type AuthState = {
@@ -113,6 +113,7 @@ export async function signUpAction(
     return { error: "Tu cuenta ya existe. Por favor inicia sesión." };
   }
 
+  await avisarUsuarioNuevo(fullName, email, "Registro desde el sitio web");
   redirect("/auth/sin-acceso");
 }
 

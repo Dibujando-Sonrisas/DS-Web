@@ -64,15 +64,7 @@ Copia `.env.example` como `.env` y llena los valores (cada variable dice de dón
 cp .env.example .env
 ```
 
-Quién recibe los avisos del formulario de contacto se elige en el panel, en **Ajustes → Correos** (menú del usuario), entre los usuarios registrados. Sin las variables de correo los mensajes se guardan igual, pero no se envía el aviso.
-
-`CORREOS_CONTACTO_CLAVE` solo sirve para leer esa lista de destinatarios. Guarda el mismo valor en Supabase Vault (SQL editor):
-
-```sql
-SELECT vault.create_secret('<la-clave-generada>', 'correos_contacto_clave');
--- para cambiarla después:
--- SELECT vault.update_secret((SELECT id FROM vault.secrets WHERE name = 'correos_contacto_clave'), '<nueva-clave>');
-```
+Quién recibe cada aviso por correo (mensajes de contacto, inscripciones de voluntarios, usuarios nuevos...) se elige en el panel, en **Ajustes → Correos** (menú del usuario), entre los usuarios registrados. Los avisos que existen están en `src/lib/avisosCorreo.ts`. Sin `RESEND_API_KEY` y `SUPABASE_SECRET_KEY` no se envían los correos, pero todo lo demás se guarda igual y los avisos siguen llegando a la campana del panel.
 
 ### Migraciones de base de datos
 

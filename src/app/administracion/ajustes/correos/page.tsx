@@ -1,8 +1,9 @@
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { requirePermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { configuracionFaltante } from "@/lib/email/contacto";
-import CorreosPanel, { type Destinatario } from "./CorreosPanel";
+import { AVISOS_CORREO } from "@/lib/avisosCorreo";
+import { configuracionFaltante } from "@/lib/email/avisos";
+import CorreosPanel, { type SeccionAviso } from "./CorreosPanel";
 
 export default async function AjustesCorreosPage() {
   await requirePermission(PERMISSIONS.AJUSTES_READ);
@@ -11,25 +12,30 @@ export default async function AjustesCorreosPage() {
     await Promise.all([
       supabase.rpc("usuarios_con_correo"),
       supabase
-        .from("destinatarios_contacto")
-        .select("perfil_id, created_at")
+        .from("destinatarios_correo")
+        .select("aviso, perfil_id, created_at")
         .order("created_at", { ascending: true }),
     ]);
 
   const porId = new Map((usuarios ?? []).map((u) => [u.id, u]));
-  const destinatarios: Destinatario[] = (filas ?? []).flatMap((f) => {
-    const u = porId.get(f.perfil_id);
-    return u ? [{ ...u, agregado: f.created_at }] : [];
+  const secciones: SeccionAviso[] = AVISOS_CORREO.map((aviso) => {
+    const destinatarios = (filas ?? []).flatMap((f) => {
+      const u = f.aviso === aviso.id ? porId.get(f.perfil_id) : undefined;
+      return u ? [{ ...u, agregado: f.created_at }] : [];
+    });
+    return {
+      ...aviso,
+      destinatarios,
+      // se pueden elegir los usuarios activos que todavía no reciben este aviso
+      opciones: (usuarios ?? [])
+        .filter((u) => u.activo && !destinatarios.some((d) => d.id === u.id))
+        .map((u) => ({ value: u.id, label: u.nombre, detail: u.email })),
+    };
   });
-  // se pueden elegir los usuarios activos que todavía no reciben
-  const opciones = (usuarios ?? [])
-    .filter((u) => u.activo && !destinatarios.some((d) => d.id === u.id))
-    .map((u) => ({ value: u.id, label: u.nombre, detail: u.email }));
 
   return (
     <CorreosPanel
-      destinatarios={destinatarios}
-      opciones={opciones}
+      secciones={secciones}
       fetchError={usuariosError?.message || filasError?.message || null}
       configFaltante={configuracionFaltante()}
     />

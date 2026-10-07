@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { enviarCorreo } from "@/lib/email/enviarCorreo";
+import { correoAvisoUsuarioNuevo, enviarAviso } from "@/lib/email/avisos";
 import { SITIO } from "@/lib/email/layout";
 import {
   correoRestablecerContrasena,
@@ -72,13 +73,16 @@ async function crearCuentaVoluntario(s: SolicitudVoluntario) {
   });
   if (error && error.code !== "email_exists") throw new Error(error.message);
 
-  // handle_new_user crea el perfil con el nombre; el teléfono se completa aquí
-  if (data.user && s.telefono) {
-    const { error: errorPerfil } = await admin
-      .from("perfiles")
-      .update({ telefono: s.telefono })
-      .eq("id", data.user.id);
-    if (errorPerfil) console.error("No se pudo guardar el teléfono del voluntario:", errorPerfil);
+  if (data.user) {
+    // handle_new_user crea el perfil con el nombre; el teléfono se completa aquí
+    if (s.telefono) {
+      const { error: errorPerfil } = await admin
+        .from("perfiles")
+        .update({ telefono: s.telefono })
+        .eq("id", data.user.id);
+      if (errorPerfil) console.error("No se pudo guardar el teléfono del voluntario:", errorPerfil);
+    }
+    await avisarUsuarioNuevo(s.nombre_completo, s.correo, "Voluntario aceptado");
   }
 
   const sitio = await urlSitio();
@@ -95,6 +99,15 @@ async function crearCuentaVoluntario(s: SolicitudVoluntario) {
       sitio,
     }),
   });
+}
+
+/** Aviso "usuario_nuevo" a Ajustes → Correos; si falla, la cuenta ya quedó creada. */
+export async function avisarUsuarioNuevo(nombre: string, correo: string, origen: string) {
+  try {
+    await enviarAviso("usuario_nuevo", correoAvisoUsuarioNuevo({ nombre, correo, origen }));
+  } catch (e) {
+    console.error("No se pudo enviar el aviso de usuario nuevo:", e);
+  }
 }
 
 /** Envía el enlace para crear una contraseña nueva. No dice si el correo tiene cuenta. */

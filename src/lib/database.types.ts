@@ -508,24 +508,27 @@ export type Database = {
         }
         Relationships: []
       }
-      destinatarios_contacto: {
+      destinatarios_correo: {
         Row: {
+          aviso: string
           created_at: string
           perfil_id: string
         }
         Insert: {
+          aviso: string
           created_at?: string
           perfil_id: string
         }
         Update: {
+          aviso?: string
           created_at?: string
           perfil_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "destinatarios_contacto_perfil_id_fkey"
+            foreignKeyName: "destinatarios_correo_perfil_id_fkey"
             columns: ["perfil_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "perfiles"
             referencedColumns: ["id"]
           },
@@ -2119,7 +2122,7 @@ export type Database = {
       }
     }
     Functions: {
-      correos_contacto: { Args: { p_clave: string }; Returns: string[] }
+      correos_aviso: { Args: { p_aviso: string }; Returns: string[] }
       cupos_ocupados: { Args: { p_brigada: string }; Returns: number }
       eliminar_rol: {
         Args: { p_destino: string; p_id: string }

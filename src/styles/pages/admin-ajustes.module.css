@@ -1,8 +1,8 @@
 /* =====================================================
    AJUSTES — admin-ajustes.module.css
-   Solo el marco de Ajustes: menú de secciones + sección
-   abierta. Paneles, tablas y formularios vienen de
-   admin.module.css y globals.css.
+   El marco de Ajustes (menú de secciones + sección
+   abierta) y las filas de Correos. Paneles, tablas y
+   formularios vienen de admin.module.css y globals.css.
    ===================================================== */
 
 .layout {
@@ -71,5 +71,160 @@
     position: sticky;
     top: 9.6rem;
     overflow: visible;
+  }
+}
+
+/* ── CORREOS: una fila por aviso, qué lo dispara | quién lo recibe ── */
+.avisos {
+  container-type: inline-size;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.aviso {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.6rem;
+  padding: 2.4rem;
+  scroll-margin-top: 9.6rem;
+}
+
+.aviso + .aviso {
+  border-top: 1px solid var(--line);
+}
+
+/* al llegar desde el enlace del pie de un correo (#aviso-...) */
+.aviso:target {
+  animation: avisoDestacado 2.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes avisoDestacado {
+  from {
+    background-color: var(--info-bg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aviso:target {
+    animation: none;
+    background-color: var(--info-bg);
+  }
+}
+
+.avisoInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.4rem;
+}
+
+.avisoIcono {
+  width: 4rem;
+  height: 4rem;
+}
+
+.avisoIcono svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.avisoTitulo {
+  margin: 0.2rem 0 0;
+  font-family: var(--fontBody);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--dark);
+  text-wrap: balance;
+}
+
+/* el contador sigue al título en la misma línea */
+.avisoTitulo > span {
+  margin-left: 0.6rem;
+  vertical-align: 0.1rem;
+}
+
+.avisoCuando {
+  margin: 0.4rem 0 0;
+  font-size: 1.4rem;
+  line-height: 1.5;
+  color: var(--gray);
+  text-wrap: pretty;
+}
+
+.avisoLista {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  min-width: 0;
+}
+
+.destinatarios {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.destinatario {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  min-height: 5.6rem;
+  padding: 0.8rem 0;
+}
+
+.destinatario + .destinatario {
+  border-top: 1px solid var(--line);
+}
+
+.destinatarioDatos {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.45rem;
+  line-height: 1.35;
+}
+
+.destinatarioDatos > span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.vacio {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+  padding: 1.2rem 1.4rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  font-size: 1.4rem;
+  line-height: 1.45;
+  color: var(--warn-ink);
+}
+
+.vacio svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex-shrink: 0;
+}
+
+.agregar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.agregar > :global(.combobox) {
+  flex: 1 1 22rem;
+  max-width: 40rem;
+}
+
+/* con espacio: qué lo dispara a la izquierda, la lista a la derecha */
+@container (min-width: 68rem) {
+  .aviso {
+    grid-template-columns: 28rem minmax(0, 1fr);
+    gap: 3.2rem;
   }
 }
