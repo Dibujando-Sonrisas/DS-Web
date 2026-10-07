@@ -332,6 +332,7 @@ export type Database = {
           descripcion: string | null
           id: string
           nombre: string
+          tipo_recurso: string
           updated_at: string | null
         }
         Insert: {
@@ -341,6 +342,7 @@ export type Database = {
           descripcion?: string | null
           id?: string
           nombre: string
+          tipo_recurso: string
           updated_at?: string | null
         }
         Update: {
@@ -350,6 +352,7 @@ export type Database = {
           descripcion?: string | null
           id?: string
           nombre?: string
+          tipo_recurso?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -1933,6 +1936,8 @@ export type Database = {
       }
       stock_actual: {
         Row: {
+          categoria_id: string | null
+          codigo: string | null
           descripcion: string | null
           estado_stock: string | null
           medicamento_id: string | null

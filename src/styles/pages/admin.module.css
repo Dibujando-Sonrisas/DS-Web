@@ -1515,6 +1515,93 @@ button.step {
   color: var(--primaryStrong);
 }
 
+/* pestañas bajo el título del modal: el texto alinea con el cuerpo y queda una sola línea */
+.modal > .tabs {
+  flex-shrink: 0;
+  padding: 0 1rem;
+}
+
+.modalHeader:has(+ .tabs) {
+  border-bottom: 0;
+  padding-bottom: 0.8rem;
+}
+
+/* campo + botón en una línea para agregar sin abrir otro formulario */
+.inlineAdd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.inlineAdd > :global(.form-input) {
+  flex: 1 1 22rem;
+  width: auto;
+}
+
+/* lista corta de registros con sus acciones a la derecha; cabe en el teléfono sin desplazar */
+.itemList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+/* misma altura al pasar a editar: el campo no mueve las filas de abajo */
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  min-height: 6.4rem;
+  padding: 0.8rem 0 0.8rem 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.itemText {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.5rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* etiqueta de un campo con una acción secundaria a la derecha */
+.fieldHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+}
+
+.fieldAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: -0.6rem -0.8rem;
+  padding: 0.6rem 0.8rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: var(--fontBody);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--primaryStrong);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.fieldAction svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.fieldAction:hover {
+  background: var(--info-bg);
+  color: var(--primaryDark);
+}
+
 /* ── AVISOS FLOTANTES (usa ToastProvider / useToast) ── */
 /* la región vacía no bloquea clics; cada aviso sí los recibe */
 .toasts {

@@ -14,6 +14,9 @@ import {
   updateLote as updateLoteDB,
   deleteLote as deleteLoteDB,
   getCategoriasInventario as getCategoriasInventarioDB,
+  createCategoria as createCategoriaDB,
+  updateCategoria as updateCategoriaDB,
+  deleteCategoria as deleteCategoriaDB,
   type TipoRecurso,
   type InsertMedicamento,
   type UpdateMedicamento,
@@ -101,4 +104,31 @@ export async function deleteLoteAction(id: string) {
 export async function getCategoriasInventarioAction() {
   const supabase = await getAuthedSupabase();
   return await getCategoriasInventarioDB(supabase);
+}
+
+// las categorías devuelven { error } en vez de lanzar: así el mensaje llega igual en producción
+type ActionResponse = { error?: string };
+
+async function categoriaAction(
+  run: (supabase: Awaited<ReturnType<typeof getAuthedSupabase>>) => Promise<void>
+): Promise<ActionResponse> {
+  try {
+    await run(await getAuthedSupabase());
+    revalidatePath("/administracion/inventario");
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo guardar la categoría." };
+  }
+}
+
+export async function createCategoriaAction(nombre: string, tipoRecurso: TipoRecurso) {
+  return categoriaAction((supabase) => createCategoriaDB(nombre, tipoRecurso, supabase));
+}
+
+export async function updateCategoriaAction(id: string, nombre: string) {
+  return categoriaAction((supabase) => updateCategoriaDB(id, nombre, supabase));
+}
+
+export async function deleteCategoriaAction(id: string) {
+  return categoriaAction((supabase) => deleteCategoriaDB(id, supabase));
 }

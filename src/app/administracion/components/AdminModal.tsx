@@ -60,6 +60,8 @@ export default function AdminModal({
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
+      // un campo ya usó el Escape (p. ej. cerrar la lista de un Combobox)
+      if (e.defaultPrevented) return;
       const isTop = openModals[openModals.length - 1] === titleId;
       if (e.key === "Escape" && isTop && !busy) onClose();
     };

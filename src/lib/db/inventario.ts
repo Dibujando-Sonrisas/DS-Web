@@ -2,6 +2,7 @@ import { supabase } from "../supabase";
 import { Database } from "../database.types";
 import { assertPermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { generateCleanToken } from "@/lib/coding/codingUtils";
 
 export type LoteMedicamento = Database["public"]["Tables"]["lotes_medicamentos"]["Row"];
 export type InsertLoteMedicamento = Database["public"]["Tables"]["lotes_medicamentos"]["Insert"];
@@ -112,10 +113,18 @@ export async function deleteLote(id: string, client: any = supabase) {
   }
 }
 
-export async function getCategoriasInventario(client: any = supabase) {
+export type CategoriaInventario = Pick<
+  Database["public"]["Tables"]["categorias_inventario"]["Row"],
+  "id" | "nombre" | "tipo_recurso"
+> & {
+  /** recursos que la usan; con alguno no se puede eliminar */
+  recursos: number;
+};
+
+export async function getCategoriasInventario(client: any = supabase): Promise<CategoriaInventario[]> {
   const { data, error } = await client
     .from("categorias_inventario")
-    .select("*")
+    .select("id, nombre, tipo_recurso, medicamentos(count)")
     .order("nombre", { ascending: true });
 
   if (error) {
@@ -123,7 +132,41 @@ export async function getCategoriasInventario(client: any = supabase) {
     return [];
   }
 
-  return data || [];
+  type Fila = Omit<CategoriaInventario, "recursos"> & { medicamentos: { count: number }[] };
+  return (data || []).map(({ medicamentos, ...c }: Fila) => ({ ...c, recursos: medicamentos[0]?.count ?? 0 }));
+}
+
+function categoriaError(error: { code?: string; message: string }): Error {
+  if (error.code === "23505") return new Error("Ya hay una categoría con ese nombre para este tipo de recurso.");
+  if (error.code === "23503") return new Error("La categoría tiene recursos asignados: cámbialos de categoría antes de eliminarla.");
+  console.error("Error en categorias_inventario:", error);
+  return new Error(error.message || "No se pudo guardar la categoría.");
+}
+
+function nombreCategoria(nombre: string) {
+  const limpio = nombre.trim();
+  if (!limpio) throw new Error("Escribe el nombre de la categoría.");
+  return limpio;
+}
+
+export async function createCategoria(nombre: string, tipoRecurso: TipoRecurso, client: any = supabase) {
+  await assertPermission(PERMISSIONS.INVENTARIO_CREATE);
+  const { error } = await client
+    .from("categorias_inventario")
+    .insert({ nombre: nombreCategoria(nombre), tipo_recurso: tipoRecurso, codigo: `CAT-${generateCleanToken(6)}` });
+  if (error) throw categoriaError(error);
+}
+
+export async function updateCategoria(id: string, nombre: string, client: any = supabase) {
+  await assertPermission(PERMISSIONS.INVENTARIO_UPDATE);
+  const { error } = await client.from("categorias_inventario").update({ nombre: nombreCategoria(nombre) }).eq("id", id);
+  if (error) throw categoriaError(error);
+}
+
+export async function deleteCategoria(id: string, client: any = supabase) {
+  await assertPermission(PERMISSIONS.INVENTARIO_DELETE);
+  const { error } = await client.from("categorias_inventario").delete().eq("id", id);
+  if (error) throw categoriaError(error);
 }
 
 export async function createMedicamento(medicamento: InsertMedicamento, cantidadInicial: number = 0, client: any = supabase) {
