@@ -10,7 +10,9 @@ import {
 } from "./actions";
 import { LotesModal } from "./components/LotesModal";
 import { MedicamentoForm } from "./components/MedicamentoForm";
-import { Boxes, Layers, Lock, Pencil, Pill, Plus, Syringe, Tent, Trash2 } from "lucide-react";
+import { CategoriasModal } from "./components/CategoriasModal";
+import type { CategoriaInventario, TipoRecurso } from "@/lib/db/inventario";
+import { Boxes, Layers, Lock, Pencil, Pill, Plus, Syringe, Tags, Tent, Trash2 } from "lucide-react";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import styles from "@/styles/pages/admin.module.css";
@@ -34,7 +36,9 @@ export function InventarioClient({
 }) {
   const { can } = usePermissions();
   const [medicamentos, setMedicamentos] = useState<Record<string, unknown>[]>([]);
-  const [categorias, setCategorias] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaInventario[]>([]);
+  // pestaña con la que se abre Categorías; null = cerrado
+  const [categoriasTipo, setCategoriasTipo] = useState<TipoRecurso | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMedLotes, setSelectedMedLotes] = useState(initialLotes);
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "medicamento" | "insumo_medico" | "material_brigada">("todos");
@@ -74,6 +78,12 @@ export function InventarioClient({
     fetchCategorias();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtroTipo]);
+
+  // recarga al abrir: el conteo de recursos por categoría cambia al crear o borrar recursos
+  const abrirCategorias = (tipo: TipoRecurso) => {
+    setCategoriasTipo(tipo);
+    fetchCategorias();
+  };
 
   const handleOpenMedForm = (med: any = null) => {
     console.log("Medicamento seleccionado:", med);
@@ -187,17 +197,27 @@ export function InventarioClient({
             </p>
           </div>
 
-          {can(PERMISSIONS.INVENTARIO_CREATE) ? (
-            <button type="button" className="btn-primary btn-sm" onClick={() => handleOpenMedForm()}>
-              <Plus aria-hidden="true" />
-              Nuevo Recurso
+          <div className={styles.panelActions}>
+            <button
+              type="button"
+              className="btn-ghost btn-sm"
+              onClick={() => abrirCategorias(filtroTipo === "todos" ? "medicamento" : filtroTipo)}
+            >
+              <Tags aria-hidden="true" />
+              Categorías
             </button>
-          ) : (
-            <span className={`${styles.badge} ${styles.badgeNeutral}`}>
-              <Lock aria-hidden="true" />
-              Modo Solo Lectura
-            </span>
-          )}
+            {can(PERMISSIONS.INVENTARIO_CREATE) ? (
+              <button type="button" className="btn-primary btn-sm" onClick={() => handleOpenMedForm()}>
+                <Plus aria-hidden="true" />
+                Nuevo Recurso
+              </button>
+            ) : (
+              <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+                <Lock aria-hidden="true" />
+                Modo Solo Lectura
+              </span>
+            )}
+          </div>
         </div>
 
         <div className={styles.tabs} role="tablist" aria-label="Tipo de recurso">
@@ -326,9 +346,20 @@ export function InventarioClient({
             categorias={categorias}
             onSubmit={handleSubmitMed}
             onCancel={handleCloseMedForm}
+            onManageCategorias={abrirCategorias}
             isLoading={isSubmitting}
           />
         </AdminModal>
+      )}
+
+      {/* después del formulario: si se abre desde ahí, queda encima */}
+      {categoriasTipo && (
+        <CategoriasModal
+          categorias={categorias}
+          tipoInicial={categoriasTipo}
+          onChanged={fetchCategorias}
+          onClose={() => setCategoriasTipo(null)}
+        />
       )}
 
       {/* Modal de Confirmación de Eliminación */}

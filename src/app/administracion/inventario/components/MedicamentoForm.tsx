@@ -1,18 +1,30 @@
-import React, { useState, useEffect } from "react";
-import { LoaderCircle } from "lucide-react";
-import type { InsertMedicamento } from "@/lib/db/inventario";
+import React, { useRef, useState } from "react";
+import { CircleAlert, LoaderCircle, Tags } from "lucide-react";
+import type { CategoriaInventario, InsertMedicamento, TipoRecurso } from "@/lib/db/inventario";
+import Combobox from "@/app/components/Combobox";
 import styles from "@/styles/pages/admin.module.css";
 
 interface MedicamentoFormProps {
   initialData?: any;
-  categorias?: any[];
+  categorias?: CategoriaInventario[];
   onSubmit: (data: InsertMedicamento, cantidadInicial?: number) => Promise<void>;
   onCancel?: () => void;
+  /** abre Categorías en la pestaña del tipo elegido, sin cerrar este formulario */
+  onManageCategorias?: (tipo: TipoRecurso) => void;
   isLoading: boolean;
 }
 
-export function MedicamentoForm({ initialData, categorias = [], onSubmit, onCancel, isLoading }: MedicamentoFormProps) {
+export function MedicamentoForm({
+  initialData,
+  categorias = [],
+  onSubmit,
+  onCancel,
+  onManageCategorias,
+  isLoading,
+}: MedicamentoFormProps) {
   const isEditing = Boolean(initialData?.id || initialData?.medicamento_id);
+  const categoriaRef = useRef<HTMLInputElement>(null);
+  const [categoriaError, setCategoriaError] = useState(false);
 
   const [cantidadInicial, setCantidadInicial] = useState<number>(0);
   const [formData, setFormData] = useState<InsertMedicamento>({
@@ -21,18 +33,16 @@ export function MedicamentoForm({ initialData, categorias = [], onSubmit, onCanc
     descripcion: initialData?.descripcion || "",
     unidad_medida: initialData?.unidad_medida || "",
     stock_minimo: initialData?.stock_minimo !== undefined ? Number(initialData.stock_minimo) : 10,
-    categoria_id: initialData?.categoria_id || (categorias[0]?.id || ""),
+    categoria_id: initialData?.categoria_id || "",
     codigo: initialData?.codigo || "",
   } as any);
 
-  useEffect(() => {
-    if (categorias && categorias.length > 0) {
-      const exists = categorias.some((c) => c.id === formData.categoria_id);
-      if (!exists || !formData.categoria_id) {
-        setFormData((prev: any) => ({ ...prev, categoria_id: categorias[0].id }));
-      }
-    }
-  }, [categorias, formData.categoria_id]);
+  // solo las categorías del tipo elegido; si cambia el tipo, la elegida deja de verse y hay que escoger otra
+  const tipo = (formData.tipo_recurso || "medicamento") as TipoRecurso;
+  const opcionesCategoria = categorias
+    .filter((c) => c.tipo_recurso === tipo)
+    .map((c) => ({ value: c.id, label: c.nombre }));
+  const categoriaValida = opcionesCategoria.some((o) => o.value === formData.categoria_id);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -41,10 +51,14 @@ export function MedicamentoForm({ initialData, categorias = [], onSubmit, onCanc
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalCategoriaId = formData.categoria_id || (categorias[0]?.id || "");
+    // texto escrito sin elegir de la lista, o una categoría de otro tipo
+    if (!categoriaValida) {
+      setCategoriaError(true);
+      categoriaRef.current?.focus();
+      return;
+    }
     await onSubmit({
       ...formData,
-      categoria_id: finalCategoriaId,
       stock_minimo: Number(formData.stock_minimo),
     }, cantidadInicial);
   };
@@ -73,28 +87,44 @@ export function MedicamentoForm({ initialData, categorias = [], onSubmit, onCanc
             </select>
           </label>
 
-          <label className="form-field">
-            <span className="form-label">
-              Categoría de Inventario <span className="form-required" aria-hidden="true">*</span>
-            </span>
-            <select
-              className="form-input"
-              name="categoria_id"
-              value={formData.categoria_id || (categorias[0]?.id || "")}
-              onChange={handleChange}
-              required
-            >
-              {categorias && categorias.length > 0 ? (
-                categorias.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.nombre}
-                  </option>
-                ))
-              ) : (
-                <option value="">Cargando categorías...</option>
+          <div className="form-field">
+            <div className={styles.fieldHead}>
+              <label className="form-label" htmlFor="medicamento-categoria">
+                Categoría de Inventario <span className="form-required" aria-hidden="true">*</span>
+              </label>
+              {onManageCategorias && (
+                <button type="button" className={styles.fieldAction} onClick={() => onManageCategorias(tipo)}>
+                  <Tags aria-hidden="true" />
+                  Gestionar categorías
+                </button>
               )}
-            </select>
-          </label>
+            </div>
+            <Combobox
+              ref={categoriaRef}
+              id="medicamento-categoria"
+              placeholder={opcionesCategoria.length ? "Busca o elige una categoría" : "Sin categorías para este tipo"}
+              options={opcionesCategoria}
+              value={formData.categoria_id || ""}
+              onChange={(categoria_id) => {
+                setFormData((prev: InsertMedicamento) => ({ ...prev, categoria_id }));
+                setCategoriaError(false);
+              }}
+              emptyText={
+                opcionesCategoria.length
+                  ? "Ninguna categoría coincide con la búsqueda."
+                  : "Aún no hay categorías para este tipo de recurso."
+              }
+              required
+              aria-invalid={categoriaError || undefined}
+              aria-describedby={categoriaError ? "medicamento-categoria-error" : undefined}
+            />
+            {categoriaError && (
+              <span className="form-error" id="medicamento-categoria-error">
+                <CircleAlert size={14} aria-hidden="true" />
+                Elige una categoría de la lista.
+              </span>
+            )}
+          </div>
 
           <label className="form-field">
             <span className="form-label">
