@@ -6,6 +6,7 @@ import { assertPermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { randomUUID } from "crypto";
 import type { EstadoBrigada } from "@/lib/db/brigadas";
+import { aceptarSolicitudVoluntario } from "@/lib/cuentas";
 
 // Helper helper to get authenticated supabase client
 async function getAuthedSupabase() {
@@ -360,18 +361,11 @@ export async function actualizarPresupuesto(brigadaId: string, nuevoMonto: numbe
   }
 }
 
-// 6. Aceptar Inscripción
+// 6. Aceptar Inscripción: crea la cuenta del voluntario y le envía su acceso
 export async function aceptarInscripcion(inscripcionId: string) {
   try {
     await assertPermission(PERMISSIONS.BRIGADAS_UPDATE);
-    const supabase = await getAuthedSupabase();
-
-    const { error } = await supabase
-      .from("inscripciones_voluntarios")
-      .update({ estado: "aceptado" })
-      .eq("id", inscripcionId);
-
-    if (error) throw new Error(`Error al aceptar la inscripción: ${error.message}`);
+    await aceptarSolicitudVoluntario(inscripcionId);
 
     revalidateBrigadas();
     return { success: true };

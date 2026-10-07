@@ -1,7 +1,7 @@
 import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { enviarCorreo } from "./enviarCorreo";
-import { COLOR, FUENTE, SITIO, botonCorreo, escapeHtml, layoutCorreo } from "./layout";
+import { COLOR, FUENTE, SITIO, botonCorreo, escapeHtml, filaCorreo, layoutCorreo } from "./layout";
 
 export type MensajeContacto = {
   nombre: string;
@@ -32,19 +32,14 @@ export function armarCorreoContacto(m: MensajeContacto, recibido = new Date()) {
   const fecha = formatFecha.format(recibido);
   const telefono = m.telefono ?? "No indicado";
 
-  const fila = (etiqueta: string, valor: string) => `<tr>
-  <td style="width:96px;padding:11px 16px 11px 0;border-bottom:1px solid ${COLOR.linea};vertical-align:top;font-family:${FUENTE};font-size:13px;font-weight:600;line-height:1.5;color:${COLOR.gris};">${etiqueta}</td>
-  <td style="padding:11px 0;border-bottom:1px solid ${COLOR.linea};font-family:${FUENTE};font-size:15px;line-height:1.5;color:${COLOR.oscuro};word-break:break-word;">${valor}</td>
-</tr>`;
-
   const cuerpo = `<p style="margin:0 0 24px;font-family:${FUENTE};font-size:16px;line-height:1.6;color:${COLOR.gris};">
   <strong style="color:${COLOR.oscuro};">${escapeHtml(nombre)}</strong> escribió desde el formulario de contacto del sitio web.<br>
   <span style="font-size:14px;">Recibido el ${escapeHtml(fecha)}</span>
 </p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${COLOR.linea};">
-  ${fila("Correo", `<a href="mailto:${escapeHtml(m.email)}" style="color:${COLOR.primario};font-weight:600;text-decoration:none;">${escapeHtml(m.email)}</a>`)}
-  ${fila("Teléfono", escapeHtml(telefono))}
-  ${fila("Asunto", escapeHtml(m.asunto))}
+  ${filaCorreo("Correo", `<a href="mailto:${escapeHtml(m.email)}" style="color:${COLOR.primario};font-weight:600;text-decoration:none;">${escapeHtml(m.email)}</a>`)}
+  ${filaCorreo("Teléfono", escapeHtml(telefono))}
+  ${filaCorreo("Asunto", escapeHtml(m.asunto))}
 </table>
 <p style="margin:28px 0 10px;font-family:${FUENTE};font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${COLOR.gris};">Mensaje</p>
 <div style="padding:18px 20px;background:${COLOR.suave};border:1px solid ${COLOR.linea};border-radius:12px;font-family:${FUENTE};font-size:16px;line-height:1.65;color:${COLOR.oscuro};word-break:break-word;">${escapeHtml(m.mensaje).replace(/\r?\n/g, "<br>")}</div>

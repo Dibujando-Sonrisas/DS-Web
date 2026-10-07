@@ -1,19 +1,15 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
-import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { inscribirVoluntarioAction } from "@/app/voluntariado/actions";
 import styles from "@/styles/components/inscripcion-modal.module.css";
 import {
   Calendar,
   Check,
   CircleAlert,
-  ClipboardCheck,
   LoaderCircle,
-  LogIn,
   MapPin,
   Send,
-  UserPlus,
   X,
 } from "lucide-react";
 
@@ -126,38 +122,26 @@ export default function InscripcionModal({
 
     setLoading(true);
 
-    try {
-      const { error: insertError } = await supabase
-        .from("inscripciones_voluntarios")
-        .insert({
-          brigada_id: brigada.id,
-          nombre_completo: nombreCompleto.trim(),
-          correo: correo.trim().toLowerCase(),
-          telefono: telefono.trim(),
-          area_interes: areaInteres,
-          profesion: profesion.trim() || null,
-          comentarios: comentarios.trim() || null,
-          estado: "pendiente",
-          lugar: lugar.trim(),
-        });
+    const { error: actionError } = await inscribirVoluntarioAction({
+      brigada_id: brigada.id,
+      nombre_completo: nombreCompleto,
+      correo,
+      telefono,
+      area_interes: areaInteres,
+      profesion,
+      comentarios,
+      lugar,
+    }).catch(() => ({
+      error: "Ocurrió un error al enviar tu solicitud. Intenta de nuevo más tarde.",
+    }));
 
-      if (insertError) {
-        throw new Error(insertError.message || "Error al registrar la solicitud.");
-      }
-
+    if (actionError) {
+      setGeneralError(actionError);
+    } else {
       setSubmittedSuccess(true);
-      if (onSuccess) {
-        onSuccess();
-      }
-    } catch (err) {
-      setGeneralError(
-        err instanceof Error
-          ? err.message
-          : "Ocurrió un error al enviar tu solicitud. Intenta de nuevo más tarde."
-      );
-    } finally {
-      setLoading(false);
+      onSuccess?.();
     }
+    setLoading(false);
   };
 
   const formatDate = (isoString?: string | null) => {
@@ -238,6 +222,7 @@ export default function InscripcionModal({
                     <label htmlFor="modal_nombre">Nombre Completo *</label>
                     <input
                       id="modal_nombre"
+                      maxLength={150}
                       type="text"
                       className="form-input"
                       placeholder="Ej. María García Rodríguez"
@@ -256,6 +241,7 @@ export default function InscripcionModal({
                     <label htmlFor="modal_lugar">Lugar de Residencia *</label>
                     <input
                       id="modal_lugar"
+                      maxLength={150}
                       type="text"
                       className="form-input"
                       placeholder="Ej. San Pedro Sula, Cortés"
@@ -274,6 +260,7 @@ export default function InscripcionModal({
                     <label htmlFor="modal_correo">Correo Electrónico *</label>
                     <input
                       id="modal_correo"
+                      maxLength={150}
                       type="email"
                       className="form-input"
                       placeholder="maria@ejemplo.com"
@@ -291,6 +278,7 @@ export default function InscripcionModal({
                     <label htmlFor="modal_telefono">Teléfono / WhatsApp *</label>
                     <input
                       id="modal_telefono"
+                      maxLength={20}
                       type="tel"
                       className="form-input"
                       placeholder="+504 9999-9999"
@@ -329,6 +317,7 @@ export default function InscripcionModal({
                     <label htmlFor="modal_profesion">Profesión / Oficio (Opcional)</label>
                     <input
                       id="modal_profesion"
+                      maxLength={100}
                       type="text"
                       className="form-input"
                       placeholder="Ej. Médico, Estudiante, Enfermero..."
@@ -344,6 +333,7 @@ export default function InscripcionModal({
                     </label>
                     <textarea
                       id="modal_comentarios"
+                      maxLength={2000}
                       className={`form-input ${styles.textarea}`}
                       rows={3}
                       placeholder="¿Tienes alguna experiencia previa o disponibilidad especial?"
@@ -390,32 +380,11 @@ export default function InscripcionModal({
               ¡Solicitud enviada con éxito!
             </h2>
             <p className={styles.successDesc}>
-              Hemos recibido tu postulación para <strong>{brigada.nombre}</strong>.
-              El equipo coordinador de Dibujando Sonrisas revisará tus datos y se
-              pondrá en contacto contigo vía WhatsApp o correo electrónico.
+              Hemos recibido tu postulación para <strong>{brigada.nombre}</strong> y
+              te enviamos un correo de confirmación a <strong>{correo.trim()}</strong>.
+              Un coordinador la revisará pronto y, cuando sea aprobada, recibirás
+              otro correo con las instrucciones para entrar a tu cuenta de voluntario.
             </p>
-
-            <div className={`${styles.accountPrompt} card-drawn tone-secondary`}>
-              <p className={styles.accountHeading}>
-                <ClipboardCheck aria-hidden="true" />
-                ¿Deseas dar seguimiento a tus voluntariados?
-              </p>
-              <p className={styles.accountText}>
-                <strong>Inicia sesión</strong> o <strong>crea una cuenta</strong>{" "}
-                para gestionar tu perfil de voluntario, consultar tus asignaciones
-                y descargar tus constancias de participación.
-              </p>
-              <div className={styles.accountButtons}>
-                <Link href="/auth/registro" className="btn-primary" onClick={onClose}>
-                  <UserPlus aria-hidden="true" />
-                  Crear mi Cuenta
-                </Link>
-                <Link href="/auth/login" className="btn-outline-blue" onClick={onClose}>
-                  <LogIn aria-hidden="true" />
-                  Iniciar Sesión
-                </Link>
-              </div>
-            </div>
 
             <button type="button" className={styles.btnDismiss} onClick={onClose}>
               Entendido, cerrar esta ventana

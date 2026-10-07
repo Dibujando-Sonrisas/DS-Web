@@ -49,6 +49,14 @@ export function botonCorreo(href: string, texto: string, variante: "primario" | 
 </table>`;
 }
 
+/** Fila etiqueta / valor de las tablas de datos; `valor` va ya escapado. */
+export function filaCorreo(etiqueta: string, valor: string) {
+  return `<tr>
+  <td style="width:96px;padding:11px 16px 11px 0;border-bottom:1px solid ${COLOR.linea};vertical-align:top;font-family:${FUENTE};font-size:13px;font-weight:600;line-height:1.5;color:${COLOR.gris};">${etiqueta}</td>
+  <td style="padding:11px 0;border-bottom:1px solid ${COLOR.linea};font-family:${FUENTE};font-size:15px;line-height:1.5;color:${COLOR.oscuro};word-break:break-word;">${valor}</td>
+</tr>`;
+}
+
 type LayoutCorreo = {
   /** texto plano; se escapa aquí */
   titulo: string;

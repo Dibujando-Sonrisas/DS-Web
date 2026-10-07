@@ -17,7 +17,13 @@ export default function SolicitudesGenerales({ solicitudes }: { solicitudes: Ins
   const cambiar = (estado: "aceptado" | "rechazado") => async (id: string) => {
     const res = await cambiarEstadoSolicitudGeneral(id, estado);
     if (res.error) showToast(res.error, "error");
-    else showToast(estado === "aceptado" ? "Solicitud aceptada." : "Solicitud rechazada.", "success");
+    else
+      showToast(
+        estado === "aceptado"
+          ? "Solicitud aceptada: le enviamos su acceso por correo."
+          : "Solicitud rechazada.",
+        "success"
+      );
   };
 
   return (

@@ -242,7 +242,7 @@ export default function BrigadasAdminClient({
     if (res.error) {
       showToast(res.error, "error");
     } else {
-      showToast("Solicitud aceptada.", "success");
+      showToast("Solicitud aceptada: le enviamos su acceso por correo.", "success");
     }
   };
 

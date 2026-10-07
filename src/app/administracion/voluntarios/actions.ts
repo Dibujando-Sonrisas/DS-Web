@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { assertPermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { aceptarSolicitudVoluntario } from "@/lib/cuentas";
 
 // -----------------------------------------------------------------------------
 // Tipos
@@ -243,15 +244,19 @@ export async function cambiarEstadoSolicitudGeneral(
 ): Promise<ActionResponse> {
   try {
     await assertPermission(PERMISSIONS.VOLUNTARIADO_UPDATE);
-    const supabase = await createSupabaseServerClient();
 
-    const { error } = await supabase
-      .from("inscripciones_voluntarios")
-      .update({ estado })
-      .eq("id", id)
-      .is("brigada_id", null);
-
-    if (error) throw new Error(error.message);
+    if (estado === "aceptado") {
+      // crea la cuenta del voluntario y le envía su acceso
+      await aceptarSolicitudVoluntario(id, { soloGeneral: true });
+    } else {
+      const supabase = await createSupabaseServerClient();
+      const { error } = await supabase
+        .from("inscripciones_voluntarios")
+        .update({ estado })
+        .eq("id", id)
+        .is("brigada_id", null);
+      if (error) throw new Error(error.message);
+    }
 
     revalidatePath("/administracion/voluntarios");
     return { success: true };

@@ -186,44 +186,7 @@
   color: var(--dark);
 }
 
-.accountPrompt {
-  width: 100%;
-  text-align: left;
-}
-
-.accountHeading {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  font-family: var(--fontHeading);
-  font-size: 1.9rem;
-  color: var(--tone-text);
-  margin-bottom: 0.8rem;
-}
-
-.accountHeading svg {
-  width: 2.2rem;
-  height: 2.2rem;
-  flex-shrink: 0;
-}
-
-.accountText {
-  font-size: 1.5rem;
-  margin-bottom: 1.8rem;
-}
-
-.accountText strong {
-  color: var(--dark);
-}
-
-.accountButtons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.2rem;
-}
-
 .btnDismiss {
-  margin-top: 2.4rem;
   background: none;
   border: none;
   font-family: var(--fontBody);
