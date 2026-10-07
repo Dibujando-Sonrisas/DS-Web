@@ -1,0 +1,75 @@
+/* =====================================================
+   AJUSTES — admin-ajustes.module.css
+   Solo el marco de Ajustes: menú de secciones + sección
+   abierta. Paneles, tablas y formularios vienen de
+   admin.module.css y globals.css.
+   ===================================================== */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 2.4rem;
+}
+
+/* en móvil: fila de secciones con scroll horizontal */
+.nav {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.8rem;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 4.4rem;
+  padding: 0.8rem 1.4rem;
+  border-radius: var(--radius-md);
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--gray);
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.navItem svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  flex-shrink: 0;
+}
+
+.navItem:hover {
+  background: rgba(26, 35, 50, 0.04);
+  color: var(--dark);
+}
+
+.navItem[aria-current="page"] {
+  background: var(--info-bg);
+  color: var(--primaryDark);
+}
+
+.navItem[aria-current="page"] svg {
+  color: var(--primaryColor);
+}
+
+/* escritorio: columna lateral fija junto a la sección */
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: 24rem minmax(0, 1fr);
+  }
+
+  .nav {
+    flex-direction: column;
+    position: sticky;
+    top: 9.6rem;
+    overflow: visible;
+  }
+}

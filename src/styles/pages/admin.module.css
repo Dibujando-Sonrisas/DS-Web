@@ -473,7 +473,7 @@
   background: var(--bad-bg);
 }
 
-/* ── ALERTAS DE STOCK (campana) ── */
+/* ── NOTIFICACIONES (campana) ── */
 .notifBtn {
   position: relative;
 }
@@ -524,53 +524,80 @@
 .notifTitle svg {
   width: 1.8rem;
   height: 1.8rem;
-  color: var(--tertiaryDark);
+  color: var(--primaryColor);
 }
 
 .notifList {
-  max-height: 32rem;
+  max-height: min(44rem, 70vh);
   overflow-y: auto;
 }
 
 .notifItem {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 1.6rem;
+  align-items: flex-start;
+  gap: 1.2rem;
+  padding: 1.2rem 1.6rem;
   border-bottom: 1px solid var(--line);
+  color: inherit;
+  transition: background-color 0.15s ease;
 }
 
 .notifItem:last-child {
   border-bottom: 0;
 }
 
+a.notifItem:hover {
+  background: var(--bg-light);
+}
+
+.notifIcon {
+  width: 3.6rem;
+  height: 3.6rem;
+}
+
+.notifIcon svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
 .notifInfo {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 0.2rem;
   min-width: 0;
 }
 
 .notifName {
   font-size: 1.4rem;
   font-weight: 600;
+  line-height: 1.35;
   color: var(--dark);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .notifMeta {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 1.3rem;
+  line-height: 1.4;
+  color: var(--gray);
+}
+
+.notifTime {
   font-size: 1.2rem;
   color: var(--gray);
 }
 
-.notifStock {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--bad-ink);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
+/* sin abrir todavía */
+.notifDot {
+  flex-shrink: 0;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-top: 0.6rem;
+  border-radius: 50%;
+  background: var(--primaryColor);
 }
 
 .notifEmpty {
@@ -588,36 +615,6 @@
   width: 2.8rem;
   height: 2.8rem;
   color: var(--primaryColor);
-}
-
-.notifMore {
-  padding: 0.9rem 1.6rem;
-  background: var(--surface-muted);
-  font-size: 1.25rem;
-  color: var(--gray);
-  text-align: center;
-}
-
-.notifFooter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  padding: 1.2rem 1.6rem;
-  border-top: 1px solid var(--line);
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--primaryStrong);
-  transition: background-color 0.2s ease;
-}
-
-.notifFooter svg {
-  width: 1.6rem;
-  height: 1.6rem;
-}
-
-.notifFooter:hover {
-  background: var(--info-bg);
 }
 
 /* ── CONTENIDO ── */
@@ -1478,6 +1475,13 @@ button.step {
 .modalBody > p {
   margin: 0;
   font-size: 1.5rem;
+}
+
+/* texto escrito por una persona: respeta sus saltos de línea */
+.messageText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
 }
 
 .modalFooter {

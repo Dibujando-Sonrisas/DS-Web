@@ -58,12 +58,25 @@ npm install
 
 ### 3. Variables de Entorno
 
-Crea un archivo `.env` en la raíz del proyecto y agrega tus credenciales de Supabase (puedes encontrarlas en la configuración de tu proyecto en Supabase):
+Copia `.env.example` como `.env` y llena los valores (cada variable dice de dónde sale):
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://tu-id-de-proyecto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key-publica
+```bash
+cp .env.example .env
 ```
+
+Quién recibe los avisos del formulario de contacto se elige en el panel, en **Ajustes → Correos** (menú del usuario), entre los usuarios registrados. Sin las variables de correo los mensajes se guardan igual, pero no se envía el aviso.
+
+`CORREOS_CONTACTO_CLAVE` solo sirve para leer esa lista de destinatarios. Guarda el mismo valor en Supabase Vault (SQL editor):
+
+```sql
+SELECT vault.create_secret('<la-clave-generada>', 'correos_contacto_clave');
+-- para cambiarla después:
+-- SELECT vault.update_secret((SELECT id FROM vault.secrets WHERE name = 'correos_contacto_clave'), '<nueva-clave>');
+```
+
+### Migraciones de base de datos
+
+Los cambios a la base van en `supabase/migrations/`. El deploy de producción en Netlify los aplica solo (`supabase db push`, ver `netlify.toml`) antes de compilar; necesita la variable secreta `SUPABASE_DB_URL` en Netlify. Para aplicarlos a mano: `npx supabase db push`.
 
 ### 4. Iniciar el Servidor de Desarrollo
 

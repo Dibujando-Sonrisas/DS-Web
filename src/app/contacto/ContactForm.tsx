@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { insertContacto } from "../../lib/db/contacto";
+import { enviarContactoAction } from "./actions";
 import { Check, CircleAlert, Send } from "lucide-react";
 
 export default function ContactForm() {
@@ -14,41 +14,18 @@ export default function ContactForm() {
     setLoading(true);
     setError("");
 
-    const form = e.currentTarget;
-    const data = {
-      nombre: (
-        form.elements.namedItem("nombre") as HTMLInputElement
-      ).value.trim(),
-      apellido: (
-        form.elements.namedItem("apellido") as HTMLInputElement
-      ).value.trim(),
-      email: (
-        form.elements.namedItem("email") as HTMLInputElement
-      ).value.trim(),
-      telefono:
-        (
-          form.elements.namedItem("telefono") as HTMLInputElement
-        ).value.trim() || null,
-      asunto: (
-        form.elements.namedItem("asunto") as HTMLInputElement
-      ).value.trim(),
-      mensaje: (
-        form.elements.namedItem("mensaje") as HTMLTextAreaElement
-      ).value.trim(),
-    };
+    const { error: actionError } = await enviarContactoAction(
+      new FormData(e.currentTarget)
+    ).catch(() => ({
+      error: "Hubo un error al enviar tu mensaje. Por favor intenta de nuevo.",
+    }));
 
-    const { error: sbError } = await insertContacto(data);
-
-    if (sbError) {
-      console.error("Error Supabase:", sbError);
-      setError(
-        "Hubo un error al enviar tu mensaje. Por favor intenta de nuevo."
-      );
-      setLoading(false);
+    if (actionError) {
+      setError(actionError);
     } else {
       setSuccess(true);
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   if (success) {
@@ -69,6 +46,7 @@ export default function ContactForm() {
             className="form-input"
             id="nombre"
             name="nombre"
+            maxLength={80}
             type="text"
             placeholder="Tu nombre"
             required
@@ -81,6 +59,7 @@ export default function ContactForm() {
             className="form-input"
             id="apellido"
             name="apellido"
+            maxLength={80}
             type="text"
             placeholder="Tu apellido"
             required
@@ -93,6 +72,7 @@ export default function ContactForm() {
             className="form-input"
             id="email"
             name="email"
+            maxLength={254}
             type="email"
             placeholder="tucorreo@ejemplo.com"
             required
@@ -105,6 +85,7 @@ export default function ContactForm() {
             className="form-input"
             id="telefono"
             name="telefono"
+            maxLength={30}
             type="tel"
             placeholder="+504 9999-9999"
           />
@@ -116,6 +97,7 @@ export default function ContactForm() {
             className="form-input"
             id="asunto"
             name="asunto"
+            maxLength={150}
             type="text"
             placeholder="¿En qué podemos ayudarte?"
             required
@@ -128,6 +110,7 @@ export default function ContactForm() {
             className="form-input"
             id="mensaje"
             name="mensaje"
+            maxLength={5000}
             placeholder="Escribe tu mensaje aquí..."
             rows={6}
             required

@@ -1,3 +1,9 @@
+[build]
+  command = "npm run build"
+
+[context.production]
+  command = "npx supabase db push --db-url \"${SUPABASE_DB_URL:?Falta SUPABASE_DB_URL en Netlify}\" --yes && npm run build"
+
 # La anon key de Supabase es pública por diseño (va al bundle de Next como NEXT_PUBLIC_*).
 # Netlify la marca en el output de build; hay que omitirla del escaneo de secretos.
 # https://ntl.fyi/configure-secrets-scanning
