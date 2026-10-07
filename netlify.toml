@@ -13,4 +13,5 @@
 
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_SUPABASE_ANON_KEY"
-  SECRETS_SCAN_OMIT_PATHS = ".next/cache/"
+  # se comparan como prefijo de la ruta: el plugin de Next la copia a .netlify/.next
+  SECRETS_SCAN_OMIT_PATHS = ".next/cache/,.netlify/.next/cache/"
