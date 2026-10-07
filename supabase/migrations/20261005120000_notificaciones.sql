@@ -37,6 +37,9 @@ REVOKE ALL ON public.notificaciones FROM anon;
 CREATE POLICY "notificaciones: leer" ON public.notificaciones FOR SELECT TO authenticated
   USING (public.tiene_permiso(permiso) AND actor_id IS DISTINCT FROM (SELECT auth.uid()));
 
+-- la campana escucha los INSERT en vivo (useCambiosEnVivo); Realtime aplica la RLS de arriba
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notificaciones;
+
 
 CREATE TABLE public.notificaciones_vistas (
   perfil_id uuid PRIMARY KEY REFERENCES public.perfiles(id) ON DELETE CASCADE,
@@ -122,7 +125,8 @@ GRANT EXECUTE ON FUNCTION public.notificar(text, text, text, text, text, uuid, b
 -- EVENTOS
 -- -------------------------------------------------------------------------
 
--- mensaje del formulario de contacto del sitio
+-- mensaje del formulario de contacto del sitio. Lo envía un visitante aunque
+-- tenga sesión abierta (p. ej. un admin probándolo): sin actor, lo ven todos.
 CREATE OR REPLACE FUNCTION public.trg_notificar_contacto() RETURNS trigger
   LANGUAGE plpgsql SECURITY DEFINER
   SET search_path = ''
@@ -133,7 +137,8 @@ BEGIN
     'Nuevo mensaje de ' || NEW.nombre || ' ' || NEW.apellido,
     NEW.asunto,
     '/administracion/contacto?mensaje=' || NEW.id,
-    'contacto.read'
+    'contacto.read',
+    p_para_todos => true
   );
   RETURN NEW;
 END;

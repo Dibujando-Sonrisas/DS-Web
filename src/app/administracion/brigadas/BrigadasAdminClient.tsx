@@ -103,7 +103,7 @@ export default function BrigadasAdminClient({
   const registrationsCountMap = useMemo(() => {
     const map: Record<string, number> = {};
     initialRegistrations.forEach((r) => {
-      map[r.brigada_id] = (map[r.brigada_id] || 0) + 1;
+      if (r.brigada_id) map[r.brigada_id] = (map[r.brigada_id] || 0) + 1;
     });
     return map;
   }, [initialRegistrations]);

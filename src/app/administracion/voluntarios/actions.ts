@@ -233,3 +233,29 @@ export async function actualizarAsignacion(id: string, area: string, perfilId: s
     return { error: e instanceof Error ? e.message : "Error al actualizar asignación." };
   }
 }
+
+// -----------------------------------------------------------------------------
+// Solicitudes generales (formulario de /voluntariado, sin brigada)
+// -----------------------------------------------------------------------------
+export async function cambiarEstadoSolicitudGeneral(
+  id: string,
+  estado: "aceptado" | "rechazado"
+): Promise<ActionResponse> {
+  try {
+    await assertPermission(PERMISSIONS.VOLUNTARIADO_UPDATE);
+    const supabase = await createSupabaseServerClient();
+
+    const { error } = await supabase
+      .from("inscripciones_voluntarios")
+      .update({ estado })
+      .eq("id", id)
+      .is("brigada_id", null);
+
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/administracion/voluntarios");
+    return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Error al actualizar la solicitud." };
+  }
+}

@@ -21,6 +21,7 @@ import {
   obtenerNotificacionesAction,
   type Notificacion,
 } from "../notificaciones/actions";
+import { useCambiosEnVivo } from "@/lib/realtime";
 import styles from "@/styles/pages/admin.module.css";
 
 type Tono = "primary" | "secondary" | "tertiary";
@@ -107,6 +108,9 @@ export default function NotificacionesBtn() {
     document.addEventListener("visibilitychange", alVolver);
     return () => document.removeEventListener("visibilitychange", alVolver);
   }, [cargar]);
+
+  // la RLS ya filtra qué eventos le llegan; se recarga para recalcular nuevas y alertas
+  useCambiosEnVivo("notificaciones", cargar, { evento: "INSERT" });
 
   useEffect(() => {
     if (!open) return;

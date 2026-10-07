@@ -896,7 +896,7 @@ export type Database = {
       inscripciones_voluntarios: {
         Row: {
           area_interes: string | null
-          brigada_id: string
+          brigada_id: string | null
           comentarios: string | null
           correo: string
           created_at: string | null
@@ -910,7 +910,7 @@ export type Database = {
         }
         Insert: {
           area_interes?: string | null
-          brigada_id: string
+          brigada_id?: string | null
           comentarios?: string | null
           correo: string
           created_at?: string | null
@@ -924,7 +924,7 @@ export type Database = {
         }
         Update: {
           area_interes?: string | null
-          brigada_id?: string
+          brigada_id?: string | null
           comentarios?: string | null
           correo?: string
           created_at?: string | null

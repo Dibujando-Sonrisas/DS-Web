@@ -5,10 +5,6 @@ import { supabase } from "@/lib/supabase";
 import styles from "../../styles/pages/volunteer.module.css";
 import { Check, CircleAlert } from "lucide-react";
 
-type VolunteerFormProps = {
-  activeBrigadaId: string;
-};
-
 const AREAS_INTERES = [
   "Registro",
   "Preclínica",
@@ -22,7 +18,8 @@ const AREAS_INTERES = [
   "Coordinación",
 ];
 
-export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
+/** Solicitud general de voluntariado: sin brigada; a una brigada se inscribe desde su anuncio. */
+export default function VolunteerForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -41,7 +38,6 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
       const { error: sbError } = await supabase
         .from("inscripciones_voluntarios")
         .insert({
-          brigada_id: activeBrigadaId,
           nombre_completo: nombreCompleto.trim(),
           correo: correo.trim().toLowerCase(),
           telefono: telefono.trim(),
@@ -74,9 +70,9 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
     return (
       <div className={`${styles.form} form-success`} role="status">
         <Check size={24} strokeWidth={2.5} aria-hidden="true" />
-        ¡Tu solicitud de inscripción ha sido enviada correctamente! Un
+        ¡Tu solicitud de voluntariado ha sido enviada correctamente! Un
         coordinador de Dibujando Sonrisas revisará tus datos y se pondrá en
-        contacto contigo pronto.
+        contacto contigo para las próximas brigadas.
       </div>
     );
   }
@@ -168,7 +164,7 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
             id="btnVoluntario"
             disabled={loading}
           >
-            {loading ? "Enviando..." : "Inscribirme en esta Brigada"}
+            {loading ? "Enviando..." : "Quiero ser voluntario"}
           </button>
         </div>
       </fieldset>
