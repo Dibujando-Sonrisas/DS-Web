@@ -1,13 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { inscribirVoluntarioAction } from "./actions";
 import styles from "../../styles/pages/volunteer.module.css";
 import { Check, CircleAlert } from "lucide-react";
-
-type VolunteerFormProps = {
-  activeBrigadaId: string;
-};
 
 const AREAS_INTERES = [
   "Registro",
@@ -22,7 +18,8 @@ const AREAS_INTERES = [
   "Coordinación",
 ];
 
-export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
+/** Solicitud general de voluntariado: sin brigada; a una brigada se inscribe desde su anuncio. */
+export default function VolunteerForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -37,46 +34,32 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
     setLoading(true);
     setError("");
 
-    try {
-      const { error: sbError } = await supabase
-        .from("inscripciones_voluntarios")
-        .insert({
-          brigada_id: activeBrigadaId,
-          nombre_completo: nombreCompleto.trim(),
-          correo: correo.trim().toLowerCase(),
-          telefono: telefono.trim(),
-          area_interes: areaInteres,
-          estado: "pendiente",
-        });
+    const { error: actionError } = await inscribirVoluntarioAction({
+      brigada_id: null,
+      nombre_completo: nombreCompleto,
+      correo,
+      telefono,
+      area_interes: areaInteres,
+    }).catch(() => ({
+      error: "Hubo un error al enviar tu solicitud. Intenta de nuevo.",
+    }));
 
-      if (sbError) {
-        console.error("Error inserting registration:", sbError);
-        throw new Error(sbError.message || "Error al enviar solicitud.");
-      }
-
+    if (actionError) {
+      setError(actionError);
+    } else {
       setSuccess(true);
-      setNombreCompleto("");
-      setCorreo("");
-      setTelefono("");
-      setAreaInteres("Registro");
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Hubo un error al enviar tu solicitud. Intenta de nuevo."
-      );
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   if (success) {
     return (
       <div className={`${styles.form} form-success`} role="status">
         <Check size={24} strokeWidth={2.5} aria-hidden="true" />
-        ¡Tu solicitud de inscripción ha sido enviada correctamente! Un
-        coordinador de Dibujando Sonrisas revisará tus datos y se pondrá en
-        contacto contigo pronto.
+        ¡Tu solicitud de voluntariado ha sido enviada! Te enviamos un correo
+        de confirmación. Un coordinador la revisará pronto y, cuando sea
+        aprobada, recibirás otro correo con las instrucciones para entrar a tu
+        cuenta de voluntario.
       </div>
     );
   }
@@ -92,6 +75,7 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
               className="form-input"
               id="nombre_completo"
               name="nombre_completo"
+              maxLength={150}
               type="text"
               placeholder="María García Rodríguez"
               value={nombreCompleto}
@@ -108,6 +92,7 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
               className="form-input"
               id="correo"
               name="correo"
+              maxLength={150}
               type="email"
               placeholder="maria@ejemplo.com"
               value={correo}
@@ -124,6 +109,7 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
               className="form-input"
               id="telefono"
               name="telefono"
+              maxLength={20}
               type="tel"
               placeholder="+504 9999-9999"
               value={telefono}
@@ -168,7 +154,7 @@ export default function VolunteerForm({ activeBrigadaId }: VolunteerFormProps) {
             id="btnVoluntario"
             disabled={loading}
           >
-            {loading ? "Enviando..." : "Inscribirme en esta Brigada"}
+            {loading ? "Enviando..." : "Quiero ser voluntario"}
           </button>
         </div>
       </fieldset>

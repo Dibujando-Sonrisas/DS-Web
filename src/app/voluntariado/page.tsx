@@ -10,7 +10,6 @@ import {
   Globe,
   Handshake,
   Heart,
-  Lock,
   Quote,
   Stethoscope,
 } from "lucide-react";
@@ -66,7 +65,6 @@ export default async function Voluntariado() {
   }
 
   const isClosed = !activeBrigada;
-  const isCupoLleno = cuposInfo.cupoLleno;
 
   return (
     <>
@@ -81,16 +79,9 @@ export default async function Voluntariado() {
         }
         subtitle="Tus habilidades pueden cambiar vidas. Únete a nuestras brigadas médicas y marca una diferencia real en Honduras."
       >
-        {!isClosed && !isCupoLleno ? (
-          <a href="#formulario" className="btn-primary">
-            Ser Voluntario
-          </a>
-        ) : (
-          <span className="btn-primary btn-disabled">
-            {isCupoLleno && <Lock size={16} aria-hidden="true" />}
-            {isCupoLleno ? "Cupo Máximo Alcanzado" : "Inscripciones Cerradas"}
-          </span>
-        )}
+        <a href="#formulario" className="btn-primary">
+          Ser Voluntario
+        </a>
         <Link href="/donar" className="btn-outline">
           Donar Ahora
         </Link>
@@ -282,54 +273,18 @@ export default async function Voluntariado() {
             </figure>
           </section>
 
-          {/* ── FORMULARIO O MENSAJE DE CIERRE ── */}
+          {/* ── SOLICITUD GENERAL (a una brigada se inscribe desde su anuncio) ── */}
           <section
             className={styles.formSection}
             aria-labelledby="form-heading"
             id="formulario"
           >
-            <h2 id="form-heading">
-              {!isClosed && !isCupoLleno
-                ? "¿Listo para Unirte?"
-                : isCupoLleno
-                ? "Capacidad Máxima Alcanzada"
-                : "Inscripciones Cerradas"}
-            </h2>
+            <h2 id="form-heading">¿Listo para Unirte?</h2>
             <p className={styles.formIntro}>
-              {!isClosed && !isCupoLleno
-                ? `Llena el formulario para postularte a la brigada ${activeBrigada?.nombre ?? ""}${
-                    cuposInfo.disponibles !== null
-                      ? ` (${cuposInfo.disponibles} cupos disponibles)`
-                      : ""
-                  }. Nos pondremos en contacto contigo pronto.`
-                : isCupoLleno
-                ? `Hemos completado la capacidad máxima de voluntarios (${cuposInfo.registrados} de ${cuposInfo.total} cupos ocupados) para la brigada ${activeBrigada?.nombre ?? ""}. Agradecemos tu vocación de servicio; mantente al tanto para futuras convocatorias.`
-                : "Actualmente no contamos con brigadas activas para inscripciones abiertas de voluntarios. Por favor mantente al tanto de nuestros canales oficiales para futuras convocatorias."}
+              Déjanos tus datos y te tendremos en cuenta para nuestras próximas
+              brigadas. Nos pondremos en contacto contigo pronto.
             </p>
-            {!isClosed && !isCupoLleno && activeBrigada && (
-              <VolunteerForm activeBrigadaId={activeBrigada.id} />
-            )}
-            {isCupoLleno && (
-              <div className={`${styles.fullCard} card-drawn tone-tertiary`}>
-                <div className={`${styles.fullIcon} icon-circle`} aria-hidden="true">
-                  <Lock />
-                </div>
-                <h3 className="tone-text">Cupo de Voluntarios Completo</h3>
-                <p>
-                  Esta brigada médica ha alcanzado el número máximo de
-                  participantes. Puedes seguir apoyando nuestra labor donando
-                  insumos o conociendo nuestras brigadas anteriores.
-                </p>
-                <div className={styles.fullActions}>
-                  <Link href="/brigadas" className="btn-primary">
-                    Ver Brigadas Realizadas
-                  </Link>
-                  <Link href="/donar" className="btn-outline-blue">
-                    Apoyar con Donación
-                  </Link>
-                </div>
-              </div>
-            )}
+            <VolunteerForm />
           </section>
         </div>
       </main>

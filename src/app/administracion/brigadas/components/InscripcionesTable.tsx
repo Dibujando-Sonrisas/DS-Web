@@ -8,7 +8,8 @@ import brig from "@/styles/pages/admin-brigadas.module.css";
 
 export type InscripcionRow = {
   id: string;
-  brigada_id: string;
+  /** null: solicitud general desde /voluntariado */
+  brigada_id: string | null;
   nombre_completo: string;
   correo: string;
   telefono: string;
@@ -25,12 +26,14 @@ export type PerfilMini = {
 
 type InscripcionesTableProps = {
   inscripciones: InscripcionRow[];
-  profiles: PerfilMini[];
-  assignments: Record<string, string>; // perfil_id -> area_asignada
+  profiles?: PerfilMini[];
+  assignments?: Record<string, string>; // perfil_id -> area_asignada
   onAccept: (id: string) => Promise<void>;
   onReject: (id: string) => Promise<void>;
-  onAssign: (perfilId: string, area: string | null) => Promise<void>;
+  /** sin él no hay columna de asignación (solicitudes generales, sin brigada) */
+  onAssign?: (perfilId: string, area: string | null) => Promise<void>;
   isReadOnly?: boolean;
+  vacio?: string;
 };
 
 const AREAS_MAP: Record<string, string> = {
@@ -60,12 +63,13 @@ const STATE_CLASSES = {
 
 export default function InscripcionesTable({
   inscripciones,
-  profiles,
-  assignments,
+  profiles = [],
+  assignments = {},
   onAccept,
   onReject,
   onAssign,
   isReadOnly = false,
+  vacio = "No hay solicitudes registradas para esta brigada.",
 }: InscripcionesTableProps) {
   const [isPending, startTransition] = useTransition();
   const [rejectTarget, setRejectTarget] = useState<InscripcionRow | null>(null);
@@ -94,9 +98,11 @@ export default function InscripcionesTable({
 
   const handleAssignChange = (perfilId: string, area: string) => {
     startTransition(async () => {
-      await onAssign(perfilId, area === "none" ? null : area);
+      await onAssign?.(perfilId, area === "none" ? null : area);
     });
   };
+
+  const columnas = 5 + (onAssign ? 1 : 0) + (isReadOnly ? 0 : 1);
 
   return (
     <section className={styles.stackSm}>
@@ -113,15 +119,15 @@ export default function InscripcionesTable({
               <th>Área de Interés</th>
               <th>Fecha Solicitud</th>
               <th>Estado</th>
-              <th>Asignación Rápida</th>
+              {onAssign && <th>Asignación Rápida</th>}
               {!isReadOnly && <th className={styles.num}>Acciones</th>}
             </tr>
           </thead>
           <tbody>
             {inscripciones.length === 0 ? (
               <tr>
-                <td colSpan={isReadOnly ? 6 : 7} className={styles.emptyCell}>
-                  No hay solicitudes registradas para esta brigada.
+                <td colSpan={columnas} className={styles.emptyCell}>
+                  {vacio}
                 </td>
               </tr>
             ) : (
@@ -148,33 +154,35 @@ export default function InscripcionesTable({
                         {STATE_LABELS[ins.estado]}
                       </span>
                     </td>
-                    <td>
-                      {ins.estado === "aceptado" ? (
-                        matchingProfile ? (
-                          <select
-                            className={`form-input form-input-sm ${brig.areaSelect}`}
-                            aria-label={`Área asignada a ${ins.nombre_completo}`}
-                            value={assignedArea}
-                            onChange={(e) => handleAssignChange(matchingProfile.id, e.target.value)}
-                            disabled={isPending || isReadOnly}
-                          >
-                            <option value="none">Sin asignar</option>
-                            {Object.entries(AREAS_MAP).map(([val, label]) => (
-                              <option key={val} value={val}>
-                                {label}
-                              </option>
-                            ))}
-                          </select>
+                    {onAssign && (
+                      <td>
+                        {ins.estado === "aceptado" ? (
+                          matchingProfile ? (
+                            <select
+                              className={`form-input form-input-sm ${brig.areaSelect}`}
+                              aria-label={`Área asignada a ${ins.nombre_completo}`}
+                              value={assignedArea}
+                              onChange={(e) => handleAssignChange(matchingProfile.id, e.target.value)}
+                              disabled={isPending || isReadOnly}
+                            >
+                              <option value="none">Sin asignar</option>
+                              {Object.entries(AREAS_MAP).map(([val, label]) => (
+                                <option key={val} value={val}>
+                                  {label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={brig.cellWarn}>
+                              <TriangleAlert aria-hidden="true" />
+                              Sin perfil registrado. Solicitar registro en la app.
+                            </span>
+                          )
                         ) : (
-                          <span className={brig.cellWarn}>
-                            <TriangleAlert aria-hidden="true" />
-                            Sin perfil registrado. Solicitar registro en la app.
-                          </span>
-                        )
-                      ) : (
-                        <span className={styles.muted}>Debe ser aceptado primero.</span>
-                      )}
-                    </td>
+                          <span className={styles.muted}>Debe ser aceptado primero.</span>
+                        )}
+                      </td>
+                    )}
                     {!isReadOnly && (
                       <td>
                         <div className={styles.rowActions}>

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { assertPermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { aceptarSolicitudVoluntario } from "@/lib/cuentas";
 
 // -----------------------------------------------------------------------------
 // Tipos
@@ -231,5 +232,35 @@ export async function actualizarAsignacion(id: string, area: string, perfilId: s
     return { success: true, message: "Asignación actualizada con éxito." };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Error al actualizar asignación." };
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Solicitudes generales (formulario de /voluntariado, sin brigada)
+// -----------------------------------------------------------------------------
+export async function cambiarEstadoSolicitudGeneral(
+  id: string,
+  estado: "aceptado" | "rechazado"
+): Promise<ActionResponse> {
+  try {
+    await assertPermission(PERMISSIONS.VOLUNTARIADO_UPDATE);
+
+    if (estado === "aceptado") {
+      // crea la cuenta del voluntario y le envía su acceso
+      await aceptarSolicitudVoluntario(id, { soloGeneral: true });
+    } else {
+      const supabase = await createSupabaseServerClient();
+      const { error } = await supabase
+        .from("inscripciones_voluntarios")
+        .update({ estado })
+        .eq("id", id)
+        .is("brigada_id", null);
+      if (error) throw new Error(error.message);
+    }
+
+    revalidatePath("/administracion/voluntarios");
+    return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Error al actualizar la solicitud." };
   }
 }

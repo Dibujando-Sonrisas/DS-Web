@@ -479,6 +479,7 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          leido: boolean
           mensaje: string | null
           nombre: string
           telefono: string | null
@@ -489,6 +490,7 @@ export type Database = {
           created_at?: string | null
           email: string
           id?: string
+          leido?: boolean
           mensaje?: string | null
           nombre: string
           telefono?: string | null
@@ -499,11 +501,38 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          leido?: boolean
           mensaje?: string | null
           nombre?: string
           telefono?: string | null
         }
         Relationships: []
+      }
+      destinatarios_correo: {
+        Row: {
+          aviso: string
+          created_at: string
+          perfil_id: string
+        }
+        Insert: {
+          aviso: string
+          created_at?: string
+          perfil_id: string
+        }
+        Update: {
+          aviso?: string
+          created_at?: string
+          perfil_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "destinatarios_correo_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       detalle_ventas: {
         Row: {
@@ -870,7 +899,7 @@ export type Database = {
       inscripciones_voluntarios: {
         Row: {
           area_interes: string | null
-          brigada_id: string
+          brigada_id: string | null
           comentarios: string | null
           correo: string
           created_at: string | null
@@ -884,7 +913,7 @@ export type Database = {
         }
         Insert: {
           area_interes?: string | null
-          brigada_id: string
+          brigada_id?: string | null
           comentarios?: string | null
           correo: string
           created_at?: string | null
@@ -898,7 +927,7 @@ export type Database = {
         }
         Update: {
           area_interes?: string | null
-          brigada_id?: string
+          brigada_id?: string | null
           comentarios?: string | null
           correo?: string
           created_at?: string | null
@@ -1170,6 +1199,62 @@ export type Database = {
             foreignKeyName: "movimientos_inventario_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notificaciones: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          detalle: string | null
+          enlace: string | null
+          id: string
+          permiso: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          detalle?: string | null
+          enlace?: string | null
+          id?: string
+          permiso: string
+          tipo: string
+          titulo: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          detalle?: string | null
+          enlace?: string | null
+          id?: string
+          permiso?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
+      notificaciones_vistas: {
+        Row: {
+          perfil_id: string
+          vistas_hasta: string
+        }
+        Insert: {
+          perfil_id: string
+          vistas_hasta?: string
+        }
+        Update: {
+          perfil_id?: string
+          vistas_hasta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificaciones_vistas_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: true
             referencedRelation: "perfiles"
             referencedColumns: ["id"]
           },
@@ -2037,6 +2122,7 @@ export type Database = {
       }
     }
     Functions: {
+      correos_aviso: { Args: { p_aviso: string }; Returns: string[] }
       cupos_ocupados: { Args: { p_brigada: string }; Returns: number }
       eliminar_rol: {
         Args: { p_destino: string; p_id: string }
@@ -2056,6 +2142,19 @@ export type Database = {
         }
         Returns: string
       }
+      marcar_notificaciones_vistas: { Args: never; Returns: undefined }
+      notificar: {
+        Args: {
+          p_tipo: string
+          p_titulo: string
+          p_detalle?: string | null
+          p_enlace?: string | null
+          p_permiso?: string | null
+          p_actor_id?: string | null
+          p_para_todos?: boolean | null
+        }
+        Returns: undefined
+      }
       rol_predeterminado_id: { Args: never; Returns: string }
       sp_confirmar_participacion: {
         Args: {
@@ -2070,6 +2169,15 @@ export type Database = {
       }
       tiene_algun_permiso: { Args: { p_permisos: string[] }; Returns: boolean }
       tiene_permiso: { Args: { p_permiso: string }; Returns: boolean }
+      usuarios_con_correo: {
+        Args: never
+        Returns: {
+          activo: boolean
+          email: string
+          id: string
+          nombre: string
+        }[]
+      }
     }
     Enums: {
       area_voluntariado:

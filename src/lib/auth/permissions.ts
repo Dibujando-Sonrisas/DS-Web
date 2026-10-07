@@ -80,6 +80,10 @@ export const PERMISSIONS = {
   CONTACTO_UPDATE: "contacto.update",
   CONTACTO_DELETE: "contacto.delete",
 
+  // Ajustes del sistema (menú del usuario → Ajustes)
+  AJUSTES_READ: "ajustes.read",
+  AJUSTES_UPDATE: "ajustes.update",
+
   // Módulo de Perfil de Usuario (Permiso Mínimo)
   PERFIL_READ: "perfil.read",
   PERFIL_UPDATE: "perfil.update",
@@ -131,6 +135,7 @@ export const PERMISSION_MODULES: { id: string; label: string }[] = [
   { id: "contacto", label: "Mensajes de Contacto" },
   { id: "usuarios", label: "Usuarios" },
   { id: "roles", label: "Roles y Permisos" },
+  { id: "ajustes", label: "Ajustes" },
   { id: "perfil", label: "Mi Perfil" },
 ];
 
@@ -177,6 +182,7 @@ export const MODULE_PERMISSIONS: Record<string, Permission | Permission[]> = {
   "/administracion/actividades-infantiles": PERMISSIONS.ACTIVIDADES_READ,
   "/administracion/ventas": PERMISSIONS.VENTAS_READ,
   "/administracion/contacto": PERMISSIONS.CONTACTO_READ,
+  "/administracion/ajustes": PERMISSIONS.AJUSTES_READ,
   "/administracion/reportes": [
     PERMISSIONS.REPORTES_READ,
     PERMISSIONS.REPORTES_PROCESS,

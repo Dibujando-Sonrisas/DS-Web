@@ -5,8 +5,10 @@ import {
   CircleUserRound,
   HandHeart,
   HeartPulse,
+  Inbox,
   LayoutDashboard,
   Pill,
+  Settings,
   Shirt,
   ShoppingCart,
   Smile,
@@ -77,6 +79,12 @@ export const adminModules: AdminModule[] = [
     icon: <ShoppingCart aria-hidden="true" />,
   },
   {
+    name: "Mensajes de Contacto",
+    href: "/administracion/contacto",
+    available: true,
+    icon: <Inbox aria-hidden="true" />,
+  },
+  {
     name: "Reportes y Estadísticas",
     href: "/administracion/reportes",
     available: true,
@@ -84,7 +92,6 @@ export const adminModules: AdminModule[] = [
   },
 ];
 
-/** Páginas de la cuenta: se abren desde el menú del usuario en el encabezado. */
 export const accountModules: AdminModule[] = [
   {
     name: "Mi Perfil",
@@ -95,6 +102,11 @@ export const accountModules: AdminModule[] = [
     name: "Gestión de Usuarios",
     href: "/administracion/usuarios",
     icon: <UserCog aria-hidden="true" />,
+  },
+  {
+    name: "Ajustes",
+    href: "/administracion/ajustes",
+    icon: <Settings aria-hidden="true" />,
   },
 ];
 

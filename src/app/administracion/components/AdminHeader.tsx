@@ -17,7 +17,7 @@ import { logoutAction } from "@/app/auth/actions";
 import { accountModules, findModule } from "./navModules";
 import { usePermissions } from "./PermissionsProvider";
 import UserAvatar from "./UserAvatar";
-import NotificacionesStockBtn from "./NotificacionesStockBtn";
+import NotificacionesBtn from "./NotificacionesBtn";
 import styles from "@/styles/pages/admin.module.css";
 
 interface AdminHeaderProps {
@@ -43,6 +43,7 @@ const MODULE_TITLES: { prefix: string; title: string; subtitle: string }[] = [
   { prefix: "/administracion/usuarios", title: "Gestión de Usuarios", subtitle: "Administración de accesos y credenciales" },
   { prefix: "/administracion/perfil", title: "Mi Perfil", subtitle: "Información personal y cuenta" },
   { prefix: "/administracion/contacto", title: "Mensajes de Contacto", subtitle: "Bandeja de mensajes del sitio web" },
+  { prefix: "/administracion/ajustes", title: "Ajustes", subtitle: "Configuración general del sistema" },
   { prefix: "/administracion/buscar", title: "Búsqueda", subtitle: "Pacientes, brigadas e inventario" },
   { prefix: "/administracion", title: "Dashboard General", subtitle: "Resumen ejecutivo y métricas globales" },
 ];
@@ -61,17 +62,13 @@ export default function AdminHeader({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Título del módulo según la ruta
   const activeModule = MODULE_TITLES.find((m) =>
     m.prefix === "/administracion" ? pathname === "/administracion" : pathname.startsWith(m.prefix)
   ) || { title: "Sistema Integral", subtitle: "Fundación Dibujando Sonrisas" };
   const moduleIcon = findModule(pathname)?.icon;
-  // mismos módulos que consulta /administracion/buscar
   const canSearch = ["/administracion/pacientes", "/administracion/brigadas", "/administracion/inventario"].some(
     (ruta) => canRoute(ruta)
   );
-
-  // Cerrar el menú al hacer clic fuera o con Escape
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -147,14 +144,12 @@ export default function AdminHeader({
       )}
 
       <div className={styles.headerRight}>
-        {/* la fecha del servidor puede diferir de la del navegador */}
         <span className={styles.headerDate} title="Fecha del sistema" suppressHydrationWarning>
           <CalendarDays aria-hidden="true" />
           {todayFormatted}
         </span>
 
-        {/* Alertas de stock mínimo */}
-        <NotificacionesStockBtn />
+        <NotificacionesBtn />
 
         <div className={styles.headerDivider} />
 
