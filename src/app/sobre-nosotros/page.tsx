@@ -145,7 +145,7 @@ export default async function SobreNosotros() {
               <Check />
             </span>
             <span><strong>Trabajo en equipo:</strong> Creemos en la fuerza de la unión para lograr
-            más.</span>
+              más.</span>
           </li>
           <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>

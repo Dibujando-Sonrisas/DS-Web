@@ -240,15 +240,16 @@
   width: 14rem;
   height: 14rem;
   border-radius: 50%;
+  object-fit: cover;
   background-size: cover;
-  background-position: center;
+  background-position: top;
   border: 5px solid var(--tone);
   box-shadow: var(--shadow-sm);
 }
 
 /* TODO: reemplazar por la foto real de cada integrante */
 .teamImage1 {
-  background-image: url(/team2.jpg);
+  background-image: url(/fundadora.jpg);
 }
 
 .teamImage2 {
@@ -256,7 +257,7 @@
 }
 
 .teamImage3 {
-  background-image: url(/team2.jpg);
+  background-image: url(/coordinador.jpg);
 }
 
 .teamPerson h4 {
