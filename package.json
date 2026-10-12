@@ -6,6 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "offline": "node scripts/offline.mjs",
+    "offline:sincronizar": "node scripts/offline.mjs sincronizar",
+    "offline:subir": "node scripts/offline.mjs subir",
     "lint": "eslint",
     "format": "prettier --write ."
   },

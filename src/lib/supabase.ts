@@ -1,8 +1,20 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "./database.types";
+import { MODO_OFFLINE } from "./offline";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const url = urlSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+
+/**
+ * En el modo offline Supabase corre en el mismo equipo que sirve la app: el navegador
+ * lo busca en la dirección con la que abrió la página, que cambia según la red de la brigada.
+ */
+function urlSupabase(configurada: string) {
+  if (!MODO_OFFLINE || typeof window === "undefined" || !configurada) return configurada;
+  const local = new URL(configurada);
+  local.hostname = window.location.hostname;
+  return local.origin;
+}
 const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 declare global {

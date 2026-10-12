@@ -8,6 +8,10 @@ import type { Database, Tables } from "@/lib/database.types";
 type Tabla = keyof Database["public"]["Tables"];
 type Evento = "INSERT" | "UPDATE" | "DELETE" | "*";
 
+// nombre único por canal en esta pestaña; crypto.randomUUID no existe sin HTTPS
+// (el modo offline se abre por http://<ip-del-servidor>)
+let canales = 0;
+
 /**
  * Escucha en vivo los cambios de una tabla (Supabase Realtime, postgres_changes).
  * Solo llegan las filas que el usuario puede leer por RLS, y la tabla tiene que
@@ -28,7 +32,7 @@ export function useCambiosEnVivo<T extends Tabla>(
   useEffect(() => {
     let activo = true;
     const canal = supabase
-      .channel(`${tabla}:${crypto.randomUUID()}`)
+      .channel(`${tabla}:${++canales}`)
       .on<Tables<T>>(
         "postgres_changes",
         { event: evento, schema: "public", table: tabla, filter: filtro },

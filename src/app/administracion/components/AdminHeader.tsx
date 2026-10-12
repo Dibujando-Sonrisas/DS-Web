@@ -18,6 +18,7 @@ import { accountModules, findModule } from "./navModules";
 import { usePermissions } from "./PermissionsProvider";
 import UserAvatar from "./UserAvatar";
 import NotificacionesBtn from "./NotificacionesBtn";
+import AvisoOffline from "./AvisoOffline";
 import styles from "@/styles/pages/admin.module.css";
 
 interface AdminHeaderProps {
@@ -144,6 +145,8 @@ export default function AdminHeader({
       )}
 
       <div className={styles.headerRight}>
+        <AvisoOffline lugar="encabezado" />
+
         <span className={styles.headerDate} title="Fecha del sistema" suppressHydrationWarning>
           <CalendarDays aria-hidden="true" />
           {todayFormatted}

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { adminModules } from "./navModules";
 import { usePermissions } from "./PermissionsProvider";
+import AvisoOffline from "./AvisoOffline";
 import styles from "@/styles/pages/admin.module.css";
 
 interface SideBarProps {
@@ -84,6 +85,9 @@ export default function SideBar({ isCollapsed, isMobileOpen, onCloseMobile }: Si
             );
           })}
         </nav>
+
+        {/* al pie, siempre a la vista aunque el menú tenga scroll */}
+        <AvisoOffline lugar="barra" alNavegar={onCloseMobile} />
       </aside>
     </>
   );
