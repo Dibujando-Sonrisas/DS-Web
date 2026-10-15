@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import {
+  Headset,
+  HeartHandshake,
+  Menu,
+  UserRoundArrowLeft,
+  X,
+} from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import styles from "../../styles/components/header.module.css";
-import { Headset, HeartHandshake, Menu, UserRoundArrowLeft, X } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/sobre-nosotros", label: "Nosotros" },
@@ -85,7 +91,11 @@ export default function Header() {
             aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+            {mobileMenuOpen ? (
+              <X aria-hidden="true" />
+            ) : (
+              <Menu aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>

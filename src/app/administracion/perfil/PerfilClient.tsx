@@ -1,20 +1,23 @@
 "use client";
 
-import React, { useState, useTransition, useRef } from "react";
+import { Camera, CircleAlert, LoaderCircle } from "lucide-react";
+import type React from "react";
+import { useRef, useState, useTransition } from "react";
 import { z } from "zod";
 import type { Perfil, RolResumen } from "@/lib/auth/session";
-import { updateProfileAction, updateAvatarAction } from "../usuarios/actions";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { supabase } from "@/lib/supabase";
-import { Camera, CircleAlert, LoaderCircle } from "lucide-react";
-import PageHeader from "../components/PageHeader";
-import { useToast } from "../components/AdminToast";
-import UserAvatar from "../components/UserAvatar";
-import RoleBadge from "../components/RoleBadge";
-import StatusBadge from "../components/StatusBadge";
+import { phoneHondurasSchema } from "@/lib/validation/validationUtils";
 import styles from "@/styles/pages/admin.module.css";
 import personas from "@/styles/pages/admin-personas.module.css";
+import { useToast } from "../components/AdminToast";
+import PageHeader from "../components/PageHeader";
+import RoleBadge from "../components/RoleBadge";
+import StatusBadge from "../components/StatusBadge";
+import UserAvatar from "../components/UserAvatar";
+import { updateAvatarAction, updateProfileAction } from "../usuarios/actions";
 
-import { phoneHondurasSchema } from "@/lib/validation/validationUtils";
+const logger = getLogger("perfil", "client");
 
 // Zod Validation Schema
 const profileSchema = z.object({
@@ -22,7 +25,10 @@ const profileSchema = z.object({
     .string()
     .trim()
     .min(3, "Prueba de presencia: El nombre debe tener al menos 3 caracteres.")
-    .max(100, "Prueba de longitud: El nombre no puede exceder los 100 caracteres.")
+    .max(
+      100,
+      "Prueba de longitud: El nombre no puede exceder los 100 caracteres."
+    )
     .regex(
       /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,
       "Prueba de sintaxis: El nombre solo debe contener letras, acentos y espacios."
@@ -140,7 +146,11 @@ export default function PerfilClient({
         });
 
       if (uploadError) {
-        throw new Error(uploadError.message);
+        logger.error("Avatar upload failed", {
+          ...errorInfo(uploadError),
+          perfilId: profile.id,
+        });
+        throw new Error("No se pudo subir la fotografía.");
       }
 
       // 3. Get public URL
@@ -155,7 +165,10 @@ export default function PerfilClient({
         throw new Error(res?.error || "Error al actualizar la base de datos.");
       }
     } catch (err) {
-      console.error(err);
+      logger.error("Avatar update failed", {
+        ...errorInfo(err),
+        perfilId: profile.id,
+      });
       showToast(
         err instanceof Error ? err.message : "Error al subir la fotografía.",
         "error"
@@ -182,11 +195,17 @@ export default function PerfilClient({
             </h2>
           </div>
 
-          <form onSubmit={handleSubmit} className={`${styles.panelBody} ${styles.stack}`}>
+          <form
+            onSubmit={handleSubmit}
+            className={`${styles.panelBody} ${styles.stack}`}
+          >
             <div className="form-grid">
               <label className="form-field form-field-full">
                 <span className="form-label">
-                  Nombre Completo <span className="form-required" aria-hidden="true">*</span>
+                  Nombre Completo{" "}
+                  <span className="form-required" aria-hidden="true">
+                    *
+                  </span>
                 </span>
                 <input
                   name="nombre_completo"
@@ -272,7 +291,9 @@ export default function PerfilClient({
               className="btn-primary btn-sm"
               disabled={isPending || uploadingAvatar}
             >
-              {isPending && <LoaderCircle className="spin" aria-hidden="true" />}
+              {isPending && (
+                <LoaderCircle className="spin" aria-hidden="true" />
+              )}
               {isPending ? "Guardando..." : "Guardar Cambios"}
             </button>
           </form>

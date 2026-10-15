@@ -1,20 +1,36 @@
 "use client";
 
+import {
+  KeyRound,
+  LoaderCircle,
+  Lock,
+  Save,
+  TriangleAlert,
+} from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
-import { KeyRound, LoaderCircle, Lock, Save, TriangleAlert } from "lucide-react";
 import { crearContrasenaAction } from "@/app/auth/actions";
+import styles from "@/styles/pages/auth.module.css";
 import AuthField from "../AuthField";
 import AuthShell from "../AuthShell";
-import styles from "@/styles/pages/auth.module.css";
 
-export default function CrearContrasenaForm({ tokenHash }: { tokenHash: string | null }) {
-  const [state, formAction, isPending] = useActionState(crearContrasenaAction, null);
+export default function CrearContrasenaForm({
+  tokenHash,
+}: {
+  tokenHash: string | null;
+}) {
+  const [state, formAction, isPending] = useActionState(
+    crearContrasenaAction,
+    null
+  );
 
   return (
     <AuthShell>
       <div className={styles.authHeader}>
-        <div className="icon-circle icon-circle-sm tone-primary" aria-hidden="true">
+        <div
+          className="icon-circle icon-circle-sm tone-primary"
+          aria-hidden="true"
+        >
           <KeyRound />
         </div>
         <h1 className={styles.authTitle}>Crea tu Contraseña</h1>
@@ -31,7 +47,8 @@ export default function CrearContrasenaForm({ tokenHash }: { tokenHash: string |
       {!tokenHash ? (
         <p className="form-error form-alert" role="alert">
           <TriangleAlert aria-hidden="true" />
-          Este enlace no es válido. Abre el enlace del correo que te enviamos o pide uno nuevo.
+          Este enlace no es válido. Abre el enlace del correo que te enviamos o
+          pide uno nuevo.
         </p>
       ) : (
         <>
@@ -69,7 +86,11 @@ export default function CrearContrasenaForm({ tokenHash }: { tokenHash: string |
               disabled={isPending}
             />
 
-            <button type="submit" className="btn-primary btn-block" disabled={isPending}>
+            <button
+              type="submit"
+              className="btn-primary btn-block"
+              disabled={isPending}
+            >
               {isPending ? (
                 <>
                   <LoaderCircle className="spin" aria-hidden="true" />

@@ -91,7 +91,8 @@ export const PERMISSIONS = {
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
-export const ALL_PERMISSIONS: readonly Permission[] = Object.values(PERMISSIONS);
+export const ALL_PERMISSIONS: readonly Permission[] =
+  Object.values(PERMISSIONS);
 
 /** Descarta claves que ya no existen en el catálogo (p. ej. guardadas antes de quitar un permiso). */
 export function isPermission(value: string): value is Permission {
@@ -108,15 +109,21 @@ export type RolConPermisos = {
  * Permisos efectivos de un rol: el superadmin tiene el catálogo completo y todos
  * tienen perfil.read (entrar al panel); igual que tiene_permiso() en la base.
  */
-export function resolvePermissions(rol: RolConPermisos | null | undefined): Permission[] {
+export function resolvePermissions(
+  rol: RolConPermisos | null | undefined
+): Permission[] {
   if (!rol) return [];
   if (rol.es_superadmin) return [...ALL_PERMISSIONS];
-  const propios = (rol.rol_permisos ?? []).map((p) => p.permiso).filter(isPermission);
+  const propios = (rol.rol_permisos ?? [])
+    .map((p) => p.permiso)
+    .filter(isPermission);
   return [...new Set<Permission>([PERMISSIONS.PERFIL_READ, ...propios])];
 }
 
 /** Permisos que todo rol tiene sin poder quitarlos. */
-export const IMPLICIT_PERMISSIONS: readonly Permission[] = [PERMISSIONS.PERFIL_READ];
+export const IMPLICIT_PERMISSIONS: readonly Permission[] = [
+  PERMISSIONS.PERFIL_READ,
+];
 
 /* ── ETIQUETAS PARA LA PANTALLA DE ROLES ── */
 
@@ -159,8 +166,10 @@ export const SPECIAL_PERMISSION_LABELS: Partial<Record<Permission, string>> = {
 /** Nombre legible de un permiso, p. ej. "Farmacia · Entregar recetas". */
 export function permissionLabel(permission: Permission): string {
   const [modulo, accion] = permission.split(".");
-  const moduleLabel = PERMISSION_MODULES.find((m) => m.id === modulo)?.label ?? modulo;
-  const actionLabel = SPECIAL_PERMISSION_LABELS[permission] ?? ACTION_LABELS[accion] ?? accion;
+  const moduleLabel =
+    PERMISSION_MODULES.find((m) => m.id === modulo)?.label ?? modulo;
+  const actionLabel =
+    SPECIAL_PERMISSION_LABELS[permission] ?? ACTION_LABELS[accion] ?? accion;
   return `${moduleLabel} · ${actionLabel}`;
 }
 
@@ -192,10 +201,17 @@ export const MODULE_PERMISSIONS: Record<string, Permission | Permission[]> = {
 /**
  * ¿Los permisos dados abren esta ruta? Las rutas sin entrada propia piden el permiso mínimo (perfil.read).
  */
-export function canAccessRoute(permissions: readonly Permission[], pathname: string): boolean {
+export function canAccessRoute(
+  permissions: readonly Permission[],
+  pathname: string
+): boolean {
   const entry = Object.entries(MODULE_PERMISSIONS).find(([route]) =>
-    route === "/administracion" ? pathname === "/administracion" : pathname.startsWith(route)
+    route === "/administracion"
+      ? pathname === "/administracion"
+      : pathname.startsWith(route)
   );
   const required = entry ? entry[1] : PERMISSIONS.PERFIL_READ;
-  return (Array.isArray(required) ? required : [required]).some((p) => permissions.includes(p));
+  return (Array.isArray(required) ? required : [required]).some((p) =>
+    permissions.includes(p)
+  );
 }

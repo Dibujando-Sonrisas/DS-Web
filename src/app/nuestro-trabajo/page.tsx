@@ -1,11 +1,3 @@
-import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import PageHero from "../components/PageHero";
-import { getBrigadas } from "../../lib/db/brigadas";
-import styles from "../../styles/pages/our-work.module.css";
 import {
   BriefcaseMedical,
   HeartPulse,
@@ -16,6 +8,14 @@ import {
   Smile,
   Users,
 } from "lucide-react";
+import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
+import { getBrigadas } from "../../lib/db/brigadas";
+import styles from "../../styles/pages/our-work.module.css";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import PageHero from "../components/PageHero";
 
 export const metadata: Metadata = {
   title: "Nuestro Trabajo | Dibujando Sonrisas",
@@ -155,7 +155,10 @@ export default async function NuestroTrabajo() {
                   key={s.id}
                   className={`${styles.serviceCard} card-soft lift`}
                 >
-                  <div className="icon-circle icon-circle-sm" aria-hidden="true">
+                  <div
+                    className="icon-circle icon-circle-sm"
+                    aria-hidden="true"
+                  >
                     {s.icon}
                   </div>
                   <div>
@@ -177,7 +180,10 @@ export default async function NuestroTrabajo() {
             <h2 id="galeria-heading">Nuestras Brigadas en Acción</h2>
             <div className={styles.actionGrid}>
               {actionPhotos.map((photo) => (
-                <figure key={photo.src} className={`${styles.actionCard} card-soft`}>
+                <figure
+                  key={photo.src}
+                  className={`${styles.actionCard} card-soft`}
+                >
                   <Image
                     src={photo.src}
                     alt={photo.alt}

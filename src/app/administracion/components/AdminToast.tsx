@@ -1,13 +1,27 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { CircleAlert, CircleCheck, X } from "lucide-react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import styles from "@/styles/pages/admin.module.css";
 
 type ToastType = "success" | "error";
-type Toast = { id: number; message: string; type: ToastType; leaving?: boolean };
+type Toast = {
+  id: number;
+  message: string;
+  type: ToastType;
+  leaving?: boolean;
+};
 
-const ToastContext = createContext<((message: string, type?: ToastType) => void) | null>(null);
+const ToastContext = createContext<
+  ((message: string, type?: ToastType) => void) | null
+>(null);
 
 // los errores se quedan más tiempo en pantalla para alcanzar a leerlos
 const DURACION: Record<ToastType, number> = { success: 4000, error: 7000 };
@@ -19,7 +33,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   // marca la salida; se quita de la lista cuando termina su animación
   const cerrar = useCallback((id: number) => {
-    setToasts((ts) => ts.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+    setToasts((ts) =>
+      ts.map((t) => (t.id === id ? { ...t, leaving: true } : t))
+    );
   }, []);
 
   const showToast = useCallback(
@@ -41,11 +57,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             className={`${styles.toast} ${t.type === "error" ? styles.toastError : ""}`}
             role={t.type === "error" ? "alert" : undefined}
             data-leaving={t.leaving || undefined}
-            onAnimationEnd={() => t.leaving && setToasts((ts) => ts.filter((x) => x.id !== t.id))}
+            onAnimationEnd={() =>
+              t.leaving && setToasts((ts) => ts.filter((x) => x.id !== t.id))
+            }
           >
-            {t.type === "error" ? <CircleAlert aria-hidden="true" /> : <CircleCheck aria-hidden="true" />}
+            {t.type === "error" ? (
+              <CircleAlert aria-hidden="true" />
+            ) : (
+              <CircleCheck aria-hidden="true" />
+            )}
             <span className={styles.toastMessage}>{t.message}</span>
-            <button type="button" className={styles.toastClose} aria-label="Cerrar aviso" onClick={() => cerrar(t.id)}>
+            <button
+              type="button"
+              className={styles.toastClose}
+              aria-label="Cerrar aviso"
+              onClick={() => cerrar(t.id)}
+            >
               <X aria-hidden="true" />
             </button>
           </div>
@@ -58,6 +85,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 /** showToast(mensaje, "success" | "error") desde cualquier pantalla del panel. */
 export function useToast() {
   const showToast = useContext(ToastContext);
-  if (!showToast) throw new Error("useToast debe usarse dentro de ToastProvider");
+  if (!showToast)
+    throw new Error("useToast must be used within ToastProvider.");
   return { showToast };
 }

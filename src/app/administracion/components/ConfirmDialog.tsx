@@ -1,9 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { CircleHelp, LoaderCircle, TriangleAlert } from "lucide-react";
-import AdminModal from "./AdminModal";
+import type { ReactNode } from "react";
 import styles from "@/styles/pages/admin.module.css";
+import AdminModal from "./AdminModal";
 
 type ConfirmDialogProps = {
   title: ReactNode;
@@ -48,7 +48,12 @@ export default function ConfirmDialog({
         <p>{children}</p>
       </div>
       <div className={styles.modalFooter}>
-        <button type="button" className="btn-ghost btn-sm" onClick={onCancel} disabled={busy}>
+        <button
+          type="button"
+          className="btn-ghost btn-sm"
+          onClick={onCancel}
+          disabled={busy}
+        >
           {cancelLabel}
         </button>
         <button

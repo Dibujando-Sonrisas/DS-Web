@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
-import { inscribirVoluntarioAction } from "./actions";
-import styles from "../../styles/pages/volunteer.module.css";
 import { Check, CircleAlert } from "lucide-react";
+import type React from "react";
+import { useState } from "react";
+import { errorInfo, getLogger } from "@/lib/logger";
+import styles from "../../styles/pages/volunteer.module.css";
+import { inscribirVoluntarioAction } from "./actions";
+
+const logger = getLogger("voluntariado", "client");
 
 const AREAS_INTERES = [
   "Registro",
@@ -40,9 +44,12 @@ export default function VolunteerForm() {
       correo,
       telefono,
       area_interes: areaInteres,
-    }).catch(() => ({
-      error: "Hubo un error al enviar tu solicitud. Intenta de nuevo.",
-    }));
+    }).catch((error) => {
+      logger.error("Volunteer request submission failed", errorInfo(error));
+      return {
+        error: "Hubo un error al enviar tu solicitud. Intenta de nuevo.",
+      };
+    });
 
     if (actionError) {
       setError(actionError);
@@ -56,16 +63,19 @@ export default function VolunteerForm() {
     return (
       <div className={`${styles.form} form-success`} role="status">
         <Check size={24} strokeWidth={2.5} aria-hidden="true" />
-        ¡Tu solicitud de voluntariado ha sido enviada! Te enviamos un correo
-        de confirmación. Un coordinador la revisará pronto y, cuando sea
-        aprobada, recibirás otro correo con las instrucciones para entrar a tu
-        cuenta de voluntario.
+        ¡Tu solicitud de voluntariado ha sido enviada! Te enviamos un correo de
+        confirmación. Un coordinador la revisará pronto y, cuando sea aprobada,
+        recibirás otro correo con las instrucciones para entrar a tu cuenta de
+        voluntario.
       </div>
     );
   }
 
   return (
-    <form className={`${styles.form} card-soft card-drawn`} onSubmit={handleSubmit}>
+    <form
+      className={`${styles.form} card-soft card-drawn`}
+      onSubmit={handleSubmit}
+    >
       <fieldset className={styles.fieldset}>
         <div className="form-grid">
           {/* Nombre Completo */}

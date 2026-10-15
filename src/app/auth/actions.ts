@@ -1,9 +1,12 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { avisarUsuarioNuevo, enviarRestablecerContrasena } from "@/lib/cuentas";
+import { errorInfo, getLogger } from "@/lib/logger";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { emailSchema } from "@/lib/validation/validationUtils";
+
+const logger = getLogger("auth");
 
 export type AuthState = {
   error?: string;
@@ -23,12 +26,13 @@ export async function loginAction(
 
   const supabase = await createSupabaseServerClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
+    logger.warning("Sign-in failed", errorInfo(error));
     if (
       error.message.includes("Invalid login credentials") ||
       error.message.includes("invalid_credentials")
@@ -40,6 +44,7 @@ export async function loginAction(
     }
     return { error: "Ocurrió un error al iniciar sesión. Intenta de nuevo." };
   }
+  logger.info("User signed in", { userId: data.user.id });
 
   const next = (formData.get("next") as string)?.trim();
   const safeNext =
@@ -57,15 +62,23 @@ export async function signUpAction(
   const confirmPassword = formData.get("confirmPassword") as string;
 
   if (!fullName || !email || !password || !confirmPassword) {
-    return { error: "Prueba de presencia: Por favor completa todos los campos obligatorios." };
+    return {
+      error:
+        "Prueba de presencia: Por favor completa todos los campos obligatorios.",
+    };
   }
 
   if (password.length < 8) {
-    return { error: "Prueba de longitud: La contraseña debe tener al menos 8 caracteres." };
+    return {
+      error:
+        "Prueba de longitud: La contraseña debe tener al menos 8 caracteres.",
+    };
   }
 
   if (password !== confirmPassword) {
-    return { error: "Prueba de coherencia: Las contraseñas ingresadas no coinciden." };
+    return {
+      error: "Prueba de coherencia: Las contraseñas ingresadas no coinciden.",
+    };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -81,10 +94,17 @@ export async function signUpAction(
   });
 
   if (signUpError) {
-    if (signUpError.message.includes("already registered") || signUpError.message.includes("already exists")) {
-      return { error: "Este correo electrónico ya se encuentra registrado. Intenta iniciar sesión." };
+    if (
+      signUpError.message.includes("already registered") ||
+      signUpError.message.includes("already exists")
+    ) {
+      return {
+        error:
+          "Este correo electrónico ya se encuentra registrado. Intenta iniciar sesión.",
+      };
     }
-    return { error: `Error al registrar usuario: ${signUpError.message}` };
+    logger.error("Sign-up failed", errorInfo(signUpError));
+    return { error: "No se pudo registrar el usuario. Intenta de nuevo." };
   }
 
   const user = authData.user;
@@ -97,7 +117,7 @@ export async function signUpAction(
       .maybeSingle();
 
     if (!existingProfile) {
-      await supabase.from("perfiles").insert({
+      const { error: perfilError } = await supabase.from("perfiles").insert({
         id: user.id,
         nombre_completo: fullName,
         // sin rol: la base asigna el predeterminado ("voluntario"), igual que el trigger handle_new_user
@@ -105,6 +125,12 @@ export async function signUpAction(
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
+      // el trigger handle_new_user también lo crea: si este insert falla no se corta el registro
+      if (perfilError)
+        logger.warning("Profile sync failed", {
+          ...errorInfo(perfilError),
+          userId: user.id,
+        });
     }
   }
 
@@ -113,6 +139,7 @@ export async function signUpAction(
     return { error: "Tu cuenta ya existe. Por favor inicia sesión." };
   }
 
+  logger.info("User signed up", { userId: user?.id ?? null });
   await avisarUsuarioNuevo(fullName, email, "Registro desde el sitio web");
   redirect("/auth/sin-acceso");
 }
@@ -141,12 +168,16 @@ export async function crearContrasenaAction(
     token_hash: tokenHash,
   });
   if (enlaceError) {
-    return { error: "El enlace venció o ya se usó. Pide uno nuevo en Recuperar contraseña." };
+    logger.warning("Password link verification failed", errorInfo(enlaceError));
+    return {
+      error:
+        "El enlace venció o ya se usó. Pide uno nuevo en Recuperar contraseña.",
+    };
   }
 
-  const { error } = await supabase.auth.updateUser({ password });
+  const { data, error } = await supabase.auth.updateUser({ password });
   if (error) {
-    console.error("No se pudo guardar la contraseña:", error);
+    logger.error("Password update failed", errorInfo(error));
     return {
       error:
         error.code === "same_password"
@@ -154,6 +185,7 @@ export async function crearContrasenaAction(
           : "No se pudo guardar la contraseña. Pide un enlace nuevo e intenta otra.",
     };
   }
+  logger.info("Password updated", { userId: data.user.id });
 
   redirect("/administracion");
 }
@@ -170,8 +202,10 @@ export async function recuperarContrasenaAction(
   try {
     await enviarRestablecerContrasena(correo.data.toLowerCase());
   } catch (e) {
-    console.error("No se pudo enviar el enlace para restablecer la contraseña:", e);
-    return { error: "No pudimos enviar el correo. Intenta de nuevo más tarde." };
+    logger.error("Password reset email failed", errorInfo(e));
+    return {
+      error: "No pudimos enviar el correo. Intenta de nuevo más tarde.",
+    };
   }
   // mismo mensaje haya o no cuenta: no revela qué correos están registrados
   return {
@@ -182,6 +216,7 @@ export async function recuperarContrasenaAction(
 
 export async function logoutAction() {
   const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+  if (error) logger.warning("Sign-out failed", errorInfo(error));
   redirect("/auth/login");
 }

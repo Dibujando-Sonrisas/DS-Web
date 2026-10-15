@@ -496,7 +496,7 @@
     /* Numeración de página nativa del browser — Formato Pág. X de Y */
     @bottom-right {
       content: "Pág. " counter(page) " de " counter(pages);
-      font-family: 'Outfit', sans-serif;
+      font-family: "Outfit", sans-serif;
       font-size: 8pt;
       font-weight: 700;
       color: #000000;
@@ -504,7 +504,7 @@
 
     @bottom-left {
       content: "Reporte — Fundación Dibujando Sonrisas";
-      font-family: 'Outfit', sans-serif;
+      font-family: "Outfit", sans-serif;
       font-size: 7pt;
       color: #475569;
     }
@@ -738,7 +738,8 @@
     break-inside: avoid !important;
   }
 
-  :global(td), :global(th) {
+  :global(td),
+  :global(th) {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }

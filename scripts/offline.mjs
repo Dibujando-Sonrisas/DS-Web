@@ -17,8 +17,8 @@ import {
   createReadStream,
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -26,6 +26,39 @@ import {
 import { networkInterfaces } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  configureSync,
+  getConsoleSink,
+  getLogfmtFormatter,
+  getLogger,
+} from "@logtape/logtape";
+
+// Traza técnica en inglés (logfmt) para soporte; lo que lee el operador sigue saliendo por log().
+// Nunca registrar SUPABASE_DB_URL (lleva la contraseña), SQL ni datos de la subida.
+configureSync({
+  sinks: { console: getConsoleSink({ formatter: getLogfmtFormatter() }) },
+  loggers: [
+    { category: ["ds-webapp"], lowestLevel: "info", sinks: ["console"] },
+    {
+      category: ["logtape", "meta"],
+      lowestLevel: "warning",
+      sinks: ["console"],
+    },
+  ],
+});
+const logger = getLogger(["ds-webapp", "offline"]);
+
+// mismo criterio que errorInfo de src/lib/logger.ts, más las cadenas de conexión
+const SENSIBLE =
+  /postgres(?:ql)?:\/\/\S+|[^\s@"'<>]+@[^\s@"'<>]+\.[^\s@"'<>]+|\d{8,}/g;
+function errorInfo(e) {
+  return {
+    errorName: e?.name,
+    errorMessage: String(e?.message ?? e)
+      .replace(SENSIBLE, "[redacted]")
+      .slice(0, 300),
+  };
+}
 
 const RAIZ = fileURLToPath(new URL("..", import.meta.url));
 process.chdir(RAIZ);
@@ -96,6 +129,10 @@ const ids = PASOS_POR_ACCION[accion];
 
 const previo = leerJson(ARCHIVO_ESTADO) ?? {};
 if (previo.corriendo && previo.pid !== process.pid && procesoVivo(previo.pid)) {
+  logger.warning("Offline run rejected: another run in progress", {
+    action: accion,
+    runningPid: previo.pid,
+  });
   console.error(
     `Ya hay una preparación, sincronización o subida en curso (proceso ${previo.pid}).`
   );
@@ -113,6 +150,8 @@ const estado = {
   pasos: ids.map((id) => ({ id, titulo: PASOS[id], estado: "pendiente" })),
 };
 guardar();
+const inicioCorrida = Date.now();
+logger.info("Offline run started", { action: accion, pid: process.pid });
 
 function guardar() {
   mkdirSync(DIR, { recursive: true });
@@ -124,13 +163,23 @@ async function paso(id, hacer) {
   Object.assign(p, { estado: "en_curso", inicio: ahora() });
   guardar();
   log(`→ ${p.titulo}...`);
+  const inicio = Date.now();
   try {
     const detalle = await hacer();
     Object.assign(p, { estado: "listo", detalle, fin: ahora() });
     log(`✓ ${p.titulo}${detalle ? `: ${detalle}` : ""}`);
+    logger.info("Step completed", {
+      step: id,
+      durationMs: Date.now() - inicio,
+    });
   } catch (e) {
     Object.assign(p, { estado: "error", detalle: e.message, fin: ahora() });
     log(`✗ ${p.titulo}: ${e.message}`);
+    logger.error("Step failed", {
+      step: id,
+      durationMs: Date.now() - inicio,
+      ...errorInfo(e),
+    });
     throw e;
   } finally {
     guardar();
@@ -141,6 +190,7 @@ function omitir(id, detalle) {
   const p = estado.pasos.find((x) => x.id === id);
   Object.assign(p, { estado: "omitido", detalle });
   log(`- ${p.titulo}: ${detalle}`);
+  logger.info("Step skipped", { step: id });
   guardar();
 }
 
@@ -152,7 +202,8 @@ try {
   await paso("docker", async () => {
     try {
       return `Docker ${await ejecutar("docker", ["info", "--format", "{{.ServerVersion}}"])}`;
-    } catch {
+    } catch (e) {
+      logger.warning("Docker not responding", errorInfo(e));
       throw new Error(
         "Docker no responde: abre Docker Desktop y vuelve a intentarlo."
       );
@@ -161,9 +212,13 @@ try {
 
   await paso("supabase", async () => {
     let yaCorria = true;
-    let status = await statusSupabase().catch(() => null);
+    let status = await statusSupabase().catch((e) => {
+      logger.debug("Local Supabase status unavailable", errorInfo(e));
+      return null;
+    });
     if (!status) {
       yaCorria = false;
+      logger.info("Local Supabase starting");
       log(
         "  Iniciando Supabase local (la primera vez descarga las imágenes y tarda varios minutos)..."
       );
@@ -202,17 +257,26 @@ try {
   estado.error = e.message;
   process.exitCode = 1;
   log(FALLO[accion]);
+  logger.error("Offline run failed", { action: accion, ...errorInfo(e) });
 } finally {
   estado.corriendo = false;
   estado.fin = ahora();
   guardar();
   rmSync(ARCHIVO_DATOS, { force: true }); // trae datos de pacientes y contraseñas cifradas
+  logger.info("Offline run finished", {
+    action: accion,
+    ok: !estado.error,
+    durationMs: Date.now() - inicioCorrida,
+  });
 }
 
 async function prepararDatos() {
   await paso("pendientes", async () => {
     const n = await cambiosPendientes();
     if (n > 0) {
+      logger.warning("Download blocked by pending offline changes", {
+        pending: n,
+      });
       throw new Error(
         `Hay ${n} cambios hechos offline que todavía no se subieron; descargar de nuevo los borraría. Súbelos primero (Subir cambios o npm run offline:subir).`
       );
@@ -279,6 +343,10 @@ async function sincronizarConNube(descargarSiempre) {
          update offline.sesion set subiendo_id = null, subiendo_hasta = null;`
       );
       pendientes = await cambiosPendientes();
+      logger.warning("Interrupted upload found applied online", {
+        uploadId: sesion.subiendoId,
+        pending: pendientes,
+      });
     }
     const guardadas = JSON.parse(
       await consultar(BASE_LOCAL, "select huellas from offline.sesion")
@@ -289,6 +357,10 @@ async function sincronizarConNube(descargarSiempre) {
     cambiadas = Object.keys(guardadas).filter(
       (t) => guardadas[t] !== actuales[t]
     );
+    logger.info("Online changes checked", {
+      changedTables: cambiadas.length,
+      pending: pendientes,
+    });
     return cambiadas.length
       ? `Cambiaron ${cambiadas.join(", ")}; se combinan con lo de la brigada`
       : "Ninguno desde la última sincronización";
@@ -312,6 +384,10 @@ async function sincronizarConNube(descargarSiempre) {
       // alguien guardó algo en este servidor mientras se descargaba: se sube y se descarga otra vez
       pendientes = await cambiosPendientes();
       if (!pendientes || intento === 3) throw e;
+      logger.warning("Local load retried after concurrent changes", {
+        attempt: intento + 1,
+        pending: pendientes,
+      });
       log(
         `  ${pendientes} cambios nuevos durante la descarga: se suben y se descarga otra vez (intento ${intento + 1} de 3).`
       );
@@ -338,6 +414,7 @@ async function subir(sesion) {
     BASE_LOCAL,
     `update offline.sesion set subiendo_id = '${subidaId}', subiendo_hasta = ${ultimo}`
   );
+  logger.info("Upload started", { uploadId: subidaId, sessionId: sesion.id });
   const marca = `$d${subidaId.replaceAll("-", "")}$`;
   const resumen = JSON.parse(
     await psql(
@@ -356,6 +433,13 @@ async function subir(sesion) {
     `delete from offline.cambios where id <= ${ultimo};
          update offline.sesion set subiendo_id = null, subiendo_hasta = null;`
   );
+  logger.info("Upload completed", {
+    uploadId: subidaId,
+    uploaded: resumen.subidos,
+    deleted: resumen.borrados,
+    merged: resumen.combinados,
+    conflicts: resumen.conflictos,
+  });
   return describirSubida(resumen);
 }
 
@@ -385,7 +469,9 @@ async function descargarDatos() {
     "-f",
     ARCHIVO_DATOS,
   ]);
-  return `${(statSync(ARCHIVO_DATOS).size / 1024 / 1024).toFixed(1)} MB`;
+  const megas = (statSync(ARCHIVO_DATOS).size / 1024 / 1024).toFixed(1);
+  logger.info("Online data downloaded", { sizeMb: Number(megas) });
+  return `${megas} MB`;
 }
 
 async function cargarDatos() {
@@ -413,6 +499,11 @@ async function cargarDatos() {
       "select (select count(*) from public.pacientes), (select count(*) from public.medicamentos), (select count(*) from auth.users)"
     )
   ).split("|");
+  logger.info("Local database loaded", {
+    patients: Number(pacientes),
+    inventoryItems: Number(medicamentos),
+    users: Number(usuarios),
+  });
   return `${pacientes} pacientes, ${medicamentos} recursos de inventario, ${usuarios} usuarios`;
 }
 
@@ -446,10 +537,12 @@ async function cambiosPendientes() {
 
 /** Las migraciones del código, de la base en línea y de la local tienen que ser las mismas. */
 async function verificarEsquema() {
-  if (!NUBE)
+  if (!NUBE) {
+    logger.error("SUPABASE_DB_URL is not set");
     throw new Error(
       "Falta SUPABASE_DB_URL en el archivo .env (la cadena de conexión de la base en línea)."
     );
+  }
   const enLinea = (
     await consultar(
       NUBE,
@@ -463,6 +556,12 @@ async function verificarEsquema() {
     .filter(Boolean);
   const faltanAqui = enLinea.filter((v) => !enCodigo.includes(v));
   const faltanEnLinea = enCodigo.filter((v) => !enLinea.includes(v));
+  if (faltanAqui.length || faltanEnLinea.length) {
+    logger.error("Migration mismatch", {
+      missingInCode: faltanAqui.length,
+      missingOnline: faltanEnLinea.length,
+    });
+  }
   if (faltanAqui.length) {
     throw new Error(
       `La base en línea tiene migraciones que este código no tiene (${faltanAqui.join(", ")}): actualiza el código.`
@@ -539,9 +638,14 @@ async function arrancarServidor() {
   await esperarRespuesta(`http://127.0.0.1:${PUERTO}`, servidor);
   servidor.on("exit", (codigo) => {
     log(`El servidor se detuvo (código ${codigo}).`);
+    logger.info("Offline server stopped", { exitCode: codigo });
     process.exit(codigo ?? 0);
   });
   estado.urls = direccionesLan().map((ip) => `http://${ip}:${PUERTO}`);
+  logger.info("Offline server listening", {
+    port: Number(PUERTO),
+    lanAddresses: estado.urls.length,
+  });
   log("");
   log(
     "Las otras computadoras de la brigada se conectan a la misma red y abren:"
@@ -634,6 +738,14 @@ function ejecutar(comando, args, { entrada, env, mostrar = false } = {}) {
     hijo.on("error", reject);
     hijo.on("close", (codigo) => {
       if (codigo === 0) return resolve(salida.trim());
+      // solo el programa y su subcomando: los demás argumentos pueden llevar la cadena de conexión
+      logger.debug("Command failed", {
+        command:
+          comando === process.execPath
+            ? `node ${args[0]?.split(/[\\/]/).at(-1)}`
+            : `${comando} ${args[0]}`,
+        exitCode: codigo,
+      });
       reject(
         new Error(
           ultimoError(errores || salida) ||
@@ -660,7 +772,8 @@ function ultimoError(texto) {
     .at(-1);
   try {
     return JSON.parse(linea).error.message.split("\n")[0];
-  } catch {
+  } catch (e) {
+    logger.debug("Command error output is not JSON", errorInfo(e));
     return linea;
   }
 }
@@ -672,7 +785,8 @@ async function esperarRespuesta(url, proceso) {
     try {
       await fetch(url, { redirect: "manual" });
       return;
-    } catch {
+    } catch (e) {
+      logger.debug("Server not ready", { attempt: i + 1, ...errorInfo(e) });
       await new Promise((r) => setTimeout(r, 500));
     }
   }
@@ -695,7 +809,8 @@ function procesoVivo(pid) {
   try {
     process.kill(pid, 0);
     return true;
-  } catch {
+  } catch (e) {
+    logger.debug("Process not running", { pid, ...errorInfo(e) });
     return false;
   }
 }
@@ -703,7 +818,9 @@ function procesoVivo(pid) {
 function leerJson(ruta) {
   try {
     return JSON.parse(readFileSync(ruta, "utf8"));
-  } catch {
+  } catch (e) {
+    // en la primera corrida el archivo todavía no existe
+    logger.debug("State file not readable", errorInfo(e));
     return null;
   }
 }

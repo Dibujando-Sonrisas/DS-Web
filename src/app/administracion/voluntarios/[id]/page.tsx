@@ -1,25 +1,31 @@
-import { requirePermission } from "@/lib/auth/session";
-import { PERMISSIONS } from "@/lib/auth/permissions";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { notFound } from "next/navigation";
-import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import PageHeader from "@/app/administracion/components/PageHeader";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/session";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "@/styles/pages/admin.module.css";
-import VoluntarioProfile from "../components/VoluntarioProfile";
 import AsignacionesCard from "../components/AsignacionesCard";
 import ParticipacionesTable from "../components/ParticipacionesTable";
+import VoluntarioProfile from "../components/VoluntarioProfile";
 
-export default async function VoluntarioDetallePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function VoluntarioDetallePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   await requirePermission(PERMISSIONS.VOLUNTARIADO_READ);
   const id = (await params).id;
 
   const supabase = await createSupabaseServerClient();
-  
+
   // Fetch voluntario
   const { data: voluntario, error: volError } = await supabase
     .from("perfiles")
-    .select("*, rol:rol_id(id, nombre, color), especialidades:especialidad_id(id, nombre)")
+    .select(
+      "*, rol:rol_id(id, nombre, color), especialidades:especialidad_id(id, nombre)"
+    )
     .eq("id", id)
     .single();
 
@@ -42,9 +48,11 @@ export default async function VoluntarioDetallePage({ params }: { params: Promis
 
   // Mezclar participaciones con asignaciones para la vista unificada
   const mergedParticipaciones = [...(participaciones || [])];
-  
-  (asignaciones || []).forEach(asig => {
-    const exists = mergedParticipaciones.find(p => p.brigada_id === asig.brigada_id);
+
+  (asignaciones || []).forEach((asig) => {
+    const exists = mergedParticipaciones.find(
+      (p) => p.brigada_id === asig.brigada_id
+    );
     if (exists) {
       // Inyectar el área asignada en la participación existente
       (exists as any).area_asignada = asig.area_asignada;
@@ -72,20 +80,19 @@ export default async function VoluntarioDetallePage({ params }: { params: Promis
       </PageHeader>
 
       <div className={styles.grid2}>
-        <VoluntarioProfile voluntario={{
-          ...voluntario,
-          participaciones_voluntarios: participaciones || []
-        }} />
-
-        <AsignacionesCard 
-          perfilId={id} 
-          asignaciones={asignaciones || []} 
+        <VoluntarioProfile
+          voluntario={{
+            ...voluntario,
+            participaciones_voluntarios: participaciones || [],
+          }}
         />
+
+        <AsignacionesCard perfilId={id} asignaciones={asignaciones || []} />
       </div>
 
-      <ParticipacionesTable 
-        perfilId={id} 
-        participaciones={mergedParticipaciones} 
+      <ParticipacionesTable
+        perfilId={id}
+        participaciones={mergedParticipaciones}
       />
     </div>
   );

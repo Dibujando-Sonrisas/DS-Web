@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import {
   Boxes,
   ChartColumn,
@@ -15,6 +14,7 @@ import {
   Tent,
   UserCog,
 } from "lucide-react";
+import type { ReactNode } from "react";
 
 export type AdminModule = {
   name: string;
@@ -113,6 +113,8 @@ export const accountModules: AdminModule[] = [
 /** Módulo al que pertenece una ruta (el dashboard solo coincide exacto). */
 export function findModule(pathname: string) {
   return [...adminModules, ...accountModules].find((m) =>
-    m.href === "/administracion" ? pathname === m.href : pathname.startsWith(m.href)
+    m.href === "/administracion"
+      ? pathname === m.href
+      : pathname.startsWith(m.href)
   );
 }

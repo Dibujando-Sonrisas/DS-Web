@@ -1,12 +1,12 @@
 "use client";
 
+import { ChevronRight, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, WifiOff } from "lucide-react";
-import { MODO_OFFLINE } from "@/lib/offline";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { usePermissions } from "./PermissionsProvider";
+import { MODO_OFFLINE } from "@/lib/offline";
 import styles from "@/styles/pages/admin.module.css";
+import { usePermissions } from "./PermissionsProvider";
 
 const AJUSTES_OFFLINE = "/administracion/ajustes/offline";
 
@@ -34,7 +34,11 @@ export default function AvisoOffline({ lugar, alNavegar }: AvisoOfflineProps) {
       </>
     );
     return enlace ? (
-      <Link href={AJUSTES_OFFLINE} className={styles.offlineChip} title="Modo offline: ver estado">
+      <Link
+        href={AJUSTES_OFFLINE}
+        className={styles.offlineChip}
+        title="Modo offline: ver estado"
+      >
         {contenido}
       </Link>
     ) : (
@@ -51,9 +55,13 @@ export default function AvisoOffline({ lugar, alNavegar }: AvisoOfflineProps) {
       </span>
       <span className={styles.offlineTexto}>
         <span className={styles.offlineTitulo}>Modo offline</span>
-        <span className={styles.offlineDetalle}>Guardando en el servidor de la brigada</span>
+        <span className={styles.offlineDetalle}>
+          Guardando en el servidor de la brigada
+        </span>
       </span>
-      {enlace && <ChevronRight className={styles.offlineFlecha} aria-hidden="true" />}
+      {enlace && (
+        <ChevronRight className={styles.offlineFlecha} aria-hidden="true" />
+      )}
     </>
   );
   return enlace ? (

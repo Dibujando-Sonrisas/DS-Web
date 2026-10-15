@@ -1,14 +1,32 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { Brigada } from "../../lib/db/brigadas";
+import {
+  CalendarDays,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { errorInfo, getLogger } from "@/lib/logger";
+import type { Brigada } from "../../lib/db/brigadas";
 import { supabase } from "../../lib/supabase";
-import { CalendarDays, Camera, ChevronLeft, ChevronRight, MapPin, X } from "lucide-react";
 import styles from "../../styles/pages/brigadas.module.css";
+
+const logger = getLogger("brigadas", "client");
 
 interface LightboxState {
   urls: string[];
   index: number;
+}
+
+// tarjetas visibles en el carrusel según el ancho de la ventana
+function getVisibleCount() {
+  if (typeof window === "undefined") return 4;
+  if (window.innerWidth <= 550) return 1;
+  if (window.innerWidth <= 900) return 2;
+  return 4;
 }
 
 export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
@@ -24,12 +42,12 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
   const btnPrevRef = useRef<HTMLButtonElement>(null);
   const btnNextRef = useRef<HTMLButtonElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loadPhotos solo usa setters estables y supabase; las fotos se recargan cuando cambia la lista de brigadas
   useEffect(() => {
     if (brigadas.length === 0) return;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveId(brigadas[0].id);
-    brigadas.forEach((b: Brigada) => loadPhotos(b));
+    for (const b of brigadas) loadPhotos(b);
   }, [brigadas]);
 
   async function loadPhotos(b: Brigada) {
@@ -44,7 +62,10 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
       .order("orden", { ascending: true });
 
     if (dbError) {
-      console.error(`Error loading images for brigade ${b.codigo}:`, dbError.message);
+      logger.error("Brigade photos load failed", {
+        ...errorInfo(dbError),
+        brigadaCodigo: b.codigo,
+      });
       setPhotoStatus((prev) => ({ ...prev, [b.id]: "error" }));
       return;
     }
@@ -64,13 +85,6 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
 
     setPhotos((prev) => ({ ...prev, [b.id]: urls }));
     setPhotoStatus((prev) => ({ ...prev, [b.id]: `${urls.length} fotos` }));
-  }
-
-  function getVisibleCount() {
-    if (typeof window === "undefined") return 4;
-    if (window.innerWidth <= 550) return 1;
-    if (window.innerWidth <= 900) return 2;
-    return 4;
   }
 
   const applyCarousel = useCallback(
@@ -118,6 +132,15 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
     return () => window.removeEventListener("resize", onResize);
   }, [brigadas, applyCarousel]);
 
+  const navigate = useCallback((dir: number) => {
+    setLightbox((prev) => {
+      if (!prev) return null;
+      const next = prev.index + dir;
+      if (next < 0 || next >= prev.urls.length) return prev;
+      return { ...prev, index: next };
+    });
+  }, []);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (!lightbox) return;
@@ -127,16 +150,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [lightbox]);
-
-  function navigate(dir: number) {
-    setLightbox((prev) => {
-      if (!prev) return null;
-      const next = prev.index + dir;
-      if (next < 0 || next >= prev.urls.length) return prev;
-      return { ...prev, index: next };
-    });
-  }
+  }, [lightbox, navigate]);
 
   function handleBrigadaClick(id: string) {
     setActiveId(id);
@@ -186,6 +200,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
         <>
           <div className={styles.carouselWrapper}>
             <button
+              type="button"
               ref={btnPrevRef}
               className={`${styles.carouselBtn} ${styles.carouselBtnPrev}`}
               aria-label="Anterior brigada"
@@ -204,6 +219,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
               <div className={styles.carouselTrack} ref={trackRef}>
                 {brigadas.map((b) => (
                   <button
+                    type="button"
                     key={b.id}
                     data-carousel-item="true"
                     className={`${styles.brigadaBtn}${activeId === b.id ? " " + styles.active : ""}`}
@@ -218,6 +234,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
             </div>
 
             <button
+              type="button"
               ref={btnNextRef}
               className={`${styles.carouselBtn} ${styles.carouselBtnNext}`}
               aria-label="Siguiente brigada"
@@ -251,7 +268,9 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                         {b.fecha_brigada && (
                           <li className="chip">
                             <CalendarDays aria-hidden="true" />
-                            {new Date(b.fecha_brigada).toLocaleDateString("es-HN")}
+                            {new Date(b.fecha_brigada).toLocaleDateString(
+                              "es-HN"
+                            )}
                           </li>
                         )}
                         {b.lugar && (
@@ -281,11 +300,21 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                     <h3 className={styles.galleryHeading}>Galería de Fotos</h3>
                     <div className={styles.galleryGrid}>
                       {bPhotos.length === 0 ? (
-                        <div className={`${styles.emptyGalleryContainer} card-soft card-drawn tone-secondary`}>
-                          <Camera className={styles.emptyGalleryIcon} strokeWidth={1.5} aria-hidden="true" />
-                          <h4 className={styles.emptyGalleryTitle}>Galería en Actualización</h4>
+                        <div
+                          className={`${styles.emptyGalleryContainer} card-soft card-drawn tone-secondary`}
+                        >
+                          <Camera
+                            className={styles.emptyGalleryIcon}
+                            strokeWidth={1.5}
+                            aria-hidden="true"
+                          />
+                          <h4 className={styles.emptyGalleryTitle}>
+                            Galería en Actualización
+                          </h4>
                           <p className={styles.emptyGalleryText}>
-                            Las fotografías de esta brigada están siendo procesadas y estarán disponibles próximamente en la plataforma.
+                            Las fotografías de esta brigada están siendo
+                            procesadas y estarán disponibles próximamente en la
+                            plataforma.
                           </p>
                         </div>
                       ) : (
@@ -321,6 +350,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
 
       {/* ── Lightbox ── */}
       {lightbox && (
+        // biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: el clic en el fondo es un atajo de ratón; Escape y las flechas se manejan en el efecto de teclado
         <div
           className={styles.modal}
           onClick={(e) => {
@@ -328,6 +358,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
           }}
         >
           <button
+            type="button"
             className={styles.btnCerrar}
             aria-label="Cerrar"
             onClick={() => setLightbox(null)}
@@ -337,6 +368,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
 
           {lightbox.index > 0 && (
             <button
+              type="button"
               className={`${styles.modalNav} ${styles.modalNavPrev}`}
               aria-label="Foto anterior"
               onClick={(e) => {
@@ -357,6 +389,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
 
           {lightbox.index < lightbox.urls.length - 1 && (
             <button
+              type="button"
               className={`${styles.modalNav} ${styles.modalNavNext}`}
               aria-label="Foto siguiente"
               onClick={(e) => {

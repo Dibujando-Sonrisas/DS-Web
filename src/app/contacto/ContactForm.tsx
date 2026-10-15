@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, FormEvent } from "react";
-import { enviarContactoAction } from "./actions";
 import { Check, CircleAlert, Send } from "lucide-react";
+import { type FormEvent, useState } from "react";
+import { errorInfo, getLogger } from "@/lib/logger";
+import { enviarContactoAction } from "./actions";
+
+const logger = getLogger("contacto", "client");
 
 export default function ContactForm() {
   const [loading, setLoading] = useState(false);
@@ -16,9 +19,13 @@ export default function ContactForm() {
 
     const { error: actionError } = await enviarContactoAction(
       new FormData(e.currentTarget)
-    ).catch(() => ({
-      error: "Hubo un error al enviar tu mensaje. Por favor intenta de nuevo.",
-    }));
+    ).catch((error) => {
+      logger.error("Contact message request failed", errorInfo(error));
+      return {
+        error:
+          "Hubo un error al enviar tu mensaje. Por favor intenta de nuevo.",
+      };
+    });
 
     if (actionError) {
       setError(actionError);

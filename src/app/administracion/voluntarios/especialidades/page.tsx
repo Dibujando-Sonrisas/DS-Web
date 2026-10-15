@@ -1,9 +1,9 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { requirePermission } from "@/lib/auth/session";
-import { PERMISSIONS } from "@/lib/auth/permissions";
-import Link from "next/link";
 import { ArrowLeft, TriangleAlert } from "lucide-react";
+import Link from "next/link";
 import PageHeader from "@/app/administracion/components/PageHeader";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/session";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "@/styles/pages/admin.module.css";
 import EspecialidadesTable from "../components/EspecialidadesTable";
 

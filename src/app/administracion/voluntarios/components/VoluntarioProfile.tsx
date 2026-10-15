@@ -2,16 +2,19 @@
 
 import styles from "@/styles/pages/admin.module.css";
 import personas from "@/styles/pages/admin-personas.module.css";
-import type { VoluntarioRow } from "./VoluntariosTable";
 import RoleBadge from "../../components/RoleBadge";
 import UserAvatar from "../../components/UserAvatar";
+import type { VoluntarioRow } from "./VoluntariosTable";
 
 type VoluntarioProfileProps = {
   voluntario: VoluntarioRow;
 };
 
-export default function VoluntarioProfile({ voluntario }: VoluntarioProfileProps) {
-  const participacionesCount = voluntario.participaciones_voluntarios?.length || 0;
+export default function VoluntarioProfile({
+  voluntario,
+}: VoluntarioProfileProps) {
+  const participacionesCount =
+    voluntario.participaciones_voluntarios?.length || 0;
   const horasEstimadas = participacionesCount * 8;
 
   return (
@@ -47,7 +50,9 @@ export default function VoluntarioProfile({ voluntario }: VoluntarioProfileProps
           <dd>
             <span
               className={`${styles.badge} ${
-                voluntario.especialidades ? styles.badgeInfo : styles.badgeNeutral
+                voluntario.especialidades
+                  ? styles.badgeInfo
+                  : styles.badgeNeutral
               }`}
             >
               {voluntario.especialidades?.nombre || "Sin Especialidad Asignada"}

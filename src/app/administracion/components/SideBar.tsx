@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import styles from "@/styles/pages/admin.module.css";
+import AvisoOffline from "./AvisoOffline";
 import { adminModules } from "./navModules";
 import { usePermissions } from "./PermissionsProvider";
-import AvisoOffline from "./AvisoOffline";
-import styles from "@/styles/pages/admin.module.css";
 
 interface SideBarProps {
   isCollapsed: boolean;
@@ -15,7 +15,11 @@ interface SideBarProps {
   onCloseMobile: () => void;
 }
 
-export default function SideBar({ isCollapsed, isMobileOpen, onCloseMobile }: SideBarProps) {
+export default function SideBar({
+  isCollapsed,
+  isMobileOpen,
+  onCloseMobile,
+}: SideBarProps) {
   const pathname = usePathname();
   const { canRoute } = usePermissions();
 
@@ -35,7 +39,11 @@ export default function SideBar({ isCollapsed, isMobileOpen, onCloseMobile }: Si
     <>
       {/* Fondo oscuro detrás del menú en móvil */}
       {isMobileOpen && (
-        <div className={styles.mobileOverlay} onClick={onCloseMobile} aria-hidden="true" />
+        <div
+          className={styles.mobileOverlay}
+          onClick={onCloseMobile}
+          aria-hidden="true"
+        />
       )}
 
       <aside
@@ -52,7 +60,13 @@ export default function SideBar({ isCollapsed, isMobileOpen, onCloseMobile }: Si
           title="Ir al sitio público"
         >
           <span className={styles.brandLogo}>
-            <Image src="/logo-mark.png" alt="" width={44} height={44} priority />
+            <Image
+              src="/logo-mark.png"
+              alt=""
+              width={44}
+              height={44}
+              priority
+            />
           </span>
           <span className={styles.brandText}>
             <span className={styles.brandName}>
@@ -80,7 +94,9 @@ export default function SideBar({ isCollapsed, isMobileOpen, onCloseMobile }: Si
               >
                 {link.icon}
                 <span className={styles.navLabel}>{link.name}</span>
-                {!link.available && <span className={styles.navSoon}>Próx.</span>}
+                {!link.available && (
+                  <span className={styles.navSoon}>Próx.</span>
+                )}
               </Link>
             );
           })}

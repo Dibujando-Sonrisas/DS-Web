@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { CircleAlert, LoaderCircle, Pencil } from "lucide-react";
+import { useState } from "react";
+import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
-import { registrarParticipacion, actualizarParticipacion } from "../actions";
+import { actualizarParticipacion, registrarParticipacion } from "../actions";
+
+const logger = getLogger("voluntarios", "client");
 
 type ParticipacionRow = {
   id?: string; // Si no tiene ID, es que no se ha registrado participación aún (solo asignación)
@@ -25,7 +28,10 @@ type ParticipacionesTableProps = {
   participaciones: ParticipacionRow[];
 };
 
-export default function ParticipacionesTable({ perfilId, participaciones }: ParticipacionesTableProps) {
+export default function ParticipacionesTable({
+  perfilId,
+  participaciones,
+}: ParticipacionesTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +82,11 @@ export default function ParticipacionesTable({ perfilId, participaciones }: Part
       }
       setEditingId(null);
     } catch (e: any) {
+      logger.error("Participation save failed", {
+        ...errorInfo(e),
+        participacionId: p.id || null,
+        brigadaId: p.brigada_id,
+      });
       setError(e.message || "Error al guardar participación.");
     } finally {
       setLoading(false);
@@ -83,10 +94,14 @@ export default function ParticipacionesTable({ perfilId, participaciones }: Part
   };
 
   return (
-    <section className={styles.panel} aria-labelledby="historial-participaciones">
+    <section
+      className={styles.panel}
+      aria-labelledby="historial-participaciones"
+    >
       <div className={styles.panelHeader}>
         <h2 id="historial-participaciones" className={styles.panelTitle}>
-          Historial y Participaciones <span className={styles.count}>{participaciones.length}</span>
+          Historial y Participaciones{" "}
+          <span className={styles.count}>{participaciones.length}</span>
         </h2>
       </div>
 
@@ -122,34 +137,41 @@ export default function ParticipacionesTable({ perfilId, participaciones }: Part
                 </td>
               </tr>
             ) : (
-              participaciones.map(p => {
+              participaciones.map((p) => {
                 const isEditing = editingId === p.brigada_id;
-                const brigadaNombre = p.brigada?.nombre || `ID: ${p.brigada_id.substring(0,8)}...`;
+                const brigadaNombre =
+                  p.brigada?.nombre || `ID: ${p.brigada_id.substring(0, 8)}...`;
                 const asistenciaClass = p.asistencia
                   ? styles.badgeSuccess
                   : p.id
-                  ? styles.badgeDanger
-                  : styles.badgeWarning;
+                    ? styles.badgeDanger
+                    : styles.badgeWarning;
 
                 return (
                   <tr key={p.brigada_id}>
                     <td className={styles.cellMain}>{brigadaNombre}</td>
                     <td className={styles.nowrap}>
-                      {p.brigada?.fecha_brigada ? new Date(p.brigada.fecha_brigada).toLocaleDateString() : "N/A"}
+                      {p.brigada?.fecha_brigada
+                        ? new Date(p.brigada.fecha_brigada).toLocaleDateString()
+                        : "N/A"}
                     </td>
                     <td>
                       {/* El área asignada viene de la tarjeta de asignaciones pero la mostraremos si la pasamos */}
-                      {(p as any).area_asignada || <span className={styles.muted}>Sin asignar</span>}
+                      {(p as any).area_asignada || (
+                        <span className={styles.muted}>Sin asignar</span>
+                      )}
                     </td>
                     <td className={styles.nowrap}>
                       {isEditing ? (
                         <label>
-                          <span className="sr-only">Hora de llegada en {brigadaNombre}</span>
-                          <input 
-                            type="time" 
+                          <span className="sr-only">
+                            Hora de llegada en {brigadaNombre}
+                          </span>
+                          <input
+                            type="time"
                             className="form-input form-input-sm"
-                            value={horaLlegada} 
-                            onChange={e => setHoraLlegada(e.target.value)} 
+                            value={horaLlegada}
+                            onChange={(e) => setHoraLlegada(e.target.value)}
                           />
                         </label>
                       ) : (
@@ -159,12 +181,14 @@ export default function ParticipacionesTable({ perfilId, participaciones }: Part
                     <td className={styles.nowrap}>
                       {isEditing ? (
                         <label>
-                          <span className="sr-only">Hora de salida en {brigadaNombre}</span>
-                          <input 
-                            type="time" 
+                          <span className="sr-only">
+                            Hora de salida en {brigadaNombre}
+                          </span>
+                          <input
+                            type="time"
                             className="form-input form-input-sm"
-                            value={horaSalida} 
-                            onChange={e => setHoraSalida(e.target.value)} 
+                            value={horaSalida}
+                            onChange={(e) => setHoraSalida(e.target.value)}
                           />
                         </label>
                       ) : (
@@ -174,16 +198,16 @@ export default function ParticipacionesTable({ perfilId, participaciones }: Part
                     <td>
                       {isEditing ? (
                         <label className="form-check">
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={asistencia}
-                            onChange={e => setAsistencia(e.target.checked)}
+                            onChange={(e) => setAsistencia(e.target.checked)}
                           />
                           Asistió
                         </label>
                       ) : (
                         <span className={`${styles.badge} ${asistenciaClass}`}>
-                          {p.asistencia ? "Sí" : (p.id ? "No" : "Pendiente")}
+                          {p.asistencia ? "Sí" : p.id ? "No" : "Pendiente"}
                         </span>
                       )}
                     </td>
@@ -191,16 +215,21 @@ export default function ParticipacionesTable({ perfilId, participaciones }: Part
                       <div className={styles.rowActions}>
                         {isEditing ? (
                           <>
-                            <button 
+                            <button
                               type="button"
                               className="btn-primary btn-xs"
                               onClick={() => handleSave(p)}
                               disabled={loading}
                             >
-                              {loading && <LoaderCircle className="spin" aria-hidden="true" />}
+                              {loading && (
+                                <LoaderCircle
+                                  className="spin"
+                                  aria-hidden="true"
+                                />
+                              )}
                               Guardar
                             </button>
-                            <button 
+                            <button
                               type="button"
                               className="btn-ghost btn-xs"
                               onClick={handleCancel}
@@ -210,7 +239,7 @@ export default function ParticipacionesTable({ perfilId, participaciones }: Part
                             </button>
                           </>
                         ) : (
-                          <button 
+                          <button
                             type="button"
                             className="btn-ghost btn-xs"
                             onClick={() => handleEdit(p)}

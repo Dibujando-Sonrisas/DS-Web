@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { type ReactNode, useEffect, useId, useRef } from "react";
 import styles from "@/styles/pages/admin.module.css";
 
 // modales abiertos, del de abajo al de arriba: Escape solo cierra el último
@@ -70,6 +70,7 @@ export default function AdminModal({
   }, [busy, onClose, titleId]);
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: tocar el fondo es un atajo de ratón; desde el teclado el modal se cierra con Escape
     <div
       className={styles.modalOverlay}
       // solo cierra si el clic empieza en el fondo (no al soltar una selección de texto)
@@ -77,6 +78,7 @@ export default function AdminModal({
         if (e.target === e.currentTarget && !busy) onClose();
       }}
     >
+      {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: role siempre es "dialog" o "alertdialog", que admiten aria-modal */}
       <div
         ref={dialogRef}
         role={role}

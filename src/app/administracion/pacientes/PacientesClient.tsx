@@ -1,12 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import {
-  getPacientesAtendidosAction as getPacientesAtendidos,
-  getPacientesDashboardAction as getPacientesDashboard,
-} from "./actions";
-import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
 import {
   Activity,
   ArrowRight,
@@ -23,23 +16,49 @@ import {
   Users,
   Venus,
 } from "lucide-react";
-import StatCard from "@/app/administracion/components/StatCard";
-import styles from "@/styles/pages/admin.module.css";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
+import StatCard from "@/app/administracion/components/StatCard";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { coincide } from "@/lib/texto";
+import styles from "@/styles/pages/admin.module.css";
+import {
+  getPacientesAtendidosAction as getPacientesAtendidos,
+  getPacientesDashboardAction as getPacientesDashboard,
+} from "./actions";
 import { ESTADOS } from "./estados";
 
 const TABS = [
-  { id: "ingresado", label: ESTADOS.ingresado.label, icon: <UserPlus aria-hidden="true" /> },
-  { id: "preclinica", label: ESTADOS.preclinica.label, icon: <Activity aria-hidden="true" /> },
-  { id: "consulta", label: ESTADOS.consulta.label, icon: <Stethoscope aria-hidden="true" /> },
-  { id: "finalizada", label: ESTADOS.finalizada.label, icon: <ClipboardCheck aria-hidden="true" /> },
+  {
+    id: "ingresado",
+    label: ESTADOS.ingresado.label,
+    icon: <UserPlus aria-hidden="true" />,
+  },
+  {
+    id: "preclinica",
+    label: ESTADOS.preclinica.label,
+    icon: <Activity aria-hidden="true" />,
+  },
+  {
+    id: "consulta",
+    label: ESTADOS.consulta.label,
+    icon: <Stethoscope aria-hidden="true" />,
+  },
+  {
+    id: "finalizada",
+    label: ESTADOS.finalizada.label,
+    icon: <ClipboardCheck aria-hidden="true" />,
+  },
   { id: "todos", label: "Todos", icon: <Users aria-hidden="true" /> },
 ];
 
 const TAB_KEY = "pacientes:estado";
+
+const logger = getLogger("pacientes", "client");
 
 export function PacientesClient() {
   const { can } = usePermissions();
@@ -54,54 +73,68 @@ export function PacientesClient() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
       const [pacs, dash, brigs] = await Promise.all([
         getPacientesAtendidos(),
         getPacientesDashboard(),
-        getBrigadas()
+        getBrigadas(),
       ]);
       setPacientes(pacs);
       setDashboard(dash);
       const brigadas = brigs.data || [];
       setTodasLasBrigadas(brigadas);
 
-      const ultima = brigadas.find(b => b.estado !== "cancelada");
+      const ultima = brigadas.find((b) => b.estado !== "cancelada");
       if (ultima) setFiltroBrigada(ultima.id);
 
       try {
         const guardada = sessionStorage.getItem(TAB_KEY);
-        if (TABS.some(t => t.id === guardada)) setActiveTab(guardada!);
-      } catch { /* sin sessionStorage (modo privado): se queda en "todos" */ }
+        if (TABS.some((t) => t.id === guardada)) setActiveTab(guardada!);
+      } catch (error) {
+        /* sin sessionStorage (modo privado): se queda en "todos" */
+        logger.warning("Session storage unavailable", errorInfo(error));
+      }
     } catch (error) {
-      console.error("Error al cargar pacientes", error);
+      logger.error("Patient list load failed", errorInfo(error));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (mounted) fetchData();
-    return () => { mounted = false; };
-  }, []);
+    return () => {
+      mounted = false;
+    };
+  }, [fetchData]);
 
   const cambiarTab = (id: string) => {
     setActiveTab(id);
     setCurrentPage(1);
-    try { sessionStorage.setItem(TAB_KEY, id); } catch { /* sin sessionStorage: solo no se recuerda */ }
+    try {
+      sessionStorage.setItem(TAB_KEY, id);
+    } catch (error) {
+      /* sin sessionStorage: solo no se recuerda */
+      logger.warning("Session storage unavailable", errorInfo(error));
+    }
   };
 
-  const visibles = pacientes.filter(p =>
-    (filtroBrigada === "todas" || p.brigada_id === filtroBrigada) &&
-    coincide(p.paciente ?? "", busqueda)
+  const visibles = pacientes.filter(
+    (p) =>
+      (filtroBrigada === "todas" || p.brigada_id === filtroBrigada) &&
+      coincide(p.paciente ?? "", busqueda)
   );
-  const porEstado = (id: string) => id === "todos" ? visibles : visibles.filter(p => p.estado === id);
+  const porEstado = (id: string) =>
+    id === "todos" ? visibles : visibles.filter((p) => p.estado === id);
   const filtered = porEstado(activeTab);
-  const tabLabel = TABS.find(t => t.id === activeTab)?.label;
-  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const tabLabel = TABS.find((t) => t.id === activeTab)?.label;
+  const paginated = filtered.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
   return (
@@ -109,19 +142,37 @@ export function PacientesClient() {
       {/* Dashboard Top */}
       {dashboard ? (
         <div className={`${styles.statGrid} tone-rotate`}>
-          <StatCard label="Total Pacientes" value={dashboard.pacientes} icon={<HeartPulse />} />
-          <StatCard label="Hombres Atendidos" value={dashboard.hombres} icon={<Mars />} />
-          <StatCard label="Mujeres Atendidas" value={dashboard.mujeres} icon={<Venus />} />
+          <StatCard
+            label="Total Pacientes"
+            value={dashboard.pacientes}
+            icon={<HeartPulse />}
+          />
+          <StatCard
+            label="Hombres Atendidos"
+            value={dashboard.hombres}
+            icon={<Mars />}
+          />
+          <StatCard
+            label="Mujeres Atendidas"
+            value={dashboard.mujeres}
+            icon={<Venus />}
+          />
         </div>
-      ) : isLoading && (
-        <div className={styles.statGrid}>
-          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
-          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
-          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
-        </div>
+      ) : (
+        isLoading && (
+          <div className={styles.statGrid}>
+            <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+            <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+          </div>
+        )
       )}
 
-      <div className={styles.tabs} role="tablist" aria-label="Expedientes por estado">
+      <div
+        className={styles.tabs}
+        role="tablist"
+        aria-label="Expedientes por estado"
+      >
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -147,9 +198,12 @@ export function PacientesClient() {
           <div className={styles.panelHeader}>
             <div>
               <h2 className={styles.panelTitle}>
-                Listado de Atenciones <span className={styles.count}>{filtered.length}</span>
+                Listado de Atenciones{" "}
+                <span className={styles.count}>{filtered.length}</span>
               </h2>
-              <p className={styles.panelSub}>Historial de expedientes digitados por brigada.</p>
+              <p className={styles.panelSub}>
+                Historial de expedientes digitados por brigada.
+              </p>
             </div>
             {can(PERMISSIONS.PACIENTES_CREATE) && (
               <button
@@ -165,18 +219,26 @@ export function PacientesClient() {
 
           <div className={styles.toolbar}>
             <div className={styles.filter}>
-              <label className={styles.filterLabel} htmlFor="pacientes-filtro-brigada">
+              <label
+                className={styles.filterLabel}
+                htmlFor="pacientes-filtro-brigada"
+              >
                 Filtrar por Brigada:
               </label>
               <select
                 id="pacientes-filtro-brigada"
                 className="form-input form-input-sm"
                 value={filtroBrigada}
-                onChange={e => { setFiltroBrigada(e.target.value); setCurrentPage(1); }}
+                onChange={(e) => {
+                  setFiltroBrigada(e.target.value);
+                  setCurrentPage(1);
+                }}
               >
                 <option value="todas">Todas las Brigadas</option>
-                {todasLasBrigadas.map(b => (
-                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                {todasLasBrigadas.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.nombre}
+                  </option>
                 ))}
               </select>
             </div>
@@ -192,7 +254,10 @@ export function PacientesClient() {
                   className="form-input form-input-sm"
                   placeholder="Nombre del paciente..."
                   value={busqueda}
-                  onChange={e => { setBusqueda(e.target.value); setCurrentPage(1); }}
+                  onChange={(e) => {
+                    setBusqueda(e.target.value);
+                    setCurrentPage(1);
+                  }}
                 />
               </div>
             </div>
@@ -234,17 +299,29 @@ export function PacientesClient() {
                         <td>{p.brigada}</td>
                         <td>
                           {p.tipo_consulta ? (
-                            <span className={`${styles.badge} ${p.tipo_consulta === "Odontologica" ? styles.badgeBrand : styles.badgeInfo}`}>
+                            <span
+                              className={`${styles.badge} ${p.tipo_consulta === "Odontologica" ? styles.badgeBrand : styles.badgeInfo}`}
+                            >
                               {p.tipo_consulta}
                             </span>
-                          ) : "-"}
+                          ) : (
+                            "-"
+                          )}
                         </td>
                         <td>{p.medico || "-"}</td>
-                        <td className={styles.nowrap}>{new Date(p.created_at).toLocaleDateString()}</td>
+                        <td className={styles.nowrap}>
+                          {new Date(p.created_at).toLocaleDateString()}
+                        </td>
                         <td>
-                          <span className={`${styles.badge} ${styles[estado.badge]}`}>{estado.label}</span>
+                          <span
+                            className={`${styles.badge} ${styles[estado.badge]}`}
+                          >
+                            {estado.label}
+                          </span>
                           {p.estado === "consulta" && p.tomado_por && (
-                            <span className={styles.cellSub}>Con {p.tomado_por}</span>
+                            <span className={styles.cellSub}>
+                              Con {p.tomado_por}
+                            </span>
                           )}
                         </td>
                         <td>
@@ -252,7 +329,9 @@ export function PacientesClient() {
                             {/* en consulta con otro usuario: nadie más lo puede atender */}
                             {estado.siguiente &&
                               can(PERMISSIONS.PACIENTES_UPDATE) &&
-                              !(p.estado === "consulta" && !p.tomado_por_mi) && (
+                              !(
+                                p.estado === "consulta" && !p.tomado_por_mi
+                              ) && (
                                 <Link
                                   href={`/administracion/pacientes/nuevo?paciente=${p.id}`}
                                   className="btn-primary btn-xs"
@@ -289,17 +368,21 @@ export function PacientesClient() {
                 type="button"
                 className="btn-ghost btn-sm"
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               >
                 <ChevronLeft aria-hidden="true" />
                 Anterior
               </button>
-              <span className={styles.pagerInfo}>Página {currentPage} de {totalPages}</span>
+              <span className={styles.pagerInfo}>
+                Página {currentPage} de {totalPages}
+              </span>
               <button
                 type="button"
                 className="btn-ghost btn-sm"
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
               >
                 Siguiente
                 <ChevronRight aria-hidden="true" />

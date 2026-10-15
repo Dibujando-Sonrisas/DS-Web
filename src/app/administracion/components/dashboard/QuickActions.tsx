@@ -1,10 +1,14 @@
-import Link from "next/link";
 import { Banknote, Gift, PackagePlus, Plus, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { PERMISSIONS, type Permission } from "@/lib/auth/permissions";
 import styles from "@/styles/pages/admin.module.css";
 import dash from "@/styles/pages/admin-dashboard.module.css";
-import { PERMISSIONS, type Permission } from "@/lib/auth/permissions";
 
-export default function QuickActions({ permissions }: { permissions: readonly Permission[] }) {
+export default function QuickActions({
+  permissions,
+}: {
+  permissions: readonly Permission[];
+}) {
   const actions = [
     {
       label: "Nueva Brigada",
@@ -50,7 +54,11 @@ export default function QuickActions({ permissions }: { permissions: readonly Pe
       {/* cada acción toma un color de marca, como "Son·ri·sas" */}
       <div className={`${dash.quickActions} tone-rotate`}>
         {visibleActions.map((action) => (
-          <Link key={action.label} href={action.href} className={dash.quickAction}>
+          <Link
+            key={action.label}
+            href={action.href}
+            className={dash.quickAction}
+          >
             <span className={dash.quickIcon} aria-hidden="true">
               {action.icon}
             </span>

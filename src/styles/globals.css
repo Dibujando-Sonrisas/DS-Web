@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Sriracha&family=Valley+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Sriracha&family=Valley+Sans:ital,wght@0,100..900;1,100..900&display=swap");
 
 :root {
   --fontHeading: "Sriracha", sans-serif;
@@ -241,13 +241,25 @@ ul {
   background-color: #8f2f27;
 }
 
-:is(.btn-primary, .btn-outline, .btn-outline-blue, .btn-ghost, .btn-danger):disabled {
+:is(
+  .btn-primary,
+  .btn-outline,
+  .btn-outline-blue,
+  .btn-ghost,
+  .btn-danger
+):disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
 /* los botones chicos viven en barras y tablas: no saltan al pasar el cursor */
-:is(.btn-sm, .btn-xs):is(.btn-primary, .btn-outline, .btn-outline-blue, .btn-ghost, .btn-danger):hover {
+:is(.btn-sm, .btn-xs):is(
+  .btn-primary,
+  .btn-outline,
+  .btn-outline-blue,
+  .btn-ghost,
+  .btn-danger
+):hover {
   transform: none;
 }
 

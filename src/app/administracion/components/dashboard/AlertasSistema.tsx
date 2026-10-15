@@ -1,7 +1,7 @@
 import { CircleCheck, TriangleAlert } from "lucide-react";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "@/styles/pages/admin.module.css";
 import dash from "@/styles/pages/admin-dashboard.module.css";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
 import EmptyState from "../EmptyState";
 
 export default async function AlertasSistema() {
@@ -18,7 +18,9 @@ export default async function AlertasSistema() {
         <h2 id="alertas-sistema" className={styles.panelTitle}>
           Alertas del Sistema
         </h2>
-        <span className={`${styles.badge} ${hayAlertas ? styles.badgeWarning : styles.badgeSuccess}`}>
+        <span
+          className={`${styles.badge} ${hayAlertas ? styles.badgeWarning : styles.badgeSuccess}`}
+        >
           {alertas?.length || 0} activas
         </span>
       </div>
@@ -30,6 +32,7 @@ export default async function AlertasSistema() {
       ) : (
         <ul className={dash.alertList}>
           {alertas.map((alerta: any, i: number) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: lista de solo lectura renderizada en el servidor; no se reordena ni se edita
             <li key={i} className={dash.alertItem}>
               <TriangleAlert aria-hidden="true" />
               <div>

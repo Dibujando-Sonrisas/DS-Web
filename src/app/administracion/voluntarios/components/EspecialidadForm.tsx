@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { CircleAlert, LoaderCircle } from "lucide-react";
+import { useState } from "react";
 import AdminModal from "@/app/administracion/components/AdminModal";
+import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
-import { TIPO_CONSULTA_LABELS, type Specialty } from "./EspecialidadesTable";
+import { type Specialty, TIPO_CONSULTA_LABELS } from "./EspecialidadesTable";
+
+const logger = getLogger("voluntarios", "client");
 
 type EspecialidadFormProps = {
   specialty: Specialty | null;
@@ -12,9 +15,15 @@ type EspecialidadFormProps = {
   onSave: (nombre: string, tipoConsulta: string | null) => Promise<void>;
 };
 
-export default function EspecialidadForm({ specialty, onClose, onSave }: EspecialidadFormProps) {
+export default function EspecialidadForm({
+  specialty,
+  onClose,
+  onSave,
+}: EspecialidadFormProps) {
   const [nombre, setNombre] = useState(specialty?.nombre || "");
-  const [tipoConsulta, setTipoConsulta] = useState(specialty?.tipo_consulta || "");
+  const [tipoConsulta, setTipoConsulta] = useState(
+    specialty?.tipo_consulta || ""
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +39,10 @@ export default function EspecialidadForm({ specialty, onClose, onSave }: Especia
     try {
       await onSave(nombre, tipoConsulta || null);
     } catch (err: any) {
+      logger.error("Specialty save failed", {
+        ...errorInfo(err),
+        especialidadId: specialty?.id ?? null,
+      });
       setError(err.message || "Ocurrió un error.");
     } finally {
       setLoading(false);
@@ -56,6 +69,7 @@ export default function EspecialidadForm({ specialty, onClose, onSave }: Especia
               placeholder="Ej. Odontología General"
               disabled={loading}
               aria-invalid={!!error}
+              // biome-ignore lint/a11y/noAutofocus: formulario dentro de un modal; al abrirlo el foco pasa a su único campo
               autoFocus
             />
             {error && (
@@ -93,7 +107,11 @@ export default function EspecialidadForm({ specialty, onClose, onSave }: Especia
           >
             Cancelar
           </button>
-          <button type="submit" className="btn-primary btn-sm" disabled={loading}>
+          <button
+            type="submit"
+            className="btn-primary btn-sm"
+            disabled={loading}
+          >
             {loading && <LoaderCircle className="spin" aria-hidden="true" />}
             {loading ? "Guardando..." : "Guardar"}
           </button>

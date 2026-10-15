@@ -1,5 +1,5 @@
-import SinAccesoClient from "./SinAccesoClient";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import SinAccesoClient from "./SinAccesoClient";
 
 export default async function SinAccesoPage() {
   const supabase = await createSupabaseServerClient();

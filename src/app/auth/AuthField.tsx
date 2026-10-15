@@ -8,14 +8,21 @@ type AuthFieldProps = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 /* Campo con ícono a la izquierda, compartido por las páginas de /auth */
-export default function AuthField({ id, label, icon, required, ...input }: AuthFieldProps) {
+export default function AuthField({
+  id,
+  label,
+  icon,
+  required,
+  ...input
+}: AuthFieldProps) {
   return (
     <div className="form-field">
       <label htmlFor={id}>
         {label}
         {required && (
           <span className="form-required" aria-hidden="true">
-            {" "}*
+            {" "}
+            *
           </span>
         )}
       </label>

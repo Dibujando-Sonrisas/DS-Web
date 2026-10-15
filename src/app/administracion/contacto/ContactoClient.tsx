@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
 import { Eye, Inbox, MailOpen, Reply, TriangleAlert } from "lucide-react";
-import type { Tables } from "@/lib/database.types";
+import { useEffect, useState, useTransition } from "react";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { Tables } from "@/lib/database.types";
+import styles from "@/styles/pages/admin.module.css";
 import AdminModal from "../components/AdminModal";
-import EmptyState from "../components/EmptyState";
 import { useToast } from "../components/AdminToast";
+import EmptyState from "../components/EmptyState";
 import { usePermissions } from "../components/PermissionsProvider";
 import { marcarLeidoAction } from "./actions";
-import styles from "@/styles/pages/admin.module.css";
 
 type Mensaje = Tables<"contacto">;
 
@@ -18,7 +18,8 @@ const formatFecha = new Intl.DateTimeFormat("es-HN", {
   timeStyle: "short",
   timeZone: "America/Tegucigalpa",
 });
-const fecha = (iso: string | null) => (iso ? formatFecha.format(new Date(iso)) : "—");
+const fecha = (iso: string | null) =>
+  iso ? formatFecha.format(new Date(iso)) : "—";
 
 type ContactoClientProps = {
   mensajes: Mensaje[];
@@ -26,7 +27,11 @@ type ContactoClientProps = {
   inicialId?: string | null;
 };
 
-export default function ContactoClient({ mensajes, fetchError, inicialId }: ContactoClientProps) {
+export default function ContactoClient({
+  mensajes,
+  fetchError,
+  inicialId,
+}: ContactoClientProps) {
   const { can } = usePermissions();
   const { showToast } = useToast();
   const [abierto, setAbierto] = useState<Mensaje | null>(
@@ -59,16 +64,20 @@ export default function ContactoClient({ mensajes, fetchError, inicialId }: Cont
       <section className={styles.panel} aria-labelledby="bandeja-entrada">
         <div className={styles.panelHeader}>
           <h2 id="bandeja-entrada" className={styles.panelTitle}>
-            Bandeja de Entrada <span className={styles.count}>{mensajes.length}</span>
+            Bandeja de Entrada{" "}
+            <span className={styles.count}>{mensajes.length}</span>
           </h2>
           {noLeidos > 0 && (
-            <span className={`${styles.badge} ${styles.badgeWarning}`}>{noLeidos} sin leer</span>
+            <span className={`${styles.badge} ${styles.badgeWarning}`}>
+              {noLeidos} sin leer
+            </span>
           )}
         </div>
 
         {mensajes.length === 0 ? (
           <EmptyState icon={<Inbox />} title="Todavía no hay mensajes">
-            Aquí aparecerán los mensajes que envíen desde la página de contacto del sitio.
+            Aquí aparecerán los mensajes que envíen desde la página de contacto
+            del sitio.
           </EmptyState>
         ) : (
           <div className={styles.tableWrap}>
@@ -92,8 +101,12 @@ export default function ContactoClient({ mensajes, fetchError, inicialId }: Cont
                       <span className={styles.cellSub}>{m.email}</span>
                     </td>
                     <td>
-                      <span className={styles.cellMain}>{m.asunto || "Sin asunto"}</span>
-                      <span className={`${styles.cellSub} ${styles.truncate}`}>{m.mensaje}</span>
+                      <span className={styles.cellMain}>
+                        {m.asunto || "Sin asunto"}
+                      </span>
+                      <span className={`${styles.cellSub} ${styles.truncate}`}>
+                        {m.mensaje}
+                      </span>
                     </td>
                     <td className={styles.nowrap}>{fecha(m.created_at)}</td>
                     <td>
@@ -144,7 +157,11 @@ export default function ContactoClient({ mensajes, fetchError, inicialId }: Cont
             <p className={styles.messageText}>{abierto.mensaje}</p>
           </div>
           <div className={styles.modalFooter}>
-            <button type="button" className="btn-ghost btn-sm" onClick={() => setAbierto(null)}>
+            <button
+              type="button"
+              className="btn-ghost btn-sm"
+              onClick={() => setAbierto(null)}
+            >
               Cerrar
             </button>
             <a

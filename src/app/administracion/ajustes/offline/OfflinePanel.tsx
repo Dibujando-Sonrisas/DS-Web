@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState, useTransition, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import {
   Circle,
   CircleCheck,
@@ -12,14 +10,21 @@ import {
   RefreshCw,
   TriangleAlert,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { type ReactNode, useEffect, useState, useTransition } from "react";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import type { AccionOffline, EstadoOffline, EstadoPaso, PasoOffline } from "@/lib/offline";
-import ConfirmDialog from "../../components/ConfirmDialog";
-import { useToast } from "../../components/AdminToast";
-import { usePermissions } from "../../components/PermissionsProvider";
-import { ejecutarOfflineAction } from "./actions";
+import type {
+  AccionOffline,
+  EstadoOffline,
+  EstadoPaso,
+  PasoOffline,
+} from "@/lib/offline";
 import styles from "@/styles/pages/admin.module.css";
 import aj from "@/styles/pages/admin-ajustes.module.css";
+import { useToast } from "../../components/AdminToast";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import { usePermissions } from "../../components/PermissionsProvider";
+import { ejecutarOfflineAction } from "./actions";
 
 const formatFecha = new Intl.DateTimeFormat("es-HN", {
   dateStyle: "medium",
@@ -27,18 +32,43 @@ const formatFecha = new Intl.DateTimeFormat("es-HN", {
   timeZone: "America/Tegucigalpa",
 });
 
-const PASO: Record<EstadoPaso, { icono: ReactNode; etiqueta: string; badge: string }> = {
-  pendiente: { icono: <Circle />, etiqueta: "Pendiente", badge: styles.badgeNeutral },
-  en_curso: { icono: <LoaderCircle className="spin" />, etiqueta: "En curso", badge: styles.badgeInfo },
-  listo: { icono: <CircleCheck />, etiqueta: "Listo", badge: styles.badgeSuccess },
+const PASO: Record<
+  EstadoPaso,
+  { icono: ReactNode; etiqueta: string; badge: string }
+> = {
+  pendiente: {
+    icono: <Circle />,
+    etiqueta: "Pendiente",
+    badge: styles.badgeNeutral,
+  },
+  en_curso: {
+    icono: <LoaderCircle className="spin" />,
+    etiqueta: "En curso",
+    badge: styles.badgeInfo,
+  },
+  listo: {
+    icono: <CircleCheck />,
+    etiqueta: "Listo",
+    badge: styles.badgeSuccess,
+  },
   error: { icono: <CircleX />, etiqueta: "Error", badge: styles.badgeDanger },
-  omitido: { icono: <CircleMinus />, etiqueta: "Omitido", badge: styles.badgeNeutral },
+  omitido: {
+    icono: <CircleMinus />,
+    etiqueta: "Omitido",
+    badge: styles.badgeNeutral,
+  },
 };
 
 /** La última ejecución del script: título del panel y el comando equivalente en la consola. */
-const ULTIMA: Record<EstadoOffline["accion"], { titulo: string; comando: string }> = {
+const ULTIMA: Record<
+  EstadoOffline["accion"],
+  { titulo: string; comando: string }
+> = {
   iniciar: { titulo: "Última preparación", comando: "npm run offline" },
-  sincronizar: { titulo: "Última sincronización", comando: "npm run offline:sincronizar" },
+  sincronizar: {
+    titulo: "Última sincronización",
+    comando: "npm run offline:sincronizar",
+  },
   subir: { titulo: "Última subida", comando: "npm run offline:subir" },
 };
 
@@ -51,7 +81,10 @@ type OfflinePanelProps = {
 };
 
 /** Ajustes → Modo offline: estado del servidor, subir o volver a descargar, y los pasos de la última ejecución. */
-export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) {
+export default function OfflinePanel({
+  estado,
+  pendientes,
+}: OfflinePanelProps) {
   const router = useRouter();
   const { can } = usePermissions();
   const { showToast } = useToast();
@@ -59,7 +92,9 @@ export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) 
   const [isPending, startTransition] = useTransition();
   const corriendo = estado?.corriendo ?? false;
   const ocupado = corriendo || isPending;
-  const total = pendientes ? Object.values(pendientes).reduce((a, n) => a + n, 0) : 0;
+  const total = pendientes
+    ? Object.values(pendientes).reduce((a, n) => a + n, 0)
+    : 0;
   const ultima = estado ? ULTIMA[estado.accion] : null;
 
   // mientras el script trabaja, el panel se actualiza solo
@@ -86,8 +121,8 @@ export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) 
               Servidor de la brigada
             </h2>
             <p className={`${styles.panelSub} ${styles.muted}`}>
-              Este equipo guarda los datos mientras no hay internet. Las demás computadoras se conectan a
-              él por la red local.
+              Este equipo guarda los datos mientras no hay internet. Las demás
+              computadoras se conectan a él por la red local.
             </p>
           </div>
           {can(PERMISSIONS.AJUSTES_UPDATE) && (
@@ -107,7 +142,11 @@ export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) 
                 onClick={() => setConfirmar("subir")}
                 disabled={ocupado || total === 0}
               >
-                {corriendo ? <LoaderCircle className="spin" aria-hidden="true" /> : <CloudUpload aria-hidden="true" />}
+                {corriendo ? (
+                  <LoaderCircle className="spin" aria-hidden="true" />
+                ) : (
+                  <CloudUpload aria-hidden="true" />
+                )}
                 {corriendo ? "Trabajando..." : "Subir cambios"}
               </button>
             </div>
@@ -118,7 +157,9 @@ export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) 
             <dl className={aj.datosOffline}>
               <div>
                 <dt>Al día con la base en línea desde</dt>
-                <dd>{formatFecha.format(new Date(estado.sesion.preparadaEn))}</dd>
+                <dd>
+                  {formatFecha.format(new Date(estado.sesion.preparadaEn))}
+                </dd>
               </div>
               <div>
                 <dt>Cambios sin subir</dt>
@@ -147,8 +188,9 @@ export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) 
             <p className="notice notice-warn" role="status">
               <TriangleAlert aria-hidden="true" />
               <span>
-                Este equipo todavía no tiene los datos en línea. Ejecuta <code>npm run offline</code> en la
-                consola del proyecto, con internet.
+                Este equipo todavía no tiene los datos en línea. Ejecuta{" "}
+                <code>npm run offline</code> en la consola del proyecto, con
+                internet.
               </span>
             </p>
           )}
@@ -164,8 +206,8 @@ export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) 
             <p className={`${styles.panelSub} ${styles.muted}`}>
               {estado && ultima ? (
                 <>
-                  Empezó el {formatFecha.format(new Date(estado.inicio))} · desde la consola:{" "}
-                  <code>{ultima.comando}</code>
+                  Empezó el {formatFecha.format(new Date(estado.inicio))} ·
+                  desde la consola: <code>{ultima.comando}</code>
                 </>
               ) : (
                 "Todavía no se ha preparado este equipo."
@@ -204,11 +246,12 @@ export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) 
           onConfirm={() => ejecutar("subir")}
           onCancel={() => setConfirmar(null)}
         >
-          Se suben los <strong>{cambios(total)}</strong> hechos en este equipo, todo en una sola operación:
-          si algo falla, no se sube nada. Si en línea cambiaron los mismos registros se combinan; si chocan
-          en el mismo dato, gana lo de la brigada y lo de línea queda anotado. Si en línea hubo cambios,
-          después se descargan y quienes estén conectados a este servidor vuelven a iniciar sesión.
-          Necesita internet.
+          Se suben los <strong>{cambios(total)}</strong> hechos en este equipo,
+          todo en una sola operación: si algo falla, no se sube nada. Si en
+          línea cambiaron los mismos registros se combinan; si chocan en el
+          mismo dato, gana lo de la brigada y lo de línea queda anotado. Si en
+          línea hubo cambios, después se descargan y quienes estén conectados a
+          este servidor vuelven a iniciar sesión. Necesita internet.
         </ConfirmDialog>
       )}
 
@@ -224,13 +267,14 @@ export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) 
         >
           {total > 0 && (
             <>
-              Primero se suben los <strong>{cambios(total)}</strong> hechos en este equipo, combinándolos con
-              lo de línea.{" "}
+              Primero se suben los <strong>{cambios(total)}</strong> hechos en
+              este equipo, combinándolos con lo de línea.{" "}
             </>
           )}
-          Después se descargan otra vez todos los datos en línea y <strong>reemplazan los de este equipo</strong>;
-          quienes estén conectados a este servidor vuelven a iniciar sesión. Necesita internet y tarda unos
-          minutos.
+          Después se descargan otra vez todos los datos en línea y{" "}
+          <strong>reemplazan los de este equipo</strong>; quienes estén
+          conectados a este servidor vuelven a iniciar sesión. Necesita internet
+          y tarda unos minutos.
         </ConfirmDialog>
       )}
     </>
@@ -239,7 +283,8 @@ export default function OfflinePanel({ estado, pendientes }: OfflinePanelProps) 
 
 function PasoItem({ paso }: { paso: PasoOffline }) {
   const { icono, etiqueta, badge } = PASO[paso.estado];
-  const duracion = paso.inicio && paso.fin ? formatDuracion(paso.inicio, paso.fin) : null;
+  const duracion =
+    paso.inicio && paso.fin ? formatDuracion(paso.inicio, paso.fin) : null;
 
   return (
     <li className={aj.paso} data-estado={paso.estado}>
@@ -259,6 +304,9 @@ function PasoItem({ paso }: { paso: PasoOffline }) {
 }
 
 function formatDuracion(inicio: string, fin: string) {
-  const s = Math.max(0, Math.round((Date.parse(fin) - Date.parse(inicio)) / 1000));
+  const s = Math.max(
+    0,
+    Math.round((Date.parse(fin) - Date.parse(inicio)) / 1000)
+  );
   return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${s % 60} s`;
 }

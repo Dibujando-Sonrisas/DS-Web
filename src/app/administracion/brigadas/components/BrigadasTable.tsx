@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo, type ReactNode } from "react";
 import { Pencil, Search, Trash2 } from "lucide-react";
+import { type ReactNode, useMemo, useState } from "react";
+import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
-import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { PERMISSIONS } from "@/lib/auth/permissions";
 
 type BrigadasTableProps = {
   brigadas: Brigada[];
@@ -93,12 +93,15 @@ export default function BrigadasTable({
   // Apply filters and search
   const filteredBrigadas = useMemo(() => {
     return brigadas.filter((b) => {
-      const matchesSearch = b.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch =
+        b.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         b.codigo.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === "all" || b.estado === statusFilter;
 
-      const bYear = b.fecha_brigada ? new Date(b.fecha_brigada).getFullYear().toString() : "";
+      const bYear = b.fecha_brigada
+        ? new Date(b.fecha_brigada).getFullYear().toString()
+        : "";
       const matchesYear = yearFilter === "all" || bYear === yearFilter;
 
       const matchesPlace = placeFilter === "all" || b.lugar === placeFilter;
@@ -111,7 +114,8 @@ export default function BrigadasTable({
     <section className={styles.panel} aria-labelledby="listado-brigadas">
       <div className={styles.panelHeader}>
         <h2 id="listado-brigadas" className={styles.panelTitle}>
-          Listado de Brigadas <span className={styles.count}>{filteredBrigadas.length}</span>
+          Listado de Brigadas{" "}
+          <span className={styles.count}>{filteredBrigadas.length}</span>
         </h2>
         {actions && <div className={styles.panelActions}>{actions}</div>}
       </div>
@@ -148,8 +152,12 @@ export default function BrigadasTable({
             onChange={(e) => setStatusFilter(e.target.value)}
           >
             <option value="all">Todos los estados</option>
-            <option value="inscripciones_abiertas">Inscripciones Abiertas</option>
-            <option value="inscripciones_cerradas">Inscripciones Cerradas</option>
+            <option value="inscripciones_abiertas">
+              Inscripciones Abiertas
+            </option>
+            <option value="inscripciones_cerradas">
+              Inscripciones Cerradas
+            </option>
             <option value="finalizada">Finalizada</option>
             <option value="cancelada">Cancelada</option>
           </select>
@@ -234,7 +242,9 @@ export default function BrigadasTable({
                     {/* el código va bajo el nombre para que la tabla quepa sin desplazamiento */}
                     <td>
                       <span className={styles.cellMain}>{b.nombre}</span>
-                      <span className={`${styles.cellSub} ${styles.nowrap}`}>{b.codigo}</span>
+                      <span className={`${styles.cellSub} ${styles.nowrap}`}>
+                        {b.codigo}
+                      </span>
                       {b.descripcion && (
                         <span className={styles.cellSub}>
                           <span className={brig.clamp}>{b.descripcion}</span>
@@ -242,17 +252,24 @@ export default function BrigadasTable({
                       )}
                     </td>
                     <td>{b.lugar || "—"}</td>
-                    <td className={styles.nowrap}>{formatDate(b.fecha_brigada)}</td>
+                    <td className={styles.nowrap}>
+                      {formatDate(b.fecha_brigada)}
+                    </td>
                     <td>
-                      <span className={`${styles.badge} ${ESTADO_CLASSES[b.estado]}`}>
+                      <span
+                        className={`${styles.badge} ${ESTADO_CLASSES[b.estado]}`}
+                      >
                         {ESTADO_LABELS[b.estado]}
                       </span>
                     </td>
                     <td className={styles.num}>{formatCurrency(estBudget)}</td>
-                    <td className={`${styles.num} ${execBudget > estBudget ? brig.valueBad : ""}`}>
+                    <td
+                      className={`${styles.num} ${execBudget > estBudget ? brig.valueBad : ""}`}
+                    >
                       {formatCurrency(execBudget)}
                     </td>
                     <td className={styles.num}>{inscCount}</td>
+                    {/* biome-ignore lint/a11y/useKeyWithClickEvents: no es una interacción; solo evita que el clic en las acciones seleccione la fila */}
                     <td onClick={(e) => e.stopPropagation()}>
                       <div className={styles.rowActions}>
                         {can(PERMISSIONS.BRIGADAS_UPDATE) && (

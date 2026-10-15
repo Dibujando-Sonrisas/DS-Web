@@ -1,14 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Banknote, ChartColumn, Gift, Printer, Receipt, ShoppingCart } from "lucide-react";
+import {
+  Banknote,
+  ChartColumn,
+  Gift,
+  Printer,
+  Receipt,
+  ShoppingCart,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import EmptyState from "@/app/administracion/components/EmptyState";
+import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import StatCard from "@/app/administracion/components/StatCard";
+import { errorInfo, getLogger } from "@/lib/logger";
+import { supabase } from "@/lib/supabase";
 import admin from "@/styles/pages/admin.module.css";
 import styles from "@/styles/pages/reportes.module.css";
-import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { supabase } from "@/lib/supabase";
 import PrintReportDocument from "./PrintReportDocument";
+
+const logger = getLogger("reportes", "client");
 
 function formatHNL(value: number) {
   return `L. ${value.toLocaleString("es-HN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -74,12 +84,18 @@ export default function ResumenFinanciero() {
         }
 
         // Fallback optimizado por si la View aún no está creada en la base de datos
-        console.warn("View v_resumen_financiero_mensual no disponible, ejecutando fallback:", viewError?.message);
+        logger.warning("Report view unavailable, using fallback", {
+          ...errorInfo(viewError),
+          view: "v_resumen_financiero_mensual",
+        });
 
-        const [{ data: salesData }, { data: donationsData }] = await Promise.all([
-          supabase.from("ventas").select("id, total, fecha"),
-          supabase.from("donaciones_ropa").select("id, cantidad_prendas, fecha_donacion"),
-        ]);
+        const [{ data: salesData }, { data: donationsData }] =
+          await Promise.all([
+            supabase.from("ventas").select("id, total, fecha"),
+            supabase
+              .from("donaciones_ropa")
+              .select("id, cantidad_prendas, fecha_donacion"),
+          ]);
 
         const map: Record<string, FinancialPeriodData> = {};
 
@@ -133,7 +149,7 @@ export default function ResumenFinanciero() {
 
         setPeriodosData(list);
       } catch (err) {
-        console.error("Error al cargar datos financieros sintetizados:", err);
+        logger.error("Financial summary load failed", errorInfo(err));
       } finally {
         setLoading(false);
       }
@@ -149,16 +165,29 @@ export default function ResumenFinanciero() {
 
   // Filtrado por Año y Mes
   const periodosFiltrados = periodosData.filter((p) => {
-    if (anioFiltro !== "todos" && p.anio.toString() !== anioFiltro) return false;
+    if (anioFiltro !== "todos" && p.anio.toString() !== anioFiltro)
+      return false;
     if (mesFiltro !== "todos" && p.mes.toString() !== mesFiltro) return false;
     return true;
   });
 
   // Totales acumulados según el filtro aplicado
-  const totalVentas = periodosFiltrados.reduce((acc, p) => acc + p.total_ventas, 0);
-  const totalDonaciones = periodosFiltrados.reduce((acc, p) => acc + p.total_donaciones, 0);
-  const cantidadVentas = periodosFiltrados.reduce((acc, p) => acc + p.cantidad_ventas, 0);
-  const cantidadDonaciones = periodosFiltrados.reduce((acc, p) => acc + p.cantidad_donaciones, 0);
+  const totalVentas = periodosFiltrados.reduce(
+    (acc, p) => acc + p.total_ventas,
+    0
+  );
+  const totalDonaciones = periodosFiltrados.reduce(
+    (acc, p) => acc + p.total_donaciones,
+    0
+  );
+  const cantidadVentas = periodosFiltrados.reduce(
+    (acc, p) => acc + p.cantidad_ventas,
+    0
+  );
+  const cantidadDonaciones = periodosFiltrados.reduce(
+    (acc, p) => acc + p.cantidad_donaciones,
+    0
+  );
   const totalGeneral = totalVentas + totalDonaciones;
 
   // Etiqueta del período seleccionado
@@ -215,12 +244,19 @@ export default function ResumenFinanciero() {
         {/* Encabezado */}
         <div className={admin.sectionHead}>
           <div>
-            <h2 className={admin.sectionTitle}>Resumen Financiero por Período</h2>
+            <h2 className={admin.sectionTitle}>
+              Resumen Financiero por Período
+            </h2>
             <p className={admin.sectionLead}>
-              Consolidado ejecutivo mensual de ingresos por ventas de apoyo y donaciones recibidas.
+              Consolidado ejecutivo mensual de ingresos por ventas de apoyo y
+              donaciones recibidas.
             </p>
           </div>
-          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            onClick={handlePrint}
+          >
             <Printer aria-hidden="true" />
             Imprimir
           </button>
@@ -279,7 +315,10 @@ export default function ResumenFinanciero() {
         {loading ? (
           <div className={admin.statGrid}>
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className={`${admin.skeleton} ${admin.skeletonStat}`} />
+              <div
+                key={i}
+                className={`${admin.skeleton} ${admin.skeletonStat}`}
+              />
             ))}
           </div>
         ) : (
@@ -392,24 +431,44 @@ export default function ResumenFinanciero() {
                   <>
                     <tr>
                       <td className={admin.cellMain}>
-                        <span className={`${styles.dot} ${styles.barTeal}`} aria-hidden="true" />
+                        <span
+                          className={`${styles.dot} ${styles.barTeal}`}
+                          aria-hidden="true"
+                        />
                         Ventas de Apoyo
                       </td>
-                      <td className={admin.num}>{cantidadVentas.toLocaleString()} ventas</td>
-                      <td className={`${admin.num} ${styles.cellOk}`}>{formatHNL(totalVentas)}</td>
                       <td className={admin.num}>
-                        {totalGeneral > 0 ? ((totalVentas / totalGeneral) * 100).toFixed(1) : "0.0"}%
+                        {cantidadVentas.toLocaleString()} ventas
+                      </td>
+                      <td className={`${admin.num} ${styles.cellOk}`}>
+                        {formatHNL(totalVentas)}
+                      </td>
+                      <td className={admin.num}>
+                        {totalGeneral > 0
+                          ? ((totalVentas / totalGeneral) * 100).toFixed(1)
+                          : "0.0"}
+                        %
                       </td>
                     </tr>
                     <tr>
                       <td className={admin.cellMain}>
-                        <span className={`${styles.dot} ${styles.barYellow}`} aria-hidden="true" />
+                        <span
+                          className={`${styles.dot} ${styles.barYellow}`}
+                          aria-hidden="true"
+                        />
                         Donaciones Recibidas
                       </td>
-                      <td className={admin.num}>{cantidadDonaciones.toLocaleString()} donaciones</td>
-                      <td className={`${admin.num} ${styles.cellOk}`}>{formatHNL(totalDonaciones)}</td>
                       <td className={admin.num}>
-                        {totalGeneral > 0 ? ((totalDonaciones / totalGeneral) * 100).toFixed(1) : "0.0"}%
+                        {cantidadDonaciones.toLocaleString()} donaciones
+                      </td>
+                      <td className={`${admin.num} ${styles.cellOk}`}>
+                        {formatHNL(totalDonaciones)}
+                      </td>
+                      <td className={admin.num}>
+                        {totalGeneral > 0
+                          ? ((totalDonaciones / totalGeneral) * 100).toFixed(1)
+                          : "0.0"}
+                        %
                       </td>
                     </tr>
                   </>
@@ -418,9 +477,12 @@ export default function ResumenFinanciero() {
                   <tr className={styles.totalRow}>
                     <td>TOTAL GENERAL DE INGRESOS</td>
                     <td className={admin.num}>
-                      {(cantidadVentas + cantidadDonaciones).toLocaleString()} registros
+                      {(cantidadVentas + cantidadDonaciones).toLocaleString()}{" "}
+                      registros
                     </td>
-                    <td className={`${admin.num} ${styles.cellOk}`}>{formatHNL(totalGeneral)}</td>
+                    <td className={`${admin.num} ${styles.cellOk}`}>
+                      {formatHNL(totalGeneral)}
+                    </td>
                     <td className={admin.num}>100%</td>
                   </tr>
                 )}
@@ -440,19 +502,35 @@ export default function ResumenFinanciero() {
             { label: "Frecuencia", value: "Mensual / Consolidado" },
           ]}
           summaryCards={[
-            { label: "Total General de Ingresos", value: formatHNL(totalGeneral) },
-            { label: "Total Recaudado por Ventas", value: formatHNL(totalVentas) },
-            { label: "Total Recibido por Donaciones", value: formatHNL(totalDonaciones) },
-            { label: "Total Transacciones", value: (cantidadVentas + cantidadDonaciones).toString() },
+            {
+              label: "Total General de Ingresos",
+              value: formatHNL(totalGeneral),
+            },
+            {
+              label: "Total Recaudado por Ventas",
+              value: formatHNL(totalVentas),
+            },
+            {
+              label: "Total Recibido por Donaciones",
+              value: formatHNL(totalDonaciones),
+            },
+            {
+              label: "Total Transacciones",
+              value: (cantidadVentas + cantidadDonaciones).toString(),
+            },
           ]}
           footerNote="Consolidado de ingresos financieros — Fundación Dibujando Sonrisas"
         >
           {/* Gráfico en Impresión */}
           <div className={styles.printGraph}>
-            <h3 className={styles.printGraphTitle}>Comparativo de Ingresos Financieros</h3>
+            <h3 className={styles.printGraphTitle}>
+              Comparativo de Ingresos Financieros
+            </h3>
             <div className={styles.printGraphArea}>
               {loading ? (
-                <div className={styles.printGraphEmpty}>Cargando gráfico...</div>
+                <div className={styles.printGraphEmpty}>
+                  Cargando gráfico...
+                </div>
               ) : totalGeneral === 0 ? (
                 <div className={styles.printGraphEmpty}>
                   No hay ingresos registrados en el período.
@@ -466,12 +544,16 @@ export default function ResumenFinanciero() {
                     );
                     return (
                       <div key={item.id} className={styles.barCol}>
-                        <span className={styles.printBarValue}>{formatHNL(item.monto)}</span>
+                        <span className={styles.printBarValue}>
+                          {formatHNL(item.monto)}
+                        </span>
                         <div
                           className={`${styles.printBar} ${item.bar}`}
                           style={{ height: `${alturaPorcentaje}%` }}
                         />
-                        <span className={styles.printBarLabel}>{item.label}</span>
+                        <span className={styles.printBarLabel}>
+                          {item.label}
+                        </span>
                       </div>
                     );
                   })}
@@ -485,8 +567,12 @@ export default function ResumenFinanciero() {
               <tr>
                 <th className={`${styles.w8} ${styles.printCenter}`}>#</th>
                 <th className={styles.w42}>Fuente de Ingreso</th>
-                <th className={`${styles.w22} ${styles.printRight}`}>Cantidad de Registros</th>
-                <th className={`${styles.w28} ${styles.printRight}`}>Monto Recaudado (HNL)</th>
+                <th className={`${styles.w22} ${styles.printRight}`}>
+                  Cantidad de Registros
+                </th>
+                <th className={`${styles.w28} ${styles.printRight}`}>
+                  Monto Recaudado (HNL)
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -507,20 +593,28 @@ export default function ResumenFinanciero() {
                   <tr>
                     <td className={styles.printCenter}>1</td>
                     <td className={styles.printStrong}>Ventas de Apoyo</td>
-                    <td className={`${styles.printRight} ${styles.printStrong}`}>
+                    <td
+                      className={`${styles.printRight} ${styles.printStrong}`}
+                    >
                       {cantidadVentas.toLocaleString()} ventas
                     </td>
-                    <td className={`${styles.printRight} ${styles.printStrong}`}>
+                    <td
+                      className={`${styles.printRight} ${styles.printStrong}`}
+                    >
                       {formatHNL(totalVentas)}
                     </td>
                   </tr>
                   <tr>
                     <td className={styles.printCenter}>2</td>
                     <td className={styles.printStrong}>Donaciones Recibidas</td>
-                    <td className={`${styles.printRight} ${styles.printStrong}`}>
+                    <td
+                      className={`${styles.printRight} ${styles.printStrong}`}
+                    >
                       {cantidadDonaciones.toLocaleString()} donaciones
                     </td>
-                    <td className={`${styles.printRight} ${styles.printStrong}`}>
+                    <td
+                      className={`${styles.printRight} ${styles.printStrong}`}
+                    >
                       {formatHNL(totalDonaciones)}
                     </td>
                   </tr>
@@ -530,9 +624,12 @@ export default function ResumenFinanciero() {
                 <tr className={styles.printTotalRow}>
                   <td colSpan={2}>TOTAL GENERAL DE INGRESOS DEL PERÍODO</td>
                   <td className={styles.printRight}>
-                    {(cantidadVentas + cantidadDonaciones).toLocaleString()} registros
+                    {(cantidadVentas + cantidadDonaciones).toLocaleString()}{" "}
+                    registros
                   </td>
-                  <td className={styles.printRight}>{formatHNL(totalGeneral)}</td>
+                  <td className={styles.printRight}>
+                    {formatHNL(totalGeneral)}
+                  </td>
                 </tr>
               )}
             </tbody>

@@ -1,14 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Activity, ChartColumn, MapPin, Printer, Tent, Users } from "lucide-react";
+import {
+  Activity,
+  ChartColumn,
+  MapPin,
+  Printer,
+  Tent,
+  Users,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import EmptyState from "@/app/administracion/components/EmptyState";
+import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import StatCard from "@/app/administracion/components/StatCard";
+import { errorInfo, getLogger } from "@/lib/logger";
+import { supabase } from "@/lib/supabase";
 import admin from "@/styles/pages/admin.module.css";
 import styles from "@/styles/pages/reportes.module.css";
-import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { supabase } from "@/lib/supabase";
 import PrintReportDocument from "./PrintReportDocument";
+
+const logger = getLogger("reportes", "client");
 
 export interface BrigadaAnualData {
   anio: number;
@@ -22,7 +32,9 @@ export default function ResumenBrigadas() {
   const { role } = usePermissions();
   const userRole = role.nombre;
   const [anio, setAnio] = useState<string>("todos");
-  const [brigadasAnuales, setBrigadasAnuales] = useState<BrigadaAnualData[]>([]);
+  const [brigadasAnuales, setBrigadasAnuales] = useState<BrigadaAnualData[]>(
+    []
+  );
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -41,30 +53,46 @@ export default function ResumenBrigadas() {
             total_brigadas: Number(row.total_brigadas || 0),
             comunidades_atendidas: Number(row.comunidades_atendidas || 0),
             total_pacientes: Number(row.total_pacientes || 0),
-            promedio_pacientes_por_brigada: Number(row.promedio_pacientes_por_brigada || 0),
+            promedio_pacientes_por_brigada: Number(
+              row.promedio_pacientes_por_brigada || 0
+            ),
           }));
           setBrigadasAnuales(formatted);
           return;
         }
 
         // Fallback optimizado por si la View aún no ha sido aplicada en la base de datos
-        console.warn("View v_resumen_brigadas_anual no disponible, ejecutando fallback:", viewError?.message);
+        logger.warning("Report view unavailable, using fallback", {
+          ...errorInfo(viewError),
+          view: "v_resumen_brigadas_anual",
+        });
 
-        const [
-          { data: brigadasData },
-          { data: patientsData },
-        ] = await Promise.all([
-          supabase.from("brigadas").select("id, fecha_brigada, lugar, municipio"),
-          supabase.from("pacientes").select("id, brigada_id"),
-        ]);
+        const [{ data: brigadasData }, { data: patientsData }] =
+          await Promise.all([
+            supabase
+              .from("brigadas")
+              .select("id, fecha_brigada, lugar, municipio"),
+            supabase.from("pacientes").select("id, brigada_id"),
+          ]);
 
-        const map: Record<number, { brigadas: Set<string>; comunidades: Set<string>; pacientesCount: number }> = {};
+        const map: Record<
+          number,
+          {
+            brigadas: Set<string>;
+            comunidades: Set<string>;
+            pacientesCount: number;
+          }
+        > = {};
 
         (brigadasData || []).forEach((b: any) => {
           if (!b.fecha_brigada) return;
           const yr = new Date(b.fecha_brigada).getFullYear();
           if (!map[yr]) {
-            map[yr] = { brigadas: new Set(), comunidades: new Set(), pacientesCount: 0 };
+            map[yr] = {
+              brigadas: new Set(),
+              comunidades: new Set(),
+              pacientesCount: 0,
+            };
           }
           map[yr].brigadas.add(b.id);
           const com = (b.municipio || b.lugar || "").trim();
@@ -85,22 +113,25 @@ export default function ResumenBrigadas() {
           }
         });
 
-        const list: BrigadaAnualData[] = Object.keys(map).map((yrStr) => {
-          const yr = Number(yrStr);
-          const tBrig = map[yr].brigadas.size;
-          const tPac = map[yr].pacientesCount;
-          return {
-            anio: yr,
-            total_brigadas: tBrig,
-            comunidades_atendidas: map[yr].comunidades.size,
-            total_pacientes: tPac,
-            promedio_pacientes_por_brigada: tBrig > 0 ? Number((tPac / tBrig).toFixed(1)) : 0,
-          };
-        }).sort((a, b) => b.anio - a.anio);
+        const list: BrigadaAnualData[] = Object.keys(map)
+          .map((yrStr) => {
+            const yr = Number(yrStr);
+            const tBrig = map[yr].brigadas.size;
+            const tPac = map[yr].pacientesCount;
+            return {
+              anio: yr,
+              total_brigadas: tBrig,
+              comunidades_atendidas: map[yr].comunidades.size,
+              total_pacientes: tPac,
+              promedio_pacientes_por_brigada:
+                tBrig > 0 ? Number((tPac / tBrig).toFixed(1)) : 0,
+            };
+          })
+          .sort((a, b) => b.anio - a.anio);
 
         setBrigadasAnuales(list);
       } catch (err) {
-        console.error("Error loading brigadas report:", err);
+        logger.error("Brigade summary load failed", errorInfo(err));
       } finally {
         setLoading(false);
       }
@@ -120,10 +151,20 @@ export default function ResumenBrigadas() {
   });
 
   // Totales acumulados
-  const totalBrigadas = datosFiltrados.reduce((acc, b) => acc + b.total_brigadas, 0);
-  const comunidadesAtendidas = datosFiltrados.reduce((acc, b) => acc + b.comunidades_atendidas, 0);
-  const totalPacientes = datosFiltrados.reduce((acc, b) => acc + b.total_pacientes, 0);
-  const promedioPacientes = totalBrigadas > 0 ? (totalPacientes / totalBrigadas).toFixed(1) : "0";
+  const totalBrigadas = datosFiltrados.reduce(
+    (acc, b) => acc + b.total_brigadas,
+    0
+  );
+  const comunidadesAtendidas = datosFiltrados.reduce(
+    (acc, b) => acc + b.comunidades_atendidas,
+    0
+  );
+  const totalPacientes = datosFiltrados.reduce(
+    (acc, b) => acc + b.total_pacientes,
+    0
+  );
+  const promedioPacientes =
+    totalBrigadas > 0 ? (totalPacientes / totalBrigadas).toFixed(1) : "0";
 
   const displayPeriodo = anio === "todos" ? "Todos los años" : `Año ${anio}`;
 
@@ -175,12 +216,19 @@ export default function ResumenBrigadas() {
         {/* Encabezado */}
         <div className={admin.sectionHead}>
           <div>
-            <h2 className={admin.sectionTitle}>Resumen de Brigadas Realizadas</h2>
+            <h2 className={admin.sectionTitle}>
+              Resumen de Brigadas Realizadas
+            </h2>
             <p className={admin.sectionLead}>
-              Informe sintetizado anual del impacto y cobertura de las brigadas ejecutadas.
+              Informe sintetizado anual del impacto y cobertura de las brigadas
+              ejecutadas.
             </p>
           </div>
-          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            onClick={handlePrint}
+          >
             <Printer aria-hidden="true" />
             Imprimir
           </button>
@@ -218,7 +266,10 @@ export default function ResumenBrigadas() {
         {loading ? (
           <div className={admin.statGrid}>
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className={`${admin.skeleton} ${admin.skeletonStat}`} />
+              <div
+                key={i}
+                className={`${admin.skeleton} ${admin.skeletonStat}`}
+              />
             ))}
           </div>
         ) : (
@@ -285,7 +336,9 @@ export default function ResumenBrigadas() {
                           className={`${styles.chartBarElement} ${item.bar}`}
                           style={{ height: `${alturaPorcentaje}%` }}
                         />
-                        <span className={styles.barLabel}>{item.nombreCorto}</span>
+                        <span className={styles.barLabel}>
+                          {item.nombreCorto}
+                        </span>
                       </div>
                     );
                   })}
@@ -320,7 +373,10 @@ export default function ResumenBrigadas() {
                   <>
                     <tr>
                       <td className={admin.cellMain}>
-                        <span className={`${styles.dot} ${styles.barTeal}`} aria-hidden="true" />
+                        <span
+                          className={`${styles.dot} ${styles.barTeal}`}
+                          aria-hidden="true"
+                        />
                         Cantidad Total de Brigadas Realizadas
                       </td>
                       <td className={`${admin.num} ${admin.cellMain}`}>
@@ -329,7 +385,10 @@ export default function ResumenBrigadas() {
                     </tr>
                     <tr>
                       <td className={admin.cellMain}>
-                        <span className={`${styles.dot} ${styles.barYellow}`} aria-hidden="true" />
+                        <span
+                          className={`${styles.dot} ${styles.barYellow}`}
+                          aria-hidden="true"
+                        />
                         Cantidad de Comunidades Atendidas
                       </td>
                       <td className={`${admin.num} ${admin.cellMain}`}>
@@ -338,7 +397,10 @@ export default function ResumenBrigadas() {
                     </tr>
                     <tr>
                       <td className={admin.cellMain}>
-                        <span className={`${styles.dot} ${styles.barRed}`} aria-hidden="true" />
+                        <span
+                          className={`${styles.dot} ${styles.barRed}`}
+                          aria-hidden="true"
+                        />
                         Cantidad Total de Pacientes Registrados
                       </td>
                       <td className={`${admin.num} ${admin.cellMain}`}>
@@ -347,7 +409,10 @@ export default function ResumenBrigadas() {
                     </tr>
                     <tr>
                       <td className={admin.cellMain}>
-                        <span className={`${styles.dot} ${styles.barGray}`} aria-hidden="true" />
+                        <span
+                          className={`${styles.dot} ${styles.barGray}`}
+                          aria-hidden="true"
+                        />
                         Promedio de Pacientes por Brigada
                       </td>
                       <td className={`${admin.num} ${admin.cellMain}`}>
@@ -372,20 +437,33 @@ export default function ResumenBrigadas() {
             { label: "Frecuencia", value: "Anual / Consolidado" },
           ]}
           summaryCards={[
-            { label: "Brigadas Realizadas", value: totalBrigadas.toLocaleString() },
-            { label: "Comunidades Atendidas", value: comunidadesAtendidas.toLocaleString() },
-            { label: "Pacientes Registrados", value: totalPacientes.toLocaleString() },
+            {
+              label: "Brigadas Realizadas",
+              value: totalBrigadas.toLocaleString(),
+            },
+            {
+              label: "Comunidades Atendidas",
+              value: comunidadesAtendidas.toLocaleString(),
+            },
+            {
+              label: "Pacientes Registrados",
+              value: totalPacientes.toLocaleString(),
+            },
             { label: "Promedio Pacientes/Brigada", value: promedioPacientes },
           ]}
           footerNote="Reporte de impacto y cobertura — Fundación Dibujando Sonrisas"
         >
           {/* Gráfico de Barras en Impresión */}
           <div className={styles.printGraph}>
-            <h3 className={styles.printGraphTitle}>Impacto de Brigadas Realizadas</h3>
+            <h3 className={styles.printGraphTitle}>
+              Impacto de Brigadas Realizadas
+            </h3>
 
             <div className={styles.printGraphArea}>
               {loading ? (
-                <div className={styles.printGraphEmpty}>Cargando gráfico...</div>
+                <div className={styles.printGraphEmpty}>
+                  Cargando gráfico...
+                </div>
               ) : totalBrigadas === 0 ? (
                 <div className={styles.printGraphEmpty}>
                   No hay brigadas registradas para este periodo.
@@ -399,12 +477,16 @@ export default function ResumenBrigadas() {
                     );
                     return (
                       <div key={item.id} className={styles.barCol}>
-                        <span className={styles.printBarValue}>{item.valor.toLocaleString()}</span>
+                        <span className={styles.printBarValue}>
+                          {item.valor.toLocaleString()}
+                        </span>
                         <div
                           className={`${styles.printBar} ${item.bar}`}
                           style={{ height: `${alturaPorcentaje}%` }}
                         />
-                        <span className={styles.printBarLabel}>{item.nombreCorto}</span>
+                        <span className={styles.printBarLabel}>
+                          {item.nombreCorto}
+                        </span>
                       </div>
                     );
                   })}
@@ -418,7 +500,9 @@ export default function ResumenBrigadas() {
               <tr>
                 <th className={`${styles.w8} ${styles.printCenter}`}>#</th>
                 <th className={styles.w62}>Métrica de Cobertura / Impacto</th>
-                <th className={`${styles.w30} ${styles.printRight}`}>Valor Consolidado</th>
+                <th className={`${styles.w30} ${styles.printRight}`}>
+                  Valor Consolidado
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -438,29 +522,45 @@ export default function ResumenBrigadas() {
                 <>
                   <tr>
                     <td className={styles.printCenter}>1</td>
-                    <td className={styles.printStrong}>Cantidad Total de Brigadas Realizadas</td>
-                    <td className={`${styles.printRight} ${styles.printStrong}`}>
+                    <td className={styles.printStrong}>
+                      Cantidad Total de Brigadas Realizadas
+                    </td>
+                    <td
+                      className={`${styles.printRight} ${styles.printStrong}`}
+                    >
                       {totalBrigadas.toLocaleString()} brigadas
                     </td>
                   </tr>
                   <tr>
                     <td className={styles.printCenter}>2</td>
-                    <td className={styles.printStrong}>Cantidad de Comunidades Atendidas</td>
-                    <td className={`${styles.printRight} ${styles.printStrong}`}>
+                    <td className={styles.printStrong}>
+                      Cantidad de Comunidades Atendidas
+                    </td>
+                    <td
+                      className={`${styles.printRight} ${styles.printStrong}`}
+                    >
                       {comunidadesAtendidas.toLocaleString()} comunidades
                     </td>
                   </tr>
                   <tr>
                     <td className={styles.printCenter}>3</td>
-                    <td className={styles.printStrong}>Cantidad Total de Pacientes Registrados</td>
-                    <td className={`${styles.printRight} ${styles.printStrong}`}>
+                    <td className={styles.printStrong}>
+                      Cantidad Total de Pacientes Registrados
+                    </td>
+                    <td
+                      className={`${styles.printRight} ${styles.printStrong}`}
+                    >
                       {totalPacientes.toLocaleString()} pacientes
                     </td>
                   </tr>
                   <tr>
                     <td className={styles.printCenter}>4</td>
-                    <td className={styles.printStrong}>Promedio de Pacientes por Brigada</td>
-                    <td className={`${styles.printRight} ${styles.printStrong}`}>
+                    <td className={styles.printStrong}>
+                      Promedio de Pacientes por Brigada
+                    </td>
+                    <td
+                      className={`${styles.printRight} ${styles.printStrong}`}
+                    >
                       {promedioPacientes} pacientes/brigada
                     </td>
                   </tr>

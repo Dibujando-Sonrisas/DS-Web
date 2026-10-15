@@ -1,11 +1,15 @@
 "use server";
 
 import { z } from "zod";
+import {
+  sendNewVolunteerRequest,
+  sendReceivedVolunteerRequest,
+} from "@/lib/email/emails";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { emailSchema } from "@/lib/validation/validationUtils";
-import { enviarCorreo } from "@/lib/email/enviarCorreo";
-import { enviarAviso } from "@/lib/email/avisos";
-import { correoAvisoInscripcion, correoSolicitudRecibida } from "@/lib/email/voluntarios";
+
+const logger = getLogger("voluntariado");
 
 const opcional = (max: number) =>
   z
@@ -47,7 +51,9 @@ export async function inscribirVoluntarioAction(
     .insert({ ...parsed.data, estado: "pendiente" });
   // índices uq_inscripciones_correo / _telefono: una vez por brigada y una como general
   if (error?.code === "23505") {
-    const dato = error.message.includes("telefono") ? "este teléfono" : "este correo";
+    const dato = error.message.includes("telefono")
+      ? "este teléfono"
+      : "este correo";
     return {
       error: parsed.data.brigada_id
         ? `Ya hay una inscripción a esta brigada con ${dato}.`
@@ -55,28 +61,45 @@ export async function inscribirVoluntarioAction(
     };
   }
   if (error) {
-    console.error("Error al guardar la solicitud de voluntariado:", error);
+    logger.error("Volunteer request save failed", errorInfo(error));
     return { error: "Hubo un error al enviar tu solicitud. Intenta de nuevo." };
   }
 
+  logger.info("Volunteer request received", {
+    brigadaId: parsed.data.brigada_id,
+  });
+
   // la solicitud ya quedó guardada: si un correo falla, no tiene que reintentar
-  const { data: brigada } = parsed.data.brigada_id
+  const { data: brigade } = parsed.data.brigada_id
     ? await supabase
         .from("brigadas")
-        .select("nombre, fecha_brigada, lugar")
+        .select("name:nombre, date:fecha_brigada, location:lugar")
         .eq("id", parsed.data.brigada_id)
         .maybeSingle()
     : { data: null };
-  const solicitud = { ...parsed.data, brigada };
+  const request = {
+    fullName: parsed.data.nombre_completo,
+    email: parsed.data.correo,
+    phone: parsed.data.telefono,
+    areaOfInterest: parsed.data.area_interes,
+    brigade,
+  };
   const envios = await Promise.allSettled([
-    enviarCorreo({ to: [solicitud.correo], ...correoSolicitudRecibida(solicitud) }),
-    enviarAviso("voluntario_inscripcion", {
-      replyTo: solicitud.correo,
-      ...correoAvisoInscripcion(solicitud),
+    sendReceivedVolunteerRequest(request),
+    sendNewVolunteerRequest({
+      ...request,
+      brigadeId: parsed.data.brigada_id,
+      residence: parsed.data.lugar,
+      profession: parsed.data.profesion,
+      comments: parsed.data.comentarios,
     }),
   ]);
-  for (const e of envios) {
-    if (e.status === "rejected") console.error("No se pudo enviar un correo de la solicitud de voluntariado:", e.reason);
+  for (const [i, e] of envios.entries()) {
+    if (e.status === "rejected")
+      logger.warning("Volunteer request email failed", {
+        ...errorInfo(e.reason),
+        correo: i === 0 ? "confirmacion" : "aviso",
+      });
   }
   return { error: null };
 }

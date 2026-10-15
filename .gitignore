@@ -55,3 +55,4 @@ next-env.d.ts
 #AI files
 .claude
 .impeccable
+/graphify-out

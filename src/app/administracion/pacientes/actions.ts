@@ -1,28 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { assertPermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { assertPermission } from "@/lib/auth/session";
 import {
-  getPacientesDashboard as getPacientesDashboardDB,
-  getPacientesAtendidos as getPacientesAtendidosDB,
-  getPacienteDetalle as getPacienteDetalleDB,
-  getProfesionalesConsulta as getProfesionalesConsultaDB,
-  registrarPaciente as registrarPacienteDB,
-  registrarPreclinica as registrarPreclinicaDB,
-  registrarConsulta as registrarConsultaDB,
-  tomarConsulta as tomarConsultaDB,
-  liberarConsulta as liberarConsultaDB,
-  actualizarPaciente as actualizarPacienteDB,
-  actualizarSignos as actualizarSignosDB,
   actualizarConsulta as actualizarConsultaDB,
   actualizarDiagnosticos as actualizarDiagnosticosDB,
+  actualizarPaciente as actualizarPacienteDB,
+  actualizarSignos as actualizarSignosDB,
   deletePaciente as deletePacienteDB,
+  getPacienteDetalle as getPacienteDetalleDB,
+  getPacientesAtendidos as getPacientesAtendidosDB,
+  getPacientesDashboard as getPacientesDashboardDB,
+  getProfesionalesConsulta as getProfesionalesConsultaDB,
   type InsertMedicamentoConsulta,
+  liberarConsulta as liberarConsultaDB,
+  registrarConsulta as registrarConsultaDB,
+  registrarPaciente as registrarPacienteDB,
+  registrarPreclinica as registrarPreclinicaDB,
+  tomarConsulta as tomarConsultaDB,
 } from "@/lib/db/pacientes";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import {
   assertValido,
+  type Datos,
   limpiarConsulta,
   limpiarPaciente,
   limpiarSignos,
@@ -31,7 +32,6 @@ import {
   validarDiagnosticos,
   validarPaciente,
   validarSignos,
-  type Datos,
 } from "@/lib/validation/expediente";
 
 async function getAuthedSupabase() {
@@ -70,19 +70,27 @@ export async function getProfesionalesConsultaAction() {
 
 export async function registrarPacienteAction(paciente: Datos) {
   await assertPermission(PERMISSIONS.PACIENTES_CREATE);
-  if (!paciente.brigada_id) throw new Error("Debe seleccionar una brigada activa obligatoriamente.");
+  if (!paciente.brigada_id)
+    throw new Error("Debe seleccionar una brigada activa obligatoriamente.");
   assertValido(validarPaciente(paciente));
   const supabase = await getAuthedSupabase();
   // el código lo genera registrarPaciente a partir de la brigada
   const result = await registrarPacienteDB(
-    { ...limpiarPaciente(paciente), brigada_id: String(paciente.brigada_id), codigo: "" },
+    {
+      ...limpiarPaciente(paciente),
+      brigada_id: String(paciente.brigada_id),
+      codigo: "",
+    },
     supabase
   );
   revalidatePath("/administracion/pacientes");
   return result;
 }
 
-export async function registrarPreclinicaAction(pacienteId: string, signos: Datos) {
+export async function registrarPreclinicaAction(
+  pacienteId: string,
+  signos: Datos
+) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertValido(validarSignos(signos));
   const supabase = await getAuthedSupabase();
@@ -112,7 +120,10 @@ export async function registrarConsultaAction(
   medicamentos: Partial<InsertMedicamentoConsulta>[]
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
-  assertValido({ ...validarConsulta(consulta), ...validarDiagnosticos(diagnosticos) });
+  assertValido({
+    ...validarConsulta(consulta),
+    ...validarDiagnosticos(diagnosticos),
+  });
   const supabase = await getAuthedSupabase();
   await registrarConsultaDB(
     pacienteId,
@@ -126,7 +137,10 @@ export async function registrarConsultaAction(
 
 // Correcciones desde la vista del expediente: mismas reglas que al registrar
 
-export async function actualizarPacienteAction(pacienteId: string, datos: Datos) {
+export async function actualizarPacienteAction(
+  pacienteId: string,
+  datos: Datos
+) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertValido(validarPaciente(datos));
   const supabase = await getAuthedSupabase();
@@ -141,7 +155,10 @@ export async function actualizarSignosAction(pacienteId: string, datos: Datos) {
   await actualizarSignosDB(pacienteId, limpiarSignos(datos), supabase);
 }
 
-export async function actualizarConsultaAction(consultaId: string, datos: Datos) {
+export async function actualizarConsultaAction(
+  consultaId: string,
+  datos: Datos
+) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertValido(validarConsulta(datos));
   const supabase = await getAuthedSupabase();
@@ -149,11 +166,18 @@ export async function actualizarConsultaAction(consultaId: string, datos: Datos)
   revalidatePath("/administracion/pacientes");
 }
 
-export async function actualizarDiagnosticosAction(consultaId: string, diagnosticos: string) {
+export async function actualizarDiagnosticosAction(
+  consultaId: string,
+  diagnosticos: string
+) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertValido(validarDiagnosticos(diagnosticos));
   const supabase = await getAuthedSupabase();
-  await actualizarDiagnosticosDB(consultaId, listaDiagnosticos(diagnosticos), supabase);
+  await actualizarDiagnosticosDB(
+    consultaId,
+    listaDiagnosticos(diagnosticos),
+    supabase
+  );
 }
 
 export async function deletePacienteAction(id: string) {

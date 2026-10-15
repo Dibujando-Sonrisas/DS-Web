@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Check, Inbox, Phone, X } from "lucide-react";
-import { aceptarInscripcion, rechazarInscripcion } from "@/app/administracion/brigadas/actions";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import {
+  aceptarInscripcion,
+  rechazarInscripcion,
+} from "@/app/administracion/brigadas/actions";
+import styles from "@/styles/pages/admin.module.css";
 import ConfirmDialog from "../ConfirmDialog";
 import EmptyState from "../EmptyState";
-import styles from "@/styles/pages/admin.module.css";
 
 export type SolicitudItem = {
   id: string;
@@ -30,7 +33,8 @@ export default function SolicitudesWidgetClient({
   initialSolicitudes,
 }: SolicitudesWidgetClientProps) {
   const router = useRouter();
-  const [solicitudes, setSolicitudes] = useState<SolicitudItem[]>(initialSolicitudes);
+  const [solicitudes, setSolicitudes] =
+    useState<SolicitudItem[]>(initialSolicitudes);
   const [isPending, startTransition] = useTransition();
   const [processingId, setProcessingId] = useState<string | null>(null);
   // solicitud que espera confirmación antes de rechazarse
@@ -117,8 +121,12 @@ export default function SolicitudesWidgetClient({
               return (
                 <tr key={sol.id}>
                   <td>
-                    <span className={styles.cellMain}>{sol.nombre_completo}</span>
-                    {sol.profesion && <span className={styles.cellSub}>{sol.profesion}</span>}
+                    <span className={styles.cellMain}>
+                      {sol.nombre_completo}
+                    </span>
+                    {sol.profesion && (
+                      <span className={styles.cellSub}>{sol.profesion}</span>
+                    )}
                   </td>
                   <td>
                     {sol.correo}
@@ -133,9 +141,13 @@ export default function SolicitudesWidgetClient({
                       {sol.area_interes || "Sin área"}
                     </span>
                   </td>
-                  <td className={styles.nowrap}>{formatDate(sol.created_at)}</td>
+                  <td className={styles.nowrap}>
+                    {formatDate(sol.created_at)}
+                  </td>
                   <td>
-                    <span className={`${styles.badge} ${ESTADO_CLASSES[estadoStr] ?? styles.badgeWarning}`}>
+                    <span
+                      className={`${styles.badge} ${ESTADO_CLASSES[estadoStr] ?? styles.badgeWarning}`}
+                    >
                       {estadoStr.charAt(0).toUpperCase() + estadoStr.slice(1)}
                     </span>
                   </td>
@@ -162,7 +174,9 @@ export default function SolicitudesWidgetClient({
                         </button>
                       </div>
                     ) : (
-                      <div className={`${styles.rowActions} ${styles.muted}`}>Revisado</div>
+                      <div className={`${styles.rowActions} ${styles.muted}`}>
+                        Revisado
+                      </div>
                     )}
                   </td>
                 </tr>

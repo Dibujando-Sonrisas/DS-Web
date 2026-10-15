@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
 import type { LoteMedicamento } from "@/lib/db/inventario";
 import styles from "@/styles/pages/admin.module.css";
 
@@ -22,7 +23,13 @@ interface LoteFormProps {
   children?: React.ReactNode;
 }
 
-export function LoteForm({ initialData, onSubmit, isLoading, onCancel, children }: LoteFormProps) {
+export function LoteForm({
+  initialData,
+  onSubmit,
+  isLoading,
+  onCancel,
+  children,
+}: LoteFormProps) {
   const [formData, setFormData] = useState<LoteFormValues>({
     numero_lote: "",
     fabricante: "",
@@ -51,7 +58,11 @@ export function LoteForm({ initialData, onSubmit, isLoading, onCancel, children 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.numero_lote || !formData.fecha_vencimiento || formData.cantidad_actual < 0) {
+    if (
+      !formData.numero_lote ||
+      !formData.fecha_vencimiento ||
+      formData.cantidad_actual < 0
+    ) {
       alert("Por favor completa los campos requeridos correctamente.");
       return;
     }
@@ -67,7 +78,10 @@ export function LoteForm({ initialData, onSubmit, isLoading, onCancel, children 
         <div className="form-grid">
           <label className="form-field">
             <span className="form-label">
-              Número de Lote <span className="form-required" aria-hidden="true">*</span>
+              Número de Lote{" "}
+              <span className="form-required" aria-hidden="true">
+                *
+              </span>
             </span>
             <input
               className="form-input"
@@ -94,7 +108,10 @@ export function LoteForm({ initialData, onSubmit, isLoading, onCancel, children 
 
           <label className="form-field">
             <span className="form-label">
-              Fecha de Vencimiento <span className="form-required" aria-hidden="true">*</span>
+              Fecha de Vencimiento{" "}
+              <span className="form-required" aria-hidden="true">
+                *
+              </span>
             </span>
             <input
               className="form-input"
@@ -108,7 +125,10 @@ export function LoteForm({ initialData, onSubmit, isLoading, onCancel, children 
 
           <label className="form-field">
             <span className="form-label">
-              Cantidad Actual <span className="form-required" aria-hidden="true">*</span>
+              Cantidad Actual{" "}
+              <span className="form-required" aria-hidden="true">
+                *
+              </span>
             </span>
             <input
               className="form-input"
@@ -130,7 +150,11 @@ export function LoteForm({ initialData, onSubmit, isLoading, onCancel, children 
             Volver a Lotes
           </button>
         )}
-        <button type="submit" className="btn-primary btn-sm" disabled={isLoading}>
+        <button
+          type="submit"
+          className="btn-primary btn-sm"
+          disabled={isLoading}
+        >
           {isLoading && <LoaderCircle className="spin" aria-hidden="true" />}
           {isLoading ? "Guardando..." : "Guardar Lote"}
         </button>

@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { RolResumen } from "@/lib/auth/session";
+import { createContext, type ReactNode, useContext, useMemo } from "react";
 import { canAccessRoute, type Permission } from "@/lib/auth/permissions";
+import type { RolResumen } from "@/lib/auth/session";
 
 type PermissionsContextValue = {
   role: RolResumen;
@@ -48,7 +48,7 @@ export function PermissionsProvider({
 export function usePermissions() {
   const ctx = useContext(PermissionsContext);
   if (!ctx) {
-    throw new Error("usePermissions debe usarse dentro de PermissionsProvider");
+    throw new Error("usePermissions must be used within PermissionsProvider.");
   }
   return ctx;
 }

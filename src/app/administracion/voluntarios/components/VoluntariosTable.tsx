@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Link from "next/link";
 import { Eye } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import StatusBadge from "@/app/administracion/components/StatusBadge";
 import UserAvatar from "@/app/administracion/components/UserAvatar";
 import styles from "@/styles/pages/admin.module.css";
@@ -25,14 +25,16 @@ type VoluntariosTableProps = {
   voluntarios: VoluntarioRow[];
 };
 
-export default function VoluntariosTable({ voluntarios }: VoluntariosTableProps) {
+export default function VoluntariosTable({
+  voluntarios,
+}: VoluntariosTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSpecialty, setFilterSpecialty] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
   const specialties = useMemo(() => {
     const specs = new Map();
-    voluntarios.forEach(v => {
+    voluntarios.forEach((v) => {
       if (v.especialidades) {
         specs.set(v.especialidades.id, v.especialidades.nombre);
       }
@@ -42,11 +44,15 @@ export default function VoluntariosTable({ voluntarios }: VoluntariosTableProps)
 
   const filtered = useMemo(() => {
     return voluntarios.filter((v) => {
-      const matchSearch = v.nombre_completo?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchSpecialty = filterSpecialty === "all" || v.especialidades?.id === filterSpecialty;
-      const matchStatus = filterStatus === "all" 
-        || (filterStatus === "active" && v.activo)
-        || (filterStatus === "inactive" && !v.activo);
+      const matchSearch = v.nombre_completo
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchSpecialty =
+        filterSpecialty === "all" || v.especialidades?.id === filterSpecialty;
+      const matchStatus =
+        filterStatus === "all" ||
+        (filterStatus === "active" && v.activo) ||
+        (filterStatus === "inactive" && !v.activo);
 
       return matchSearch && matchSpecialty && matchStatus;
     });
@@ -56,7 +62,8 @@ export default function VoluntariosTable({ voluntarios }: VoluntariosTableProps)
     <section className={styles.panel} aria-labelledby="listado-voluntarios">
       <div className={styles.panelHeader}>
         <h2 id="listado-voluntarios" className={styles.panelTitle}>
-          Voluntarios Encontrados <span className={styles.count}>{filtered.length}</span>
+          Voluntarios Encontrados{" "}
+          <span className={styles.count}>{filtered.length}</span>
         </h2>
       </div>
 
@@ -96,7 +103,11 @@ export default function VoluntariosTable({ voluntarios }: VoluntariosTableProps)
                   <tr key={v.id}>
                     <td>
                       <div className={styles.cellPerson}>
-                        <UserAvatar avatarUrl={v.avatar_url} nombres={v.nombre_completo} size={36} />
+                        <UserAvatar
+                          avatarUrl={v.avatar_url}
+                          nombres={v.nombre_completo}
+                          size={36}
+                        />
                         <div>
                           <span className={styles.cellMain}>{nombre}</span>
                           {v.rol && (
@@ -107,8 +118,14 @@ export default function VoluntariosTable({ voluntarios }: VoluntariosTableProps)
                         </div>
                       </div>
                     </td>
-                    <td>{v.especialidades?.nombre || <span className={styles.muted}>Sin asignar</span>}</td>
-                    <td>{v.cargo || <span className={styles.muted}>N/A</span>}</td>
+                    <td>
+                      {v.especialidades?.nombre || (
+                        <span className={styles.muted}>Sin asignar</span>
+                      )}
+                    </td>
+                    <td>
+                      {v.cargo || <span className={styles.muted}>N/A</span>}
+                    </td>
                     <td className={styles.num}>
                       {v.participaciones_voluntarios?.length || 0} brigadas
                     </td>

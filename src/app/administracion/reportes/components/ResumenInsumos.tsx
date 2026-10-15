@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Boxes, ChartColumn, Gift, Pill, Printer, Shirt } from "lucide-react";
+import { useEffect, useState } from "react";
 import EmptyState from "@/app/administracion/components/EmptyState";
+import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import StatCard from "@/app/administracion/components/StatCard";
+import { errorInfo, getLogger } from "@/lib/logger";
+import { supabase } from "@/lib/supabase";
 import admin from "@/styles/pages/admin.module.css";
 import styles from "@/styles/pages/reportes.module.css";
-import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { supabase } from "@/lib/supabase";
 import PrintReportDocument from "./PrintReportDocument";
+
+const logger = getLogger("reportes", "client");
 
 export interface BrigadeReportData {
   brigada_id: string;
@@ -58,7 +61,10 @@ export default function ResumenInsumos() {
         }
 
         // Fallback optimizado por si la View aún no ha sido aplicada en la base de datos
-        console.warn("View v_reporte_insumos_brigada no disponible, ejecutando fallback:", viewError?.message);
+        logger.warning("Report view unavailable, using fallback", {
+          ...errorInfo(viewError),
+          view: "v_reporte_insumos_brigada",
+        });
 
         const [
           { data: brigadas },
@@ -66,10 +72,17 @@ export default function ResumenInsumos() {
           { data: ropaData },
           { data: juguetesData },
         ] = await Promise.all([
-          supabase.from("brigadas").select("id, nombre, fecha_brigada, lugar").order("fecha_brigada", { ascending: false }),
-          supabase.from("entregas_farmacia").select("cantidad, consultas!inner(brigada_id)"),
+          supabase
+            .from("brigadas")
+            .select("id, nombre, fecha_brigada, lugar")
+            .order("fecha_brigada", { ascending: false }),
+          supabase
+            .from("entregas_farmacia")
+            .select("cantidad, consultas!inner(brigada_id)"),
           supabase.from("entregas_ropa").select("cantidad_prendas, brigada_id"),
-          supabase.from("actividades_infantiles").select("cantidad_regalos, brigada_id"),
+          supabase
+            .from("actividades_infantiles")
+            .select("cantidad_regalos, brigada_id"),
         ]);
 
         const medMap: Record<string, number> = {};
@@ -83,14 +96,16 @@ export default function ResumenInsumos() {
         const ropaMap: Record<string, number> = {};
         (ropaData || []).forEach((r: any) => {
           if (r.brigada_id) {
-            ropaMap[r.brigada_id] = (ropaMap[r.brigada_id] || 0) + Number(r.cantidad_prendas || 0);
+            ropaMap[r.brigada_id] =
+              (ropaMap[r.brigada_id] || 0) + Number(r.cantidad_prendas || 0);
           }
         });
 
         const jugMap: Record<string, number> = {};
         (juguetesData || []).forEach((j: any) => {
           if (j.brigada_id) {
-            jugMap[j.brigada_id] = (jugMap[j.brigada_id] || 0) + Number(j.cantidad_regalos || 0);
+            jugMap[j.brigada_id] =
+              (jugMap[j.brigada_id] || 0) + Number(j.cantidad_regalos || 0);
           }
         });
 
@@ -115,7 +130,7 @@ export default function ResumenInsumos() {
           setSelectedBrigadaId(list[0].brigada_id);
         }
       } catch (err) {
-        console.error("Error al cargar datos del reporte de insumos:", err);
+        logger.error("Supplies report load failed", errorInfo(err));
       } finally {
         setLoading(false);
       }
@@ -125,32 +140,40 @@ export default function ResumenInsumos() {
   }, []);
 
   // Determinar los datos a mostrar según el filtro de brigada
-  const selectedBrigada = brigadasData.find((b) => b.brigada_id === selectedBrigadaId);
+  const selectedBrigada = brigadasData.find(
+    (b) => b.brigada_id === selectedBrigadaId
+  );
 
-  const displayNombre = selectedBrigadaId === "todas"
-    ? "Todas las Brigadas"
-    : selectedBrigada?.brigada_nombre || "Seleccionar Brigada";
+  const displayNombre =
+    selectedBrigadaId === "todas"
+      ? "Todas las Brigadas"
+      : selectedBrigada?.brigada_nombre || "Seleccionar Brigada";
 
-  const displayFecha = selectedBrigadaId === "todas"
-    ? "Consolidado General"
-    : selectedBrigada?.fecha
-      ? new Date(selectedBrigada.fecha).toLocaleDateString("es-HN", {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        })
-      : "Fecha no registrada";
+  const displayFecha =
+    selectedBrigadaId === "todas"
+      ? "Consolidado General"
+      : selectedBrigada?.fecha
+        ? new Date(selectedBrigada.fecha).toLocaleDateString("es-HN", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          })
+        : "Fecha no registrada";
 
-  const displayComunidad = selectedBrigadaId === "todas"
-    ? "Varias Comunidades"
-    : selectedBrigada?.comunidad || "No especificada";
+  const displayComunidad =
+    selectedBrigadaId === "todas"
+      ? "Varias Comunidades"
+      : selectedBrigada?.comunidad || "No especificada";
 
   let totalMedicamentos = 0;
   let totalRopa = 0;
   let totalJuguetes = 0;
 
   if (selectedBrigadaId === "todas") {
-    totalMedicamentos = brigadasData.reduce((acc, b) => acc + b.total_medicamentos, 0);
+    totalMedicamentos = brigadasData.reduce(
+      (acc, b) => acc + b.total_medicamentos,
+      0
+    );
     totalRopa = brigadasData.reduce((acc, b) => acc + b.total_ropa, 0);
     totalJuguetes = brigadasData.reduce((acc, b) => acc + b.total_juguetes, 0);
   } else if (selectedBrigada) {
@@ -209,12 +232,19 @@ export default function ResumenInsumos() {
         {/* Encabezado */}
         <div className={admin.sectionHead}>
           <div>
-            <h2 className={admin.sectionTitle}>Resumen de Entrega de Insumos</h2>
+            <h2 className={admin.sectionTitle}>
+              Resumen de Entrega de Insumos
+            </h2>
             <p className={admin.sectionLead}>
-              Consolidado sintetizado de insumos entregados durante la brigada seleccionada.
+              Consolidado sintetizado de insumos entregados durante la brigada
+              seleccionada.
             </p>
           </div>
-          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            onClick={handlePrint}
+          >
             <Printer aria-hidden="true" />
             Imprimir
           </button>
@@ -237,15 +267,24 @@ export default function ResumenInsumos() {
                 <option value="todas">Todas las brigadas</option>
                 {brigadasData.map((b) => (
                   <option key={b.brigada_id} value={b.brigada_id}>
-                    {b.brigada_nombre} {b.fecha ? `(${new Date(b.fecha).toLocaleDateString("es-HN")})` : ""}
+                    {b.brigada_nombre}{" "}
+                    {b.fecha
+                      ? `(${new Date(b.fecha).toLocaleDateString("es-HN")})`
+                      : ""}
                   </option>
                 ))}
               </select>
             </div>
             <div className={`${admin.toolbarNote} ${styles.toolbarMeta}`}>
-              <span><strong>Brigada:</strong> {displayNombre}</span>
-              <span><strong>Fecha:</strong> {displayFecha}</span>
-              <span><strong>Comunidad:</strong> {displayComunidad}</span>
+              <span>
+                <strong>Brigada:</strong> {displayNombre}
+              </span>
+              <span>
+                <strong>Fecha:</strong> {displayFecha}
+              </span>
+              <span>
+                <strong>Comunidad:</strong> {displayComunidad}
+              </span>
             </div>
           </div>
         </div>
@@ -254,7 +293,10 @@ export default function ResumenInsumos() {
         {loading ? (
           <div className={admin.statGrid}>
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className={`${admin.skeleton} ${admin.skeletonStat}`} />
+              <div
+                key={i}
+                className={`${admin.skeleton} ${admin.skeletonStat}`}
+              />
             ))}
           </div>
         ) : (
@@ -314,13 +356,16 @@ export default function ResumenInsumos() {
                     return (
                       <div key={cat.id} className={styles.barCol}>
                         <div className={styles.barColTooltip}>
-                          {cat.cantidad.toLocaleString()} {cat.nombreCorto.toLowerCase()} entregados
+                          {cat.cantidad.toLocaleString()}{" "}
+                          {cat.nombreCorto.toLowerCase()} entregados
                         </div>
                         <div
                           className={`${styles.chartBarElement} ${cat.bar}`}
                           style={{ height: `${alturaPorcentaje}%` }}
                         />
-                        <span className={styles.barLabel}>{cat.nombreCorto}</span>
+                        <span className={styles.barLabel}>
+                          {cat.nombreCorto}
+                        </span>
                       </div>
                     );
                   })}
@@ -354,16 +399,22 @@ export default function ResumenInsumos() {
                   </tr>
                 ) : (
                   categorias.map((cat) => {
-                    const porcentaje = totalGeneral > 0
-                      ? ((cat.cantidad / totalGeneral) * 100).toFixed(1)
-                      : "0.0";
+                    const porcentaje =
+                      totalGeneral > 0
+                        ? ((cat.cantidad / totalGeneral) * 100).toFixed(1)
+                        : "0.0";
                     return (
                       <tr key={cat.id}>
                         <td className={admin.cellMain}>
-                          <span className={`${styles.dot} ${cat.bar}`} aria-hidden="true" />
+                          <span
+                            className={`${styles.dot} ${cat.bar}`}
+                            aria-hidden="true"
+                          />
                           {cat.nombre}
                         </td>
-                        <td className={admin.num}>{cat.cantidad.toLocaleString()}</td>
+                        <td className={admin.num}>
+                          {cat.cantidad.toLocaleString()}
+                        </td>
                         <td className={admin.num}>{porcentaje}%</td>
                       </tr>
                     );
@@ -372,7 +423,9 @@ export default function ResumenInsumos() {
                 {!loading && totalGeneral > 0 && (
                   <tr className={styles.totalRow}>
                     <td>TOTAL GENERAL DE INSUMOS ENTREGADOS</td>
-                    <td className={admin.num}>{totalGeneral.toLocaleString()}</td>
+                    <td className={admin.num}>
+                      {totalGeneral.toLocaleString()}
+                    </td>
                     <td className={admin.num}>100%</td>
                   </tr>
                 )}
@@ -394,20 +447,36 @@ export default function ResumenInsumos() {
             { label: "Comunidad", value: displayComunidad },
           ]}
           summaryCards={[
-            { label: "Total General Insumos", value: totalGeneral.toLocaleString() },
-            { label: "Medicamentos Entregados", value: totalMedicamentos.toLocaleString() },
-            { label: "Prendas de Ropa Entregadas", value: totalRopa.toLocaleString() },
-            { label: "Juguetes Entregados", value: totalJuguetes.toLocaleString() },
+            {
+              label: "Total General Insumos",
+              value: totalGeneral.toLocaleString(),
+            },
+            {
+              label: "Medicamentos Entregados",
+              value: totalMedicamentos.toLocaleString(),
+            },
+            {
+              label: "Prendas de Ropa Entregadas",
+              value: totalRopa.toLocaleString(),
+            },
+            {
+              label: "Juguetes Entregados",
+              value: totalJuguetes.toLocaleString(),
+            },
           ]}
           footerNote="Consolidado de ayuda humanitaria e insumos — Fundación Dibujando Sonrisas"
         >
           {/* Gráfico de Barras en Impresión */}
           <div className={styles.printGraph}>
-            <h3 className={styles.printGraphTitle}>Distribución de Insumos Entregados</h3>
+            <h3 className={styles.printGraphTitle}>
+              Distribución de Insumos Entregados
+            </h3>
 
             <div className={styles.printGraphArea}>
               {loading ? (
-                <div className={styles.printGraphEmpty}>Cargando gráfico...</div>
+                <div className={styles.printGraphEmpty}>
+                  Cargando gráfico...
+                </div>
               ) : totalGeneral === 0 ? (
                 <div className={styles.printGraphEmpty}>
                   No hay entregas registradas para esta brigada.
@@ -421,12 +490,16 @@ export default function ResumenInsumos() {
                     );
                     return (
                       <div key={cat.id} className={styles.barCol}>
-                        <span className={styles.printBarValue}>{cat.cantidad.toLocaleString()}</span>
+                        <span className={styles.printBarValue}>
+                          {cat.cantidad.toLocaleString()}
+                        </span>
                         <div
                           className={`${styles.printBar} ${cat.bar}`}
                           style={{ height: `${alturaPorcentaje}%` }}
                         />
-                        <span className={styles.printBarLabel}>{cat.nombreCorto}</span>
+                        <span className={styles.printBarLabel}>
+                          {cat.nombreCorto}
+                        </span>
                       </div>
                     );
                   })}
@@ -440,8 +513,12 @@ export default function ResumenInsumos() {
               <tr>
                 <th className={`${styles.w8} ${styles.printCenter}`}>#</th>
                 <th className={styles.w48}>Categoría de Insumo</th>
-                <th className={`${styles.w24} ${styles.printRight}`}>Total Entregado</th>
-                <th className={`${styles.w20} ${styles.printRight}`}>Porcentaje</th>
+                <th className={`${styles.w24} ${styles.printRight}`}>
+                  Total Entregado
+                </th>
+                <th className={`${styles.w20} ${styles.printRight}`}>
+                  Porcentaje
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -459,17 +536,22 @@ export default function ResumenInsumos() {
                 </tr>
               ) : (
                 categorias.map((cat, idx) => {
-                  const porcentaje = totalGeneral > 0
-                    ? ((cat.cantidad / totalGeneral) * 100).toFixed(1)
-                    : "0.0";
+                  const porcentaje =
+                    totalGeneral > 0
+                      ? ((cat.cantidad / totalGeneral) * 100).toFixed(1)
+                      : "0.0";
                   return (
                     <tr key={cat.id}>
                       <td className={styles.printCenter}>{idx + 1}</td>
                       <td className={styles.printStrong}>{cat.nombre}</td>
-                      <td className={`${styles.printRight} ${styles.printStrong}`}>
+                      <td
+                        className={`${styles.printRight} ${styles.printStrong}`}
+                      >
                         {cat.cantidad.toLocaleString()}
                       </td>
-                      <td className={`${styles.printRight} ${styles.printStrong}`}>
+                      <td
+                        className={`${styles.printRight} ${styles.printStrong}`}
+                      >
                         {porcentaje}%
                       </td>
                     </tr>
@@ -479,7 +561,9 @@ export default function ResumenInsumos() {
               {!loading && totalGeneral > 0 && (
                 <tr className={styles.printTotalRow}>
                   <td colSpan={2}>TOTAL GENERAL DE INSUMOS ENTREGADOS</td>
-                  <td className={styles.printRight}>{totalGeneral.toLocaleString()}</td>
+                  <td className={styles.printRight}>
+                    {totalGeneral.toLocaleString()}
+                  </td>
                   <td className={styles.printRight}>100%</td>
                 </tr>
               )}

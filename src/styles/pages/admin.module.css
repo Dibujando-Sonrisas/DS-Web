@@ -984,7 +984,10 @@ a.notifItem:hover {
 
 /* como máximo tres por fila (6 métricas quedan 3 + 3) */
 .statGridThree {
-  grid-template-columns: repeat(auto-fit, minmax(max(22rem, calc((100% - 3.2rem) / 3)), 1fr));
+  grid-template-columns: repeat(
+      auto-fit,
+      minmax(max(22rem, calc((100% - 3.2rem) / 3)), 1fr)
+    );
 }
 
 .statCard {

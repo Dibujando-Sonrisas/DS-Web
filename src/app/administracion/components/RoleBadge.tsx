@@ -17,10 +17,14 @@ const TONOS: Record<string, string> = {
 
 export default function RoleBadge({ role }: RoleBadgeProps) {
   if (!role) {
-    return <span className={`${styles.badge} ${styles.badgeNeutral}`}>Sin rol</span>;
+    return (
+      <span className={`${styles.badge} ${styles.badgeNeutral}`}>Sin rol</span>
+    );
   }
   return (
-    <span className={`${styles.badge} ${TONOS[role.color ?? ""] ?? styles.badgeNeutral}`}>
+    <span
+      className={`${styles.badge} ${TONOS[role.color ?? ""] ?? styles.badgeNeutral}`}
+    >
       {role.nombre}
     </span>
   );

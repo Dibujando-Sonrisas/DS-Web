@@ -1,50 +1,84 @@
 "use client";
 
-import { useState, useMemo, useTransition, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { Camera, CircleAlert, ClipboardList, LayoutList, Lock, Pencil, Plus, Tent, UserPlus, Wallet } from "lucide-react";
-import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
 import {
-  crearBrigada,
-  editarBrigada,
-  eliminarBrigada,
-  registrarGasto,
-  actualizarPresupuesto,
-  aceptarInscripcion,
-  rechazarInscripcion,
-  asignarVoluntario,
-} from "./actions";
-import BrigadasTable from "./components/BrigadasTable";
-import BrigadaForm from "./components/BrigadaForm";
-import PresupuestoCard from "./components/PresupuestoCard";
-import GastosTable, { GastoRow } from "./components/GastosTable";
-import InscripcionesTable, { InscripcionRow } from "./components/InscripcionesTable";
-import AsignacionesTable, { PerfilRow } from "./components/AsignacionesTable";
-import GaleriaUploader from "./components/GaleriaUploader";
-import GaleriaPreview, { BrigadaImagenRow } from "./components/GaleriaPreview";
+  Camera,
+  CircleAlert,
+  ClipboardList,
+  LayoutList,
+  Lock,
+  Pencil,
+  Plus,
+  Tent,
+  UserPlus,
+  Wallet,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { type ReactNode, useMemo, useState, useTransition } from "react";
 import { useToast } from "@/app/administracion/components/AdminToast";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import EmptyState from "@/app/administracion/components/EmptyState";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
+import {
+  aceptarInscripcion,
+  actualizarPresupuesto,
+  asignarVoluntario,
+  crearBrigada,
+  editarBrigada,
+  eliminarBrigada,
+  rechazarInscripcion,
+  registrarGasto,
+} from "./actions";
+import AsignacionesTable, {
+  type PerfilRow,
+} from "./components/AsignacionesTable";
+import BrigadaForm from "./components/BrigadaForm";
+import BrigadasTable from "./components/BrigadasTable";
+import GaleriaPreview, {
+  type BrigadaImagenRow,
+} from "./components/GaleriaPreview";
+import GaleriaUploader from "./components/GaleriaUploader";
+import GastosTable, { type GastoRow } from "./components/GastosTable";
+import InscripcionesTable, {
+  type InscripcionRow,
+} from "./components/InscripcionesTable";
+import PresupuestoCard from "./components/PresupuestoCard";
 
 type TabName = "finanzas" | "inscripciones" | "asignaciones" | "galeria";
 
 const TABS: { id: TabName; label: string; icon: ReactNode }[] = [
   { id: "finanzas", label: "Finanzas", icon: <Wallet aria-hidden="true" /> },
-  { id: "inscripciones", label: "Solicitudes", icon: <ClipboardList aria-hidden="true" /> },
-  { id: "asignaciones", label: "Asignar Personal", icon: <UserPlus aria-hidden="true" /> },
+  {
+    id: "inscripciones",
+    label: "Solicitudes",
+    icon: <ClipboardList aria-hidden="true" />,
+  },
+  {
+    id: "asignaciones",
+    label: "Asignar Personal",
+    icon: <UserPlus aria-hidden="true" />,
+  },
   { id: "galeria", label: "Fotografías", icon: <Camera aria-hidden="true" /> },
 ];
 
 type BrigadasAdminClientProps = {
   initialBrigadas: Brigada[];
-  initialBudgets: { id: string; brigada_id: string; presupuesto_estimado: number }[];
+  initialBudgets: {
+    id: string;
+    brigada_id: string;
+    presupuesto_estimado: number;
+  }[];
   initialExpenses: GastoRow[];
   initialRegistrations: InscripcionRow[];
-  initialAssignments: { id: string; brigada_id: string; perfil_id: string; area_asignada: string }[];
+  initialAssignments: {
+    id: string;
+    brigada_id: string;
+    perfil_id: string;
+    area_asignada: string;
+  }[];
   initialProfiles: PerfilRow[];
   initialImages: BrigadaImagenRow[];
   fetchError: string | null;
@@ -71,7 +105,9 @@ export default function BrigadasAdminClient({
     linked?.id ?? (initialBrigadas.length > 0 ? initialBrigadas[0].id : null)
   );
   const [activeTab, setActiveTab] = useState<TabName>("finanzas");
-  const [view, setView] = useState<"listado" | "detalle">(linked ? "detalle" : "listado");
+  const [view, setView] = useState<"listado" | "detalle">(
+    linked ? "detalle" : "listado"
+  );
 
   // Modals / Dialog state
   const [modalMode, setModalMode] = useState<"create" | "edit" | null>(null);
@@ -158,13 +194,18 @@ export default function BrigadasAdminClient({
   };
 
   // 1. Create Brigade Submit Handler
-  const handleCreateBrigada = async (data: Parameters<typeof crearBrigada>[0]) => {
+  const handleCreateBrigada = async (
+    data: Parameters<typeof crearBrigada>[0]
+  ) => {
     startActionTransition(async () => {
       const res = await crearBrigada(data);
       if (res.error) {
         showToast(res.error, "error");
       } else {
-        showToast("Brigada creada y presupuesto inicializado con éxito.", "success");
+        showToast(
+          "Brigada creada y presupuesto inicializado con éxito.",
+          "success"
+        );
         closeModal();
         if (res.id) setSelectedId(res.id);
         router.refresh();
@@ -173,7 +214,9 @@ export default function BrigadasAdminClient({
   };
 
   // 2. Edit Brigade Submit Handler
-  const handleEditBrigada = async (data: Parameters<typeof editarBrigada>[1] & { id?: string }) => {
+  const handleEditBrigada = async (
+    data: Parameters<typeof editarBrigada>[1] & { id?: string }
+  ) => {
     const targetId = data.id || editingBrigada?.id;
     if (!targetId) {
       showToast("No se pudo identificar la brigada a editar.", "error");
@@ -202,7 +245,9 @@ export default function BrigadasAdminClient({
         showToast("Brigada eliminada con éxito.", "success");
         setDeleteTarget(null);
         // Select first available or null
-        const remaining = initialBrigadas.filter((b) => b.id !== deleteTarget.id);
+        const remaining = initialBrigadas.filter(
+          (b) => b.id !== deleteTarget.id
+        );
         setSelectedId(remaining.length > 0 ? remaining[0].id : null);
       }
     });
@@ -220,7 +265,10 @@ export default function BrigadasAdminClient({
   };
 
   // 5. Gasto Save Action (insert, update, delete)
-  const handleSaveGasto = async (gasto: Omit<GastoRow, "id"> & { id?: string }, isDelete = false) => {
+  const handleSaveGasto = async (
+    gasto: Omit<GastoRow, "id"> & { id?: string },
+    isDelete = false
+  ) => {
     const res = await registrarGasto(gasto, isDelete);
     if (res.error) {
       showToast(res.error, "error");
@@ -242,7 +290,10 @@ export default function BrigadasAdminClient({
     if (res.error) {
       showToast(res.error, "error");
     } else {
-      showToast("Solicitud aceptada: le enviamos su acceso por correo.", "success");
+      showToast(
+        "Solicitud aceptada: le enviamos su acceso por correo.",
+        "success"
+      );
     }
   };
 
@@ -257,13 +308,19 @@ export default function BrigadasAdminClient({
   };
 
   // 8. Assign Volunteer to Area
-  const handleAssignVolunteer = async (perfilId: string, area: string | null) => {
+  const handleAssignVolunteer = async (
+    perfilId: string,
+    area: string | null
+  ) => {
     if (!selectedId) return;
     const res = await asignarVoluntario(selectedId, perfilId, area);
     if (res.error) {
       showToast(res.error, "error");
     } else {
-      showToast(area ? "Área asignada correctamente." : "Asignación removida.", "success");
+      showToast(
+        area ? "Área asignada correctamente." : "Asignación removida.",
+        "success"
+      );
     }
   };
 
@@ -284,7 +341,6 @@ export default function BrigadasAdminClient({
 
   return (
     <div className={styles.stack}>
-
       {fetchError && (
         <p className="notice notice-bad" role="alert">
           <CircleAlert aria-hidden="true" />
@@ -294,7 +350,11 @@ export default function BrigadasAdminClient({
         </p>
       )}
 
-      <div className={styles.tabs} role="tablist" aria-label="Vista de brigadas">
+      <div
+        className={styles.tabs}
+        role="tablist"
+        aria-label="Vista de brigadas"
+      >
         <button
           type="button"
           role="tab"
@@ -316,7 +376,9 @@ export default function BrigadasAdminClient({
         >
           <Tent aria-hidden="true" />
           Brigada Activa
-          {activeBrigada && <span className={styles.tabCount}>{activeBrigada.codigo}</span>}
+          {activeBrigada && (
+            <span className={styles.tabCount}>{activeBrigada.codigo}</span>
+          )}
         </button>
       </div>
 
@@ -353,7 +415,11 @@ export default function BrigadasAdminClient({
           />
 
           {!activeBrigada && (
-            <EmptyState dashed icon={<Tent />} title="No hay brigadas registradas">
+            <EmptyState
+              dashed
+              icon={<Tent />}
+              title="No hay brigadas registradas"
+            >
               Haz clic en &quot;+ Nueva Brigada&quot; para registrar la primera.
             </EmptyState>
           )}
@@ -366,7 +432,9 @@ export default function BrigadasAdminClient({
               {activeBrigada.nombre} ({activeBrigada.codigo})
             </h2>
             <div className={styles.panelActions}>
-              <span className={`${styles.badge} ${ESTADO_CLASSES[activeBrigada.estado]}`}>
+              <span
+                className={`${styles.badge} ${ESTADO_CLASSES[activeBrigada.estado]}`}
+              >
                 {ESTADO_LABELS[activeBrigada.estado]}
               </span>
               <button
@@ -388,12 +456,18 @@ export default function BrigadasAdminClient({
             <p className={`notice notice-warn ${brig.detailNotice}`}>
               <Lock aria-hidden="true" />
               <span>
-                <strong>Brigada Finalizada:</strong> Esta brigada se encuentra en modo de consulta. No se pueden realizar modificaciones en finanzas, voluntarios, galería ni permitir inscripciones.
+                <strong>Brigada Finalizada:</strong> Esta brigada se encuentra
+                en modo de consulta. No se pueden realizar modificaciones en
+                finanzas, voluntarios, galería ni permitir inscripciones.
               </span>
             </p>
           )}
 
-          <div className={styles.tabs} role="tablist" aria-label="Gestión de la brigada">
+          <div
+            className={styles.tabs}
+            role="tablist"
+            aria-label="Gestión de la brigada"
+          >
             {TABS.map((tab) => (
               <button
                 key={tab.id}
@@ -475,9 +549,15 @@ export default function BrigadasAdminClient({
         <BrigadaForm
           mode={modalMode}
           brigada={editingBrigada || undefined}
-          initialBudget={editingBrigada ? budgetsMap[editingBrigada.id] ?? 0 : 0}
+          initialBudget={
+            editingBrigada ? (budgetsMap[editingBrigada.id] ?? 0) : 0
+          }
           onClose={closeModal}
-          onSubmit={modalMode === "create" ? handleCreateBrigada : (handleEditBrigada as any)}
+          onSubmit={
+            modalMode === "create"
+              ? handleCreateBrigada
+              : (handleEditBrigada as any)
+          }
           isSubmitting={isPending}
         />
       )}
@@ -496,8 +576,8 @@ export default function BrigadasAdminClient({
           <strong>
             {deleteTarget.codigo} — {deleteTarget.nombre}
           </strong>
-          ? Se eliminarán todos los presupuestos, gastos, solicitudes y asignaciones relacionadas. Esta acción
-          no se puede deshacer.
+          ? Se eliminarán todos los presupuestos, gastos, solicitudes y
+          asignaciones relacionadas. Esta acción no se puede deshacer.
         </ConfirmDialog>
       )}
     </div>
