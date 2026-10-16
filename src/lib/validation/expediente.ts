@@ -100,30 +100,34 @@ export function validarPaciente(p: Datos): Errores {
   return e;
 }
 
-// rangos de los signos vitales; todos son opcionales
+// rangos de los signos vitales; todos son obligatorios (solo las observaciones son opcionales)
 const RANGOS: {
   campo: string;
   min: number;
   max: number;
   entero?: boolean;
+  required: string;
   msg: string;
 }[] = [
   {
     campo: "peso",
     min: 0.5,
     max: 400,
+    required: "El peso es obligatorio.",
     msg: "El peso debe estar entre 0.5 y 400 kg.",
   },
   {
     campo: "talla",
     min: 30,
     max: 250,
+    required: "La talla es obligatoria.",
     msg: "La talla debe estar entre 30 y 250 cm.",
   },
   {
     campo: "temperatura",
     min: 30,
     max: 45,
+    required: "La temperatura es obligatoria.",
     msg: "La temperatura debe estar entre 30 y 45 °C.",
   },
   {
@@ -131,6 +135,7 @@ const RANGOS: {
     min: 20,
     max: 250,
     entero: true,
+    required: "La frecuencia cardíaca es obligatoria.",
     msg: "La frecuencia cardíaca debe ser un número entero entre 20 y 250 lpm.",
   },
   {
@@ -138,18 +143,21 @@ const RANGOS: {
     min: 5,
     max: 80,
     entero: true,
+    required: "La frecuencia respiratoria es obligatoria.",
     msg: "La frecuencia respiratoria debe ser un número entero entre 5 y 80 rpm.",
   },
   {
     campo: "saturacion",
     min: 0,
     max: 100,
+    required: "La saturación es obligatoria.",
     msg: "La saturación debe estar entre 0 y 100 %.",
   },
   {
     campo: "glucosa",
     min: 20,
     max: 700,
+    required: "La glucosa es obligatoria.",
     msg: "La glucosa debe estar entre 20 y 700 mg/dL.",
   },
 ];
@@ -158,7 +166,10 @@ export function validarSignos(s: Datos): Errores {
   const e: Errores = {};
 
   for (const r of RANGOS) {
-    if (vacio(s[r.campo])) continue;
+    if (!texto(s[r.campo])) {
+      e[r.campo] = r.required;
+      continue;
+    }
     const val = Number(s[r.campo]);
     if (
       isNaN(val) ||
@@ -169,10 +180,9 @@ export function validarSignos(s: Datos): Errores {
       e[r.campo] = r.msg;
   }
 
-  if (
-    s.presion_arterial &&
-    !/^\d{2,3}\/\d{2,3}$/.test(texto(s.presion_arterial))
-  )
+  if (!texto(s.presion_arterial))
+    e.presion_arterial = "La presión arterial es obligatoria.";
+  else if (!/^\d{2,3}\/\d{2,3}$/.test(texto(s.presion_arterial)))
     e.presion_arterial =
       "La presión arterial debe tener el formato Sistólica/Diastólica (ej. 120/80).";
 

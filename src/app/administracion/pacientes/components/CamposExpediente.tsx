@@ -234,6 +234,14 @@ export function CamposPaciente({
   );
 }
 
+function RequiredMark() {
+  return (
+    <span className="form-required" aria-hidden="true">
+      *
+    </span>
+  );
+}
+
 export function CamposSignos({
   value,
   setValue,
@@ -244,18 +252,19 @@ export function CamposSignos({
   return (
     <>
       <p className="form-hint">
-        Todos los campos son opcionales. Si ingresas datos, se verificarán sus
-        rangos normales.
+        Todos los signos vitales son obligatorios y se verificarán sus rangos
+        normales. Solo las observaciones son opcionales.
       </p>
 
       <div className="form-grid-3">
         <label className="form-field">
           <span className="form-label">
-            Peso (kg) <span className="form-optional">(Opcional)</span>
+            Peso (kg) <RequiredMark />
           </span>
           <input
             ref={registerRef("peso")}
             className="form-input"
+            aria-required="true"
             aria-invalid={!!errors.peso}
             type="number"
             step="0.01"
@@ -270,11 +279,12 @@ export function CamposSignos({
         </label>
         <label className="form-field">
           <span className="form-label">
-            Talla (cm) <span className="form-optional">(Opcional)</span>
+            Talla (cm) <RequiredMark />
           </span>
           <input
             ref={registerRef("talla")}
             className="form-input"
+            aria-required="true"
             aria-invalid={!!errors.talla}
             type="number"
             step="0.01"
@@ -289,11 +299,12 @@ export function CamposSignos({
         </label>
         <label className="form-field">
           <span className="form-label">
-            Temperatura (°C) <span className="form-optional">(Opcional)</span>
+            Temperatura (°C) <RequiredMark />
           </span>
           <input
             ref={registerRef("temperatura")}
             className="form-input"
+            aria-required="true"
             aria-invalid={!!errors.temperatura}
             type="number"
             step="0.1"
@@ -312,12 +323,12 @@ export function CamposSignos({
       <div className="form-grid">
         <label className="form-field">
           <span className="form-label">
-            Frecuencia Cardíaca (lpm){" "}
-            <span className="form-optional">(Opcional)</span>
+            Frecuencia Cardíaca (lpm) <RequiredMark />
           </span>
           <input
             ref={registerRef("frecuencia_cardiaca")}
             className="form-input"
+            aria-required="true"
             aria-invalid={!!errors.frecuencia_cardiaca}
             type="number"
             placeholder="20 - 250"
@@ -332,12 +343,12 @@ export function CamposSignos({
         </label>
         <label className="form-field">
           <span className="form-label">
-            Frecuencia Respiratoria (rpm){" "}
-            <span className="form-optional">(Opcional)</span>
+            Frecuencia Respiratoria (rpm) <RequiredMark />
           </span>
           <input
             ref={registerRef("frecuencia_respiratoria")}
             className="form-input"
+            aria-required="true"
             aria-invalid={!!errors.frecuencia_respiratoria}
             type="number"
             placeholder="5 - 80"
@@ -355,12 +366,12 @@ export function CamposSignos({
       <div className="form-grid-3">
         <label className="form-field">
           <span className="form-label">
-            Presión Arterial{" "}
-            <span className="form-optional">(Opcional, ej. 120/80)</span>
+            Presión Arterial <RequiredMark />
           </span>
           <input
             ref={registerRef("presion_arterial")}
             className="form-input"
+            aria-required="true"
             aria-invalid={!!errors.presion_arterial}
             placeholder="120/80"
             value={value.presion_arterial}
@@ -374,11 +385,12 @@ export function CamposSignos({
         </label>
         <label className="form-field">
           <span className="form-label">
-            Saturación O2 (%) <span className="form-optional">(Opcional)</span>
+            Saturación O2 (%) <RequiredMark />
           </span>
           <input
             ref={registerRef("saturacion")}
             className="form-input"
+            aria-required="true"
             aria-invalid={!!errors.saturacion}
             type="number"
             placeholder="0 - 100"
@@ -393,11 +405,12 @@ export function CamposSignos({
         </label>
         <label className="form-field">
           <span className="form-label">
-            Glucosa (mg/dL) <span className="form-optional">(Opcional)</span>
+            Glucosa (mg/dL) <RequiredMark />
           </span>
           <input
             ref={registerRef("glucosa")}
             className="form-input"
+            aria-required="true"
             aria-invalid={!!errors.glucosa}
             type="number"
             step="0.01"
