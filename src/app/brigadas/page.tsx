@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import PageHero from "../components/PageHero";
-import BrigadasClient from "./BrigadasClient";
 import { getBrigadas } from "../../lib/db/brigadas";
 import styles from "../../styles/pages/brigadas.module.css";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import PageHero from "../components/PageHero";
+import BrigadasClient from "./BrigadasClient";
 
 export const metadata: Metadata = {
   title: "Brigadas | Dibujando Sonrisas",

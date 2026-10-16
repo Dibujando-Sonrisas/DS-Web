@@ -9,7 +9,11 @@ type PageHeaderProps = {
 };
 
 /** Encabezado de todas las páginas del panel: título, trazos de crayón, descripción y acciones. */
-export default function PageHeader({ title, description, children }: PageHeaderProps) {
+export default function PageHeader({
+  title,
+  description,
+  children,
+}: PageHeaderProps) {
   return (
     <header className={styles.pageHeader}>
       <div className={styles.pageHeading}>

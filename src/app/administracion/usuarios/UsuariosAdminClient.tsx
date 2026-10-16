@@ -1,23 +1,33 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import type { ProfileWithSpecialty, RolDetalle, SpecialtyRow } from "./page";
-import { PERMISSIONS } from "@/lib/auth/permissions";
 import {
-  changeRoleAction,
-  changeSpecialtyAction,
-  activateUserAction,
-  deactivateUserAction,
-} from "./actions";
-import { LoaderCircle, Pencil, Search, ShieldCheck, TriangleAlert, Users } from "lucide-react";
+  LoaderCircle,
+  Pencil,
+  Search,
+  ShieldCheck,
+  TriangleAlert,
+  Users,
+} from "lucide-react";
+import { useState, useTransition } from "react";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { errorInfo, getLogger } from "@/lib/logger";
+import styles from "@/styles/pages/admin.module.css";
 import AdminModal from "../components/AdminModal";
 import { useToast } from "../components/AdminToast";
 import { usePermissions } from "../components/PermissionsProvider";
-import RolesPanel from "./components/RolesPanel";
 import RoleBadge from "../components/RoleBadge";
 import StatusBadge from "../components/StatusBadge";
 import UserAvatar from "../components/UserAvatar";
-import styles from "@/styles/pages/admin.module.css";
+import {
+  activateUserAction,
+  changeRoleAction,
+  changeSpecialtyAction,
+  deactivateUserAction,
+} from "./actions";
+import RolesPanel from "./components/RolesPanel";
+import type { ProfileWithSpecialty, RolDetalle, SpecialtyRow } from "./page";
+
+const logger = getLogger("usuarios", "client");
 
 type UsuariosAdminClientProps = {
   rows: ProfileWithSpecialty[];
@@ -108,6 +118,10 @@ export default function UsuariosAdminClient({
         showToast("Usuario actualizado exitosamente.", "success");
         setEditTarget(null);
       } catch (err) {
+        logger.error("User update failed", {
+          ...errorInfo(err),
+          perfilId: editTarget.id,
+        });
         showToast(
           err instanceof Error ? err.message : "Ocurrió un error al guardar.",
           "error"
@@ -140,7 +154,8 @@ export default function UsuariosAdminClient({
 
   const isSelf = editTarget?.id === currentUserId;
   // el rol de administrador solo lo da o quita otro administrador (la base lo exige igual)
-  const lockedSuperadmin = !myRole.es_superadmin && !!editTarget?.rol?.es_superadmin;
+  const lockedSuperadmin =
+    !myRole.es_superadmin && !!editTarget?.rol?.es_superadmin;
 
   return (
     <div className={styles.stack}>
@@ -154,7 +169,11 @@ export default function UsuariosAdminClient({
       )}
 
       {canSeeRoles && (
-        <div className={styles.tabs} role="tablist" aria-label="Miembros y roles">
+        <div
+          className={styles.tabs}
+          role="tablist"
+          aria-label="Miembros y roles"
+        >
           <button
             type="button"
             role="tab"
@@ -183,10 +202,14 @@ export default function UsuariosAdminClient({
       {activeTab === "roles" ? (
         <RolesPanel roles={roles} />
       ) : (
-        <section className={styles.panel} aria-labelledby="miembros-registrados">
+        <section
+          className={styles.panel}
+          aria-labelledby="miembros-registrados"
+        >
           <div className={styles.panelHeader}>
             <h2 id="miembros-registrados" className={styles.panelTitle}>
-              Miembros Registrados <span className={styles.count}>{filteredRows.length}</span>
+              Miembros Registrados{" "}
+              <span className={styles.count}>{filteredRows.length}</span>
             </h2>
           </div>
 
@@ -229,7 +252,10 @@ export default function UsuariosAdminClient({
             </div>
 
             <div className={styles.filter}>
-              <label className={styles.filterLabel} htmlFor="usuarios-especialidad">
+              <label
+                className={styles.filterLabel}
+                htmlFor="usuarios-especialidad"
+              >
                 Especialidad
               </label>
               <select
@@ -287,10 +313,9 @@ export default function UsuariosAdminClient({
                   </tr>
                 ) : (
                   filteredRows.map((user) => {
-                    const nameDisplay =
-                      user.nombre_completo
-                        ? user.nombre_completo.trim()
-                        : "Usuario Nuevo (Sin Perfil)";
+                    const nameDisplay = user.nombre_completo
+                      ? user.nombre_completo.trim()
+                      : "Usuario Nuevo (Sin Perfil)";
                     return (
                       <tr key={user.id}>
                         <td>
@@ -301,7 +326,9 @@ export default function UsuariosAdminClient({
                               size={36}
                             />
                             <div>
-                              <span className={styles.cellMain}>{nameDisplay}</span>
+                              <span className={styles.cellMain}>
+                                {nameDisplay}
+                              </span>
                               <span className={styles.cellSub}>
                                 ID: <code>{user.id.substring(0, 8)}...</code>
                               </span>
@@ -312,7 +339,9 @@ export default function UsuariosAdminClient({
                           <RoleBadge role={user.rol} />
                         </td>
                         <td>
-                          {user.cargo || <span className={styles.muted}>—</span>}
+                          {user.cargo || (
+                            <span className={styles.muted}>—</span>
+                          )}
                         </td>
                         <td>
                           {user.especialidades?.nombre || (
@@ -349,7 +378,12 @@ export default function UsuariosAdminClient({
 
       {/* Modal de Edición de Usuario */}
       {editTarget && (
-        <AdminModal title="Editar Miembro" size="sm" onClose={closeEditModal} busy={isPending}>
+        <AdminModal
+          title="Editar Miembro"
+          size="sm"
+          onClose={closeEditModal}
+          busy={isPending}
+        >
           <form
             className={styles.modalForm}
             onSubmit={(e) => {
@@ -396,7 +430,9 @@ export default function UsuariosAdminClient({
                   ))}
                 </select>
                 {isSelf ? (
-                  <span className="form-hint">No puedes cambiar tu propio rol.</span>
+                  <span className="form-hint">
+                    No puedes cambiar tu propio rol.
+                  </span>
                 ) : lockedSuperadmin ? (
                   <span className="form-hint">
                     Solo un administrador puede quitar el rol de administrador.
@@ -406,7 +442,9 @@ export default function UsuariosAdminClient({
 
               {/* Editar Especialidad */}
               <label className="form-field">
-                <span className="form-label">Especialidad Médica/Odontológica</span>
+                <span className="form-label">
+                  Especialidad Médica/Odontológica
+                </span>
                 <select
                   className="form-input"
                   value={selectedSpecialtyId}
@@ -435,7 +473,9 @@ export default function UsuariosAdminClient({
                   Permitir acceso al panel administrativo
                 </label>
                 {isSelf && (
-                  <span className="form-hint">No puedes desactivar tu propio acceso.</span>
+                  <span className="form-hint">
+                    No puedes desactivar tu propio acceso.
+                  </span>
                 )}
               </div>
 
@@ -462,8 +502,14 @@ export default function UsuariosAdminClient({
               >
                 Cancelar
               </button>
-              <button type="submit" className="btn-primary btn-sm" disabled={isPending}>
-                {isPending && <LoaderCircle className="spin" aria-hidden="true" />}
+              <button
+                type="submit"
+                className="btn-primary btn-sm"
+                disabled={isPending}
+              >
+                {isPending && (
+                  <LoaderCircle className="spin" aria-hidden="true" />
+                )}
                 {isPending ? "Guardando..." : "Guardar Cambios"}
               </button>
             </div>

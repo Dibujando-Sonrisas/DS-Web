@@ -1,22 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { assertPermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { assertPermission } from "@/lib/auth/session";
 import {
-  getDashboardVentas as getDashboardVentasDB,
-  getCategoriasProductos as getCategoriasProductosDB,
-  getProductos as getProductosDB,
-  getHistorialVentas as getHistorialVentasDB,
-  getBajoStock as getBajoStockDB,
   createCategoriaProducto as createCategoriaProductoDB,
   createProducto as createProductoDB,
-  updateStockProducto as updateStockProductoDB,
-  registrarVenta as registrarVentaDB,
-  deleteProducto as deleteProductoDB,
   deleteCategoriaProducto as deleteCategoriaProductoDB,
+  deleteProducto as deleteProductoDB,
+  getBajoStock as getBajoStockDB,
+  getCategoriasProductos as getCategoriasProductosDB,
+  getDashboardVentas as getDashboardVentasDB,
+  getHistorialVentas as getHistorialVentasDB,
+  getProductos as getProductosDB,
+  registrarVenta as registrarVentaDB,
+  updateStockProducto as updateStockProductoDB,
 } from "@/lib/db/ventas";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 async function getAuthedSupabase() {
   const supabase = await createSupabaseServerClient();
@@ -72,7 +72,10 @@ export async function crearProductoAction(producto: any) {
   return result;
 }
 
-export async function updateStockProductoAction(id: string, nuevoStock: number) {
+export async function updateStockProductoAction(
+  id: string,
+  nuevoStock: number
+) {
   await assertPermission(PERMISSIONS.VENTAS_UPDATE);
   const supabase = await getAuthedSupabase();
   const result = await updateStockProductoDB(id, nuevoStock, supabase);
@@ -84,7 +87,11 @@ export async function registrarVentaAction(ventaParams: {
   vendedor_id: string;
   brigada_id?: string;
   observaciones?: string;
-  detalles: Array<{ producto_id: string; cantidad: number; precio_unitario: number }>;
+  detalles: Array<{
+    producto_id: string;
+    cantidad: number;
+    precio_unitario: number;
+  }>;
 }) {
   await assertPermission(PERMISSIONS.VENTAS_CREATE);
   const supabase = await getAuthedSupabase();

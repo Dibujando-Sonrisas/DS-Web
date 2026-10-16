@@ -1,7 +1,7 @@
 import { History } from "lucide-react";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "@/styles/pages/admin.module.css";
 import dash from "@/styles/pages/admin-dashboard.module.css";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
 import EmptyState from "../EmptyState";
 
 export default async function ActividadReciente() {
@@ -19,12 +19,16 @@ export default async function ActividadReciente() {
       </div>
 
       {!actividad || actividad.length === 0 ? (
-        <EmptyState icon={<History />} title="No hay actividad reciente registrada." />
+        <EmptyState
+          icon={<History />}
+          title="No hay actividad reciente registrada."
+        />
       ) : (
         <ul className={`${dash.feed} tone-rotate`}>
           {actividad.map((act: any, i: number) => {
             const date = new Date(act.created_at);
             return (
+              // biome-ignore lint/suspicious/noArrayIndexKey: lista de solo lectura renderizada en el servidor; no se reordena ni se edita
               <li key={i} className={dash.feedItem}>
                 <span className={dash.feedDot} aria-hidden="true" />
                 <div>

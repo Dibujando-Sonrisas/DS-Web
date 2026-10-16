@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { LayoutDashboard, Lock } from "lucide-react";
+import Link from "next/link";
 import styles from "@/styles/pages/admin.module.css";
 
 export default function NoAutorizadoPage() {

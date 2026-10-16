@@ -1,13 +1,21 @@
 "use server";
 
 import { z } from "zod";
+import { sendNewContact } from "@/lib/email/emails";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { emailSchema } from "@/lib/validation/validationUtils";
-import { notificarMensajeContacto } from "@/lib/email/contacto";
+
+const logger = getLogger("contacto");
 
 // una sola línea: el asunto también va en el asunto del correo
 const linea = (max: number) =>
-  z.string().trim().min(1).max(max).transform((s) => s.replace(/\s+/g, " "));
+  z
+    .string()
+    .trim()
+    .min(1)
+    .max(max)
+    .transform((s) => s.replace(/\s+/g, " "));
 
 const contactoSchema = z.object({
   nombre: linea(80),
@@ -24,7 +32,9 @@ const contactoSchema = z.object({
 });
 
 /** Formulario público de contacto: guarda el mensaje y avisa por correo a los de Ajustes. */
-export async function enviarContactoAction(formData: FormData): Promise<{ error: string | null }> {
+export async function enviarContactoAction(
+  formData: FormData
+): Promise<{ error: string | null }> {
   const parsed = contactoSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { error: "Revisa los datos del formulario e intenta de nuevo." };
@@ -33,15 +43,27 @@ export async function enviarContactoAction(formData: FormData): Promise<{ error:
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("contacto").insert(parsed.data);
   if (error) {
-    console.error("Error al guardar el mensaje de contacto:", error);
-    return { error: "Hubo un error al enviar tu mensaje. Por favor intenta de nuevo." };
+    logger.error("Contact message save failed", errorInfo(error));
+    return {
+      error: "Hubo un error al enviar tu mensaje. Por favor intenta de nuevo.",
+    };
   }
+
+  logger.info("Contact message received");
 
   // el mensaje ya quedó guardado: si el aviso falla, el visitante no tiene que reintentar
   try {
-    await notificarMensajeContacto(parsed.data);
+    const { nombre, apellido, email, telefono, asunto, mensaje } = parsed.data;
+    await sendNewContact({
+      firstName: nombre,
+      lastName: apellido,
+      email,
+      phone: telefono,
+      subject: asunto,
+      message: mensaje,
+    });
   } catch (e) {
-    console.error("No se pudo enviar el aviso del mensaje de contacto:", e);
+    logger.warning("Contact notice failed", errorInfo(e));
   }
   return { error: null };
 }

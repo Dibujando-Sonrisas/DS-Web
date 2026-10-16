@@ -1,14 +1,26 @@
-import { cache } from "react";
-import { redirect } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+import { redirect } from "next/navigation";
+import { cache } from "react";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { canAccessRoute, resolvePermissions, type Permission } from "./permissions";
+import {
+  canAccessRoute,
+  type Permission,
+  resolvePermissions,
+} from "./permissions";
 
-/** Tonos de badge disponibles para un rol (columna roles.color). */
-export const ROL_TONOS = ["brand", "info", "success", "warning", "danger", "neutral"] as const;
+const logger = getLogger("auth");
+
+export const ROL_TONOS = [
+  "brand",
+  "info",
+  "success",
+  "warning",
+  "danger",
+  "neutral",
+] as const;
 export type RolTono = (typeof ROL_TONOS)[number];
 
-/** Lo que se necesita de un rol para mostrarlo (badge, encabezado, reportes). */
 export type RolResumen = {
   id: string;
   nombre: string;
@@ -36,11 +48,9 @@ export type AuthContext = {
   profile: Perfil;
   role: RolResumen;
   permissions: Permission[];
-  /** nombre de la especialidad del perfil, solo para mostrar */
   specialtyName: string | null;
 };
 
-// perfil + rol + permisos + especialidad en una sola consulta
 const PERFIL_SELECT =
   "*, rol:rol_id(id, nombre, color, es_superadmin, rol_permisos(permiso)), especialidades:especialidad_id(nombre)";
 
@@ -49,10 +59,6 @@ type PerfilConRol = Perfil & {
   especialidades: { nombre: string } | null;
 };
 
-/**
- * Usuario, perfil, rol y permisos de la sesión actual.
- * cache(): layout, página y guardas de un mismo render comparten una sola consulta.
- */
 export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
   const supabase = await createSupabaseServerClient();
   const {
@@ -68,21 +74,25 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
     .maybeSingle();
 
   if (error) {
-    console.error("Error fetching user profile:", error);
+    logger.error("Profile load failed", {
+      ...errorInfo(error),
+      userId: user.id,
+    });
     return null;
   }
 
   let row = data as unknown as PerfilConRol | null;
 
-  // Si el usuario no posee registro en perfiles: crearlo automáticamente
   if (!row) {
     const now = new Date().toISOString();
     const { data: nuevo, error: insertError } = await supabase
       .from("perfiles")
       .insert({
         id: user.id,
-        nombre_completo: user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuario",
-        // sin rol: la base asigna el rol predeterminado, igual que el trigger handle_new_user
+        nombre_completo:
+          user.user_metadata?.full_name ||
+          user.email?.split("@")[0] ||
+          "Usuario",
         activo: true,
         created_at: now,
         updated_at: now,
@@ -91,14 +101,22 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
       .single();
 
     if (insertError) {
-      console.error("Error auto-creating profile in database:", insertError);
+      logger.error("Profile auto-creation failed", {
+        ...errorInfo(insertError),
+        userId: user.id,
+      });
       return null;
     }
+    logger.info("Profile auto-created", { userId: user.id });
     row = nuevo as unknown as PerfilConRol;
   }
 
-  // Si el usuario no está activo o no tiene rol, no tiene acceso
   if (!row.activo || !row.rol) {
+    logger.debug("Profile without access", {
+      userId: user.id,
+      activo: row.activo,
+      conRol: Boolean(row.rol),
+    });
     return null;
   }
 
@@ -106,7 +124,12 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
   return {
     user,
     profile,
-    role: { id: rol.id, nombre: rol.nombre, color: rol.color, es_superadmin: rol.es_superadmin },
+    role: {
+      id: rol.id,
+      nombre: rol.nombre,
+      color: rol.color,
+      es_superadmin: rol.es_superadmin,
+    },
     permissions: resolvePermissions(rol),
     specialtyName: especialidades?.nombre ?? null,
   };
@@ -140,13 +163,15 @@ export async function requireRouteAccess(
   return ctx;
 }
 
-/** Para server actions: lanza un error legible en vez de redirigir. Devuelve el contexto para reutilizarlo. */
-export async function assertPermission(permission: Permission): Promise<AuthContext> {
+export async function assertPermission(
+  permission: Permission
+): Promise<AuthContext> {
   const ctx = await getAuthContext();
   if (!ctx) {
     throw new Error("Debes iniciar sesión para realizar esta acción.");
   }
   if (!ctx.permissions.includes(permission)) {
+    logger.warning("Permission denied", { permission, userId: ctx.user.id });
     throw new Error("No tienes permiso para realizar esta acción.");
   }
   return ctx;

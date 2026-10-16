@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { errorInfo, getLogger } from "../logger";
 import { supabase } from "../supabase";
+
+const logger = getLogger("storage");
 
 export const BRIGADAS_STORAGE_BUCKET = "brigadas";
 
@@ -9,10 +12,6 @@ export interface UploadedPhotoResult {
   publicUrl: string;
 }
 
-/**
- * Sube fotos al storage de Supabase dentro de la carpeta de la brigada (brigadas/CODIGO-BRIGADA/timestamp-filename).
- * Retorna las URLs públicas de cada archivo cargado.
- */
 export async function uploadBrigadaPhotos(
   client: SupabaseClient = supabase,
   brigadaCodigo: string,
@@ -35,7 +34,11 @@ export async function uploadBrigadaPhotos(
         });
 
       if (uploadError) {
-        errors.push(`Error al subir ${file.name}: ${uploadError.message}`);
+        logger.error("Photo upload failed", {
+          ...errorInfo(uploadError),
+          brigadaCodigo,
+        });
+        errors.push(`No se pudo subir ${file.name}.`);
         continue;
       }
 
@@ -49,35 +52,50 @@ export async function uploadBrigadaPhotos(
         publicUrl: data.publicUrl,
       });
     } catch (err) {
-      errors.push(`Error al procesar ${file.name}: ${err instanceof Error ? err.message : "Error desconocido"}`);
+      logger.error("Photo processing failed", {
+        ...errorInfo(err),
+        brigadaCodigo,
+      });
+      errors.push(`No se pudo procesar ${file.name}.`);
     }
   }
 
+  logger.info("Brigade photos uploaded", {
+    brigadaCodigo,
+    uploaded: uploaded.length,
+    failed: errors.length,
+  });
   return { uploaded, errors };
 }
 
-/**
- * Elimina una foto física de Supabase Storage.
- */
 export async function deleteBrigadaPhotoFromStorage(
   client: SupabaseClient = supabase,
   brigadaCodigo: string,
   fileName: string
 ): Promise<{ error: string | null }> {
   const path = `${brigadaCodigo}/${fileName}`;
-  const { error } = await client.storage.from(BRIGADAS_STORAGE_BUCKET).remove([path]);
-  return { error: error?.message ?? null };
+  const { error } = await client.storage
+    .from(BRIGADAS_STORAGE_BUCKET)
+    .remove([path]);
+  if (error) {
+    logger.error("Photo deletion failed", {
+      ...errorInfo(error),
+      brigadaCodigo,
+    });
+    return { error: "No se pudo eliminar la foto." };
+  }
+  logger.info("Brigade photo deleted", { brigadaCodigo });
+  return { error: null };
 }
 
-/**
- * Obtiene la URL pública de una foto guardada en Supabase Storage.
- */
 export function getBrigadaPhotoPublicUrl(
   client: SupabaseClient = supabase,
   brigadaCodigo: string,
   fileName: string
 ): string {
   const path = `${brigadaCodigo}/${fileName}`;
-  const { data } = client.storage.from(BRIGADAS_STORAGE_BUCKET).getPublicUrl(path);
+  const { data } = client.storage
+    .from(BRIGADAS_STORAGE_BUCKET)
+    .getPublicUrl(path);
   return data.publicUrl;
 }

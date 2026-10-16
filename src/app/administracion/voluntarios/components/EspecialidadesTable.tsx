@@ -1,15 +1,25 @@
 "use client";
 
+import {
+  Ban,
+  CircleAlert,
+  CircleCheck,
+  LoaderCircle,
+  Pencil,
+  Plus,
+} from "lucide-react";
 import { useState } from "react";
-import { Ban, CircleAlert, CircleCheck, LoaderCircle, Pencil, Plus } from "lucide-react";
+import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
-import { 
-  crearEspecialidad, 
-  editarEspecialidad, 
-  activarEspecialidad, 
-  desactivarEspecialidad 
+import {
+  activarEspecialidad,
+  crearEspecialidad,
+  desactivarEspecialidad,
+  editarEspecialidad,
 } from "../actions";
 import EspecialidadForm from "./EspecialidadForm";
+
+const logger = getLogger("voluntarios", "client");
 
 export type Specialty = {
   id: string;
@@ -32,7 +42,9 @@ export default function EspecialidadesTable({
 }) {
   const [specialties, setSpecialties] = useState(initialSpecialties);
   const [showModal, setShowModal] = useState(false);
-  const [editingSpecialty, setEditingSpecialty] = useState<Specialty | null>(null);
+  const [editingSpecialty, setEditingSpecialty] = useState<Specialty | null>(
+    null
+  );
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,15 +65,23 @@ export default function EspecialidadesTable({
     setError(null);
     try {
       const active = isActiva(sp);
-      const res = active 
+      const res = active
         ? await desactivarEspecialidad(sp.id)
         : await activarEspecialidad(sp.id);
-      
+
       if (res.error) throw new Error(res.error);
-      
+
       // Update local state to reflect change immediately
-      setSpecialties(prev => prev.map(s => s.id === sp.id ? { ...s, activo: !active, activa: !active } : s));
+      setSpecialties((prev) =>
+        prev.map((s) =>
+          s.id === sp.id ? { ...s, activo: !active, activa: !active } : s
+        )
+      );
     } catch (e: any) {
+      logger.error("Specialty status change failed", {
+        ...errorInfo(e),
+        especialidadId: sp.id,
+      });
       setError(e.message || "Ocurrió un error.");
     } finally {
       setLoadingId(null);
@@ -72,16 +92,24 @@ export default function EspecialidadesTable({
     setError(null);
     try {
       if (editingSpecialty) {
-        const res = await editarEspecialidad(editingSpecialty.id, nombre, tipoConsulta);
+        const res = await editarEspecialidad(
+          editingSpecialty.id,
+          nombre,
+          tipoConsulta
+        );
         if (res.error) throw new Error(res.error);
 
-        setSpecialties(prev => prev.map(s =>
-          s.id === editingSpecialty.id ? { ...s, nombre, tipo_consulta: tipoConsulta } : s
-        ));
+        setSpecialties((prev) =>
+          prev.map((s) =>
+            s.id === editingSpecialty.id
+              ? { ...s, nombre, tipo_consulta: tipoConsulta }
+              : s
+          )
+        );
       } else {
         const res = await crearEspecialidad(nombre, tipoConsulta);
         if (res.error) throw new Error(res.error);
-        
+
         // Since we don't have the new ID immediately, we should ideally refresh the route
         // But for UI optimism, we just force a page reload or we can fetch them again.
         // The server action revalidatePath handles it, so we can just reload.
@@ -105,12 +133,20 @@ export default function EspecialidadesTable({
         </p>
       )}
 
-      <section className={styles.panel} aria-labelledby="listado-especialidades">
+      <section
+        className={styles.panel}
+        aria-labelledby="listado-especialidades"
+      >
         <div className={styles.panelHeader}>
           <h2 id="listado-especialidades" className={styles.panelTitle}>
-            Listado de Especialidades <span className={styles.count}>{specialties.length}</span>
+            Listado de Especialidades{" "}
+            <span className={styles.count}>{specialties.length}</span>
           </h2>
-          <button type="button" className="btn-primary btn-sm" onClick={handleCreate}>
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            onClick={handleCreate}
+          >
             <Plus aria-hidden="true" />
             Nueva Especialidad
           </button>
@@ -137,7 +173,11 @@ export default function EspecialidadesTable({
                 specialties.map((sp) => {
                   const active = isActiva(sp);
                   const busy = loadingId === sp.id;
-                  const toggleLabel = busy ? "Procesando..." : active ? "Desactivar" : "Activar";
+                  const toggleLabel = busy
+                    ? "Procesando..."
+                    : active
+                      ? "Desactivar"
+                      : "Activar";
                   return (
                     <tr key={sp.id}>
                       <td className={styles.cellMain}>{sp.nombre}</td>
@@ -145,10 +185,13 @@ export default function EspecialidadesTable({
                         {sp.tipo_consulta ? (
                           <span
                             className={`${styles.badge} ${
-                              sp.tipo_consulta === "Odontologica" ? styles.badgeBrand : styles.badgeInfo
+                              sp.tipo_consulta === "Odontologica"
+                                ? styles.badgeBrand
+                                : styles.badgeInfo
                             }`}
                           >
-                            {TIPO_CONSULTA_LABELS[sp.tipo_consulta] ?? sp.tipo_consulta}
+                            {TIPO_CONSULTA_LABELS[sp.tipo_consulta] ??
+                              sp.tipo_consulta}
                           </span>
                         ) : (
                           "-"
@@ -183,7 +226,10 @@ export default function EspecialidadesTable({
                             aria-label={`${toggleLabel} ${sp.nombre}`}
                           >
                             {busy ? (
-                              <LoaderCircle className="spin" aria-hidden="true" />
+                              <LoaderCircle
+                                className="spin"
+                                aria-hidden="true"
+                              />
                             ) : active ? (
                               <Ban aria-hidden="true" />
                             ) : (

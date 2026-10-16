@@ -13,5 +13,9 @@ export default async function CrearContrasenaPage({
 }) {
   // ?token_hash=... viene del enlace del correo (lib/cuentas.ts)
   const { token_hash } = await searchParams;
-  return <CrearContrasenaForm tokenHash={typeof token_hash === "string" ? token_hash : null} />;
+  return (
+    <CrearContrasenaForm
+      tokenHash={typeof token_hash === "string" ? token_hash : null}
+    />
+  );
 }

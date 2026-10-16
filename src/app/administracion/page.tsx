@@ -1,16 +1,21 @@
+import { Suspense } from "react";
+import { PERMISSIONS, type Permission } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/session";
 import styles from "@/styles/pages/admin.module.css";
 import dash from "@/styles/pages/admin-dashboard.module.css";
-import { requirePermission } from "@/lib/auth/session";
-import { PERMISSIONS, type Permission } from "@/lib/auth/permissions";
-import RoleBadge from "./components/RoleBadge";
-import UserAvatar from "./components/UserAvatar";
-import { Suspense } from "react";
-import CountdownBrigada from "./components/dashboard/CountdownBrigada";
 import ActividadReciente from "./components/dashboard/ActividadReciente";
 import AlertasSistema from "./components/dashboard/AlertasSistema";
+import CountdownBrigada from "./components/dashboard/CountdownBrigada";
 import QuickActions from "./components/dashboard/QuickActions";
 import SolicitudesRecientesWidget from "./components/dashboard/SolicitudesRecientesWidget";
-import { AdminStats, ClinicoStats, FarmaciaStats, VoluntarioStats } from "./components/dashboard/TarjetasDashboard";
+import {
+  AdminStats,
+  ClinicoStats,
+  FarmaciaStats,
+  VoluntarioStats,
+} from "./components/dashboard/TarjetasDashboard";
+import RoleBadge from "./components/RoleBadge";
+import UserAvatar from "./components/UserAvatar";
 
 /** Tres tarjetas vacías mientras llegan las métricas. */
 function StatsSkeleton() {
@@ -34,10 +39,10 @@ export default async function DashboardPage() {
   const view = can(PERMISSIONS.DASHBOARD_RESUMEN)
     ? "admin"
     : can(PERMISSIONS.PACIENTES_CREATE)
-    ? "clinico"
-    : can(PERMISSIONS.FARMACIA_PROCESS)
-    ? "farmacia"
-    : "voluntario";
+      ? "clinico"
+      : can(PERMISSIONS.FARMACIA_PROCESS)
+        ? "farmacia"
+        : "voluntario";
 
   return (
     <div className={styles.page}>
@@ -70,14 +75,20 @@ export default async function DashboardPage() {
           </dd>
           <dt>Especialidad</dt>
           <dd>
-            <span className={`${styles.badge} ${styles.badgeInfo}`}>{specialtyName}</span>
+            <span className={`${styles.badge} ${styles.badgeInfo}`}>
+              {specialtyName}
+            </span>
           </dd>
         </dl>
       </header>
 
       <QuickActions permissions={ctx.permissions} />
 
-      <Suspense fallback={<div className={`${styles.skeleton} ${styles.skeletonStat}`} />}>
+      <Suspense
+        fallback={
+          <div className={`${styles.skeleton} ${styles.skeletonStat}`} />
+        }
+      >
         <CountdownBrigada />
       </Suspense>
 
@@ -93,7 +104,9 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className={`${styles.statGrid} ${styles.statGridThree} tone-rotate`}>
+        <div
+          className={`${styles.statGrid} ${styles.statGridThree} tone-rotate`}
+        >
           <Suspense fallback={<StatsSkeleton />}>
             {view === "admin" && <AdminStats />}
             {view === "clinico" && <ClinicoStats />}
@@ -105,7 +118,11 @@ export default async function DashboardPage() {
 
       {/* Solicitudes de Inscripción para la Brigada Activa */}
       {view === "admin" && (
-        <Suspense fallback={<div className={`${styles.skeleton} ${styles.skeletonBlock}`} />}>
+        <Suspense
+          fallback={
+            <div className={`${styles.skeleton} ${styles.skeletonBlock}`} />
+          }
+        >
           <SolicitudesRecientesWidget />
         </Suspense>
       )}
@@ -113,10 +130,18 @@ export default async function DashboardPage() {
       {/* Alertas y Actividad Reciente solo con el resumen general */}
       {view === "admin" && (
         <div className={styles.grid2}>
-          <Suspense fallback={<div className={`${styles.skeleton} ${styles.skeletonBlock}`} />}>
+          <Suspense
+            fallback={
+              <div className={`${styles.skeleton} ${styles.skeletonBlock}`} />
+            }
+          >
             <AlertasSistema />
           </Suspense>
-          <Suspense fallback={<div className={`${styles.skeleton} ${styles.skeletonBlock}`} />}>
+          <Suspense
+            fallback={
+              <div className={`${styles.skeleton} ${styles.skeletonBlock}`} />
+            }
+          >
             <ActividadReciente />
           </Suspense>
         </div>

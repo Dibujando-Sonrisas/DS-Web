@@ -1,8 +1,5 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Activity,
   ArrowRight,
@@ -20,31 +17,36 @@ import {
   Tent,
   UserRound,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { type FormEvent, type ReactNode, useState } from "react";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import { useToast } from "@/app/administracion/components/AdminToast";
 import EmptyState from "@/app/administracion/components/EmptyState";
-import UserAvatar from "@/app/administracion/components/UserAvatar";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
+import UserAvatar from "@/app/administracion/components/UserAvatar";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { errorInfo, getLogger } from "@/lib/logger";
 import {
   CAMPOS_CONSULTA,
   CAMPOS_PACIENTE,
   CAMPOS_SIGNOS,
+  type Datos,
+  type Errores,
   sinNulos,
   validarConsulta,
   validarDiagnosticos,
   validarPaciente,
   validarSignos,
-  type Datos,
-  type Errores,
 } from "@/lib/validation/expediente";
+import styles from "@/styles/pages/admin.module.css";
+import pac from "@/styles/pages/admin-pacientes.module.css";
 import {
   actualizarConsultaAction,
   actualizarDiagnosticosAction,
   actualizarPacienteAction,
   actualizarSignosAction,
 } from "../actions";
-import { ESTADOS } from "../estados";
 import {
   CampoDiagnosticos,
   CamposConsulta,
@@ -53,14 +55,20 @@ import {
   useFieldFocus,
 } from "../components/CamposExpediente";
 import { hay, SIGNOS } from "../components/FichaPaciente";
-import styles from "@/styles/pages/admin.module.css";
-import pac from "@/styles/pages/admin-pacientes.module.css";
+import { ESTADOS } from "../estados";
 
 type Seccion = "paciente" | "signos" | "consulta" | "diagnosticos";
 
+const logger = getLogger("pacientes", "client");
+
 // etapas del expediente en orden; el estado dice hasta cuál llegó
 const ETAPAS = ["Ingreso", "Preclínica", "Consulta", "Finalizada"];
-const ULTIMA_HECHA: Record<string, number> = { ingresado: 0, preclinica: 1, consulta: 1, finalizada: 3 };
+const ULTIMA_HECHA: Record<string, number> = {
+  ingresado: 0,
+  preclinica: 1,
+  consulta: 1,
+  finalizada: 3,
+};
 
 // zona horaria fija: el servidor y el navegador muestran el mismo día
 const fecha = (v: string | null) =>
@@ -94,7 +102,10 @@ function Tarjeta({
     <section className={styles.panel}>
       <div className={styles.panelHeader}>
         <div className={pac.tarjetaTitulo}>
-          <span className={`icon-circle icon-circle-sm tone-${tono}`} aria-hidden="true">
+          <span
+            className={`icon-circle icon-circle-sm tone-${tono}`}
+            aria-hidden="true"
+          >
             {icono}
           </span>
           <div>
@@ -102,7 +113,9 @@ function Tarjeta({
             {subtitulo && <p className={styles.panelSub}>{subtitulo}</p>}
           </div>
         </div>
-        {onCorregir && <BotonCorregir onClick={onCorregir} que={String(titulo)} />}
+        {onCorregir && (
+          <BotonCorregir onClick={onCorregir} que={String(titulo)} />
+        )}
       </div>
       <div className={styles.panelBody}>{children}</div>
     </section>
@@ -111,7 +124,12 @@ function Tarjeta({
 
 function BotonCorregir({ onClick, que }: { onClick: () => void; que: string }) {
   return (
-    <button type="button" className="btn-ghost btn-sm" onClick={onClick} aria-label={`Corregir ${que.toLowerCase()}`}>
+    <button
+      type="button"
+      className="btn-ghost btn-sm"
+      onClick={onClick}
+      aria-label={`Corregir ${que.toLowerCase()}`}
+    >
       <Pencil aria-hidden="true" />
       Corregir
     </button>
@@ -119,7 +137,17 @@ function BotonCorregir({ onClick, que }: { onClick: () => void; que: string }) {
 }
 
 /** Un signo vital: ícono, nombre y cifra con su unidad. */
-function Vital({ icono, label, valor, unidad }: { icono: ReactNode; label: string; valor: unknown; unidad?: string }) {
+function Vital({
+  icono,
+  label,
+  valor,
+  unidad,
+}: {
+  icono: ReactNode;
+  label: string;
+  valor: unknown;
+  unidad?: string;
+}) {
   return (
     <li className={pac.vital}>
       <span className={pac.vitalLabel}>
@@ -163,7 +191,8 @@ export function ExpedienteClient({
   const consulta = expediente.consultas[0];
   const info = ESTADOS[estado] ?? ESTADOS.finalizada;
   // el siguiente paso lo hace otro usuario si el paciente ya está en consulta con alguien más
-  const siguiente = estado === "consulta" && !tomadoPorMi ? undefined : info.siguiente;
+  const siguiente =
+    estado === "consulta" && !tomadoPorMi ? undefined : info.siguiente;
   const hecha = ULTIMA_HECHA[estado] ?? 3;
   const odontologica = consulta?.tipo_consulta === "Odontologica";
 
@@ -178,7 +207,13 @@ export function ExpedienteClient({
   // cada sección: con qué datos abre el formulario, cómo se valida y dónde se guarda
   const secciones: Record<
     Seccion,
-    { titulo: string; datos: () => Datos; validar: () => Errores; orden: string[]; guardar: () => Promise<void> }
+    {
+      titulo: string;
+      datos: () => Datos;
+      validar: () => Errores;
+      orden: string[];
+      guardar: () => Promise<void>;
+    }
   > = {
     paciente: {
       titulo: "Corregir datos del paciente",
@@ -203,10 +238,15 @@ export function ExpedienteClient({
     },
     diagnosticos: {
       titulo: "Corregir diagnósticos",
-      datos: () => ({ diagnosticos: consulta.diagnosticos_consulta.map((d: Datos) => d.diagnostico).join(", ") }),
+      datos: () => ({
+        diagnosticos: consulta.diagnosticos_consulta
+          .map((d: Datos) => d.diagnostico)
+          .join(", "),
+      }),
       validar: () => validarDiagnosticos(form.diagnosticos),
       orden: ["diagnosticosStr"],
-      guardar: () => actualizarDiagnosticosAction(consulta.id, form.diagnosticos),
+      guardar: () =>
+        actualizarDiagnosticosAction(consulta.id, form.diagnosticos),
     },
   };
 
@@ -237,8 +277,14 @@ export function ExpedienteClient({
       showToast("Cambios guardados en el expediente.");
       router.refresh();
     } catch (err) {
-      console.error("Error técnico al corregir el expediente:", err);
-      setError("No fue posible guardar los cambios. Verifique la información e intente nuevamente.");
+      logger.error("Patient record correction failed", {
+        ...errorInfo(err),
+        seccion: editando,
+        pacienteId: paciente.id,
+      });
+      setError(
+        "No fue posible guardar los cambios. Verifique la información e intente nuevamente."
+      );
     } finally {
       setGuardando(false);
     }
@@ -261,19 +307,37 @@ export function ExpedienteClient({
       <section className={styles.panel} aria-label="Resumen del expediente">
         <div className={`${styles.panelBody} ${styles.stack}`}>
           <div className={pac.resumen}>
-            <UserAvatar nombres={paciente.nombres} apellidos={paciente.apellidos} size={64} />
+            <UserAvatar
+              nombres={paciente.nombres}
+              apellidos={paciente.apellidos}
+              size={64}
+            />
             <div className={pac.resumenId}>
               <p className={pac.resumenCodigo}>{paciente.codigo}</p>
               <p className={styles.muted}>
-                {[hay(paciente.edad) && `${paciente.edad} años`, paciente.sexo].filter(Boolean).join(" · ")}
+                {[hay(paciente.edad) && `${paciente.edad} años`, paciente.sexo]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
             <div className={pac.resumenAcciones}>
-              <span className={`${styles.badge} ${styles[info.badge]}`}>{info.label}</span>
-              {estado === "consulta" && tomadoPor && <span className={styles.muted}>Con {tomadoPor}</span>}
-              {puedeCorregir && <BotonCorregir onClick={() => abrir("paciente")} que="datos del paciente" />}
+              <span className={`${styles.badge} ${styles[info.badge]}`}>
+                {info.label}
+              </span>
+              {estado === "consulta" && tomadoPor && (
+                <span className={styles.muted}>Con {tomadoPor}</span>
+              )}
+              {puedeCorregir && (
+                <BotonCorregir
+                  onClick={() => abrir("paciente")}
+                  que="datos del paciente"
+                />
+              )}
               {siguiente && puedeCorregir && (
-                <Link href={`/administracion/pacientes/nuevo?paciente=${paciente.id}`} className="btn-primary btn-sm">
+                <Link
+                  href={`/administracion/pacientes/nuevo?paciente=${paciente.id}`}
+                  className="btn-primary btn-sm"
+                >
                   {siguiente}
                   <ArrowRight aria-hidden="true" />
                 </Link>
@@ -305,7 +369,9 @@ export function ExpedienteClient({
                     className={`${styles.step} ${actual ? styles.stepCurrent : ""} ${hecho ? styles.stepDone : ""}`}
                     aria-current={actual ? "step" : undefined}
                   >
-                    <span className={styles.stepNum}>{hecho ? <Check aria-hidden="true" /> : i + 1}</span>
+                    <span className={styles.stepNum}>
+                      {hecho ? <Check aria-hidden="true" /> : i + 1}
+                    </span>
                     {etapa}
                     {hecho && <span className="sr-only"> (hecha)</span>}
                   </span>
@@ -328,7 +394,13 @@ export function ExpedienteClient({
           <div className={styles.stack}>
             <ul className={`${pac.vitales} tone-rotate`}>
               {SIGNOS.map(({ label, unidad, Icon, valor }) => (
-                <Vital key={label} icono={<Icon aria-hidden="true" />} label={label} valor={valor(signos)} unidad={unidad} />
+                <Vital
+                  key={label}
+                  icono={<Icon aria-hidden="true" />}
+                  label={label}
+                  valor={valor(signos)}
+                  unidad={unidad}
+                />
               ))}
             </ul>
             {hay(signos.observaciones) && (
@@ -339,22 +411,37 @@ export function ExpedienteClient({
             )}
           </div>
         ) : (
-          <EmptyState icon={<Activity />} title="Aún no se toma la preclínica." />
+          <EmptyState
+            icon={<Activity />}
+            title="Aún no se toma la preclínica."
+          />
         )}
       </Tarjeta>
 
       {/* ── CONSULTA Y DIAGNÓSTICOS ── */}
       <Tarjeta
-        titulo={consulta ? (odontologica ? "Consulta odontológica" : "Consulta médica") : "Consulta"}
+        titulo={
+          consulta
+            ? odontologica
+              ? "Consulta odontológica"
+              : "Consulta médica"
+            : "Consulta"
+        }
         icono={<Stethoscope />}
         subtitulo={
           consulta
-            ? [consulta.medico?.nombre_completo && `Atendió ${consulta.medico.nombre_completo}`, fecha(consulta.created_at)]
+            ? [
+                consulta.medico?.nombre_completo &&
+                  `Atendió ${consulta.medico.nombre_completo}`,
+                fecha(consulta.created_at),
+              ]
                 .filter(Boolean)
                 .join(" · ")
             : undefined
         }
-        onCorregir={puedeCorregir && consulta ? () => abrir("consulta") : undefined}
+        onCorregir={
+          puedeCorregir && consulta ? () => abrir("consulta") : undefined
+        }
       >
         {consulta ? (
           <div className={styles.stack}>
@@ -381,9 +468,17 @@ export function ExpedienteClient({
             <div className={pac.diagnosticos}>
               <div className={styles.rowBetween}>
                 <h3 className={pac.etiqueta}>
-                  Diagnósticos <span className={styles.count}>{consulta.diagnosticos_consulta.length}</span>
+                  Diagnósticos{" "}
+                  <span className={styles.count}>
+                    {consulta.diagnosticos_consulta.length}
+                  </span>
                 </h3>
-                {puedeCorregir && <BotonCorregir onClick={() => abrir("diagnosticos")} que="diagnósticos" />}
+                {puedeCorregir && (
+                  <BotonCorregir
+                    onClick={() => abrir("diagnosticos")}
+                    que="diagnósticos"
+                  />
+                )}
               </div>
               <ul className={pac.chips}>
                 {consulta.diagnosticos_consulta.map((d: Datos) => (
@@ -398,7 +493,11 @@ export function ExpedienteClient({
         ) : (
           <EmptyState
             icon={<Stethoscope />}
-            title={estado === "consulta" ? `En consulta con ${tomadoPor ?? "otro usuario"}.` : "Aún no se atiende la consulta."}
+            title={
+              estado === "consulta"
+                ? `En consulta con ${tomadoPor ?? "otro usuario"}.`
+                : "Aún no se atiende la consulta."
+            }
           />
         )}
       </Tarjeta>
@@ -408,7 +507,10 @@ export function ExpedienteClient({
         <Tarjeta
           titulo={
             <>
-              Receta médica <span className={styles.count}>{consulta.medicamentos_consulta.length}</span>
+              Receta médica{" "}
+              <span className={styles.count}>
+                {consulta.medicamentos_consulta.length}
+              </span>
             </>
           }
           icono={<Pill />}
@@ -430,7 +532,9 @@ export function ExpedienteClient({
                 <tbody>
                   {consulta.medicamentos_consulta.map((m: Datos) => (
                     <tr key={m.id}>
-                      <td className={styles.cellMain}>{m.medicamentos?.nombre ?? "-"}</td>
+                      <td className={styles.cellMain}>
+                        {m.medicamentos?.nombre ?? "-"}
+                      </td>
                       <td className={styles.num}>{m.cantidad}</td>
                       <td>{m.indicaciones}</td>
                     </tr>
@@ -454,8 +558,12 @@ export function ExpedienteClient({
           <form className={styles.modalForm} onSubmit={guardar} noValidate>
             <div className={styles.modalBody}>
               <div className={styles.formSection}>
-                {editando === "paciente" && <CamposPaciente value={form} setValue={setForm} {...campos} />}
-                {editando === "signos" && <CamposSignos value={form} setValue={setForm} {...campos} />}
+                {editando === "paciente" && (
+                  <CamposPaciente value={form} setValue={setForm} {...campos} />
+                )}
+                {editando === "signos" && (
+                  <CamposSignos value={form} setValue={setForm} {...campos} />
+                )}
                 {editando === "consulta" && (
                   <CamposConsulta
                     value={form}
@@ -482,18 +590,30 @@ export function ExpedienteClient({
               )}
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => setEditando(null)} disabled={guardando}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => setEditando(null)}
+                disabled={guardando}
+              >
                 Cancelar
               </button>
-              <button type="submit" className="btn-primary btn-sm" disabled={guardando}>
-                {guardando ? <LoaderCircle className="spin" aria-hidden="true" /> : <Save aria-hidden="true" />}
+              <button
+                type="submit"
+                className="btn-primary btn-sm"
+                disabled={guardando}
+              >
+                {guardando ? (
+                  <LoaderCircle className="spin" aria-hidden="true" />
+                ) : (
+                  <Save aria-hidden="true" />
+                )}
                 {guardando ? "Guardando..." : "Guardar cambios"}
               </button>
             </div>
           </form>
         </AdminModal>
       )}
-
     </div>
   );
 }

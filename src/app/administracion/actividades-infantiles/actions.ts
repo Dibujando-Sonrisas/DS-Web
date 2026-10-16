@@ -1,15 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { assertPermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { assertPermission } from "@/lib/auth/session";
 import {
-  getDashboardActividades as getDashboardActividadesDB,
-  getActividades as getActividadesDB,
-  createActividad as createActividadDB,
   addParticipantesActividad as addParticipantesActividadDB,
+  createActividad as createActividadDB,
+  getActividades as getActividadesDB,
+  getDashboardActividades as getDashboardActividadesDB,
 } from "@/lib/db/actividades";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 async function getAuthedSupabase() {
   const supabase = await createSupabaseServerClient();

@@ -1,16 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import {
-  getDonacionesRopaAction as getDonacionesRopa,
-  getEntregasRopaAction as getEntregasRopa,
-  getDashboardRopaAction as getDashboardRopa,
-  getResumenRopaAction as getResumenRopa,
-  getPacientesBrigadaParaRopaAction as getPacientesBrigadaParaRopa,
-  registrarDonacionRopaAction as createDonacionRopa,
-  registrarEntregaRopaAction as createEntregaRopa,
-} from "./actions";
-import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,12 +10,26 @@ import {
   Shirt,
   Users,
 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import { useToast } from "@/app/administracion/components/AdminToast";
-import StatCard from "@/app/administracion/components/StatCard";
-import styles from "@/styles/pages/admin.module.css";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
+import StatCard from "@/app/administracion/components/StatCard";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { errorInfo, getLogger } from "@/lib/logger";
+import styles from "@/styles/pages/admin.module.css";
+import {
+  registrarDonacionRopaAction as createDonacionRopa,
+  registrarEntregaRopaAction as createEntregaRopa,
+  getDashboardRopaAction as getDashboardRopa,
+  getDonacionesRopaAction as getDonacionesRopa,
+  getEntregasRopaAction as getEntregasRopa,
+  getPacientesBrigadaParaRopaAction as getPacientesBrigadaParaRopa,
+  getResumenRopaAction as getResumenRopa,
+} from "./actions";
+
+const logger = getLogger("donaciones", "client");
 
 export function DonacionesClient({ userId }: { userId: string }) {
   const { can } = usePermissions();
@@ -35,7 +38,9 @@ export function DonacionesClient({ userId }: { userId: string }) {
   const [donaciones, setDonaciones] = useState<any[]>([]);
   const [entregas, setEntregas] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"donaciones" | "entregas">("donaciones");
+  const [activeTab, setActiveTab] = useState<"donaciones" | "entregas">(
+    "donaciones"
+  );
   const [filtroBrigada, setFiltroBrigada] = useState<string>("todas");
   const [brigadasActivas, setBrigadasActivas] = useState<any[]>([]);
   const [todasLasBrigadas, setTodasLasBrigadas] = useState<any[]>([]);
@@ -45,6 +50,7 @@ export function DonacionesClient({ userId }: { userId: string }) {
 
   const { showToast } = useToast();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: el filtro y la pestaña son los disparadores; al cambiarlos se vuelve a la página 1
   useEffect(() => {
     setCurrentPageDonaciones(1);
     setCurrentPageEntregas(1);
@@ -52,15 +58,26 @@ export function DonacionesClient({ userId }: { userId: string }) {
 
   // Donacion Modal
   const [isDonacionModalOpen, setIsDonacionModalOpen] = useState(false);
-  const [donacionForm, setDonacionForm] = useState({ fecha_donacion: new Date().toISOString().split('T')[0], nombre_donante: "", cantidad_prendas: 1, observaciones: "", tipo_donacion: "Ropa" });
+  const [donacionForm, setDonacionForm] = useState({
+    fecha_donacion: new Date().toISOString().split("T")[0],
+    nombre_donante: "",
+    cantidad_prendas: 1,
+    observaciones: "",
+    tipo_donacion: "Ropa",
+  });
 
   // Entrega Modal
   const [isEntregaModalOpen, setIsEntregaModalOpen] = useState(false);
   const [pacientesElegibles, setPacientesElegibles] = useState<any[]>([]);
-  const [entregaForm, setEntregaForm] = useState({ brigada_id: "", paciente_id: "", cantidad_prendas: 1, observaciones: "" });
+  const [entregaForm, setEntregaForm] = useState({
+    brigada_id: "",
+    paciente_id: "",
+    cantidad_prendas: 1,
+    observaciones: "",
+  });
   const [isFetchingPacientes, setIsFetchingPacientes] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [res, dash, d, e, b] = await Promise.all([
@@ -68,7 +85,7 @@ export function DonacionesClient({ userId }: { userId: string }) {
         getDashboardRopa(),
         getDonacionesRopa(),
         getEntregasRopa(),
-        getBrigadas()
+        getBrigadas(),
       ]);
       setResumen(res);
       setDashboard(dash);
@@ -76,57 +93,80 @@ export function DonacionesClient({ userId }: { userId: string }) {
       setEntregas(e);
       setTodasLasBrigadas(b.data || []);
     } catch (error) {
-      console.error(error);
+      logger.error("Donations load failed", errorInfo(error));
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchData();
   }, []);
 
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   const openDonacionModal = () => {
-    setDonacionForm({ fecha_donacion: new Date().toISOString().split('T')[0], nombre_donante: "", cantidad_prendas: 1, observaciones: "", tipo_donacion: "Ropa" });
+    setDonacionForm({
+      fecha_donacion: new Date().toISOString().split("T")[0],
+      nombre_donante: "",
+      cantidad_prendas: 1,
+      observaciones: "",
+      tipo_donacion: "Ropa",
+    });
     setIsDonacionModalOpen(true);
   };
 
   const submitDonacion = async () => {
-    if (donacionForm.cantidad_prendas <= 0) return showToast("Cantidad inválida", "error");
+    if (donacionForm.cantidad_prendas <= 0)
+      return showToast("Cantidad inválida", "error");
     try {
       await createDonacionRopa(donacionForm);
       setIsDonacionModalOpen(false);
       showToast("Donación registrada correctamente", "success");
       fetchData();
     } catch (e: any) {
+      logger.error("Donation registration failed", errorInfo(e));
       showToast(e.message, "error");
     }
   };
 
   const openEntregaModal = async () => {
     setIsEntregaModalOpen(true);
-    setEntregaForm({ brigada_id: "", paciente_id: "", cantidad_prendas: 1, observaciones: "" });
+    setEntregaForm({
+      brigada_id: "",
+      paciente_id: "",
+      cantidad_prendas: 1,
+      observaciones: "",
+    });
     setPacientesElegibles([]);
     try {
       const bRes = await getBrigadas();
-      const activas = bRes.data?.filter(b => b.estado !== 'finalizada' && b.estado !== 'cancelada') || [];
+      const activas =
+        bRes.data?.filter(
+          (b) => b.estado !== "finalizada" && b.estado !== "cancelada"
+        ) || [];
       setBrigadasActivas(activas);
     } catch (e) {
-      console.error(e);
+      logger.error("Active brigades load failed", errorInfo(e));
     }
   };
 
   const handleBrigadaChange = async (brigadaId: string) => {
-    setEntregaForm(prev => ({ ...prev, brigada_id: brigadaId, paciente_id: "" }));
+    setEntregaForm((prev) => ({
+      ...prev,
+      brigada_id: brigadaId,
+      paciente_id: "",
+    }));
     setPacientesElegibles([]);
     if (!brigadaId) return;
-    
+
     setIsFetchingPacientes(true);
     try {
       const pacs = await getPacientesBrigadaParaRopa(brigadaId);
       setPacientesElegibles(pacs);
     } catch (e: any) {
+      logger.error("Eligible patients load failed", {
+        ...errorInfo(e),
+        brigadaId,
+      });
       alert("Error cargando pacientes: " + e.message);
     } finally {
       setIsFetchingPacientes(false);
@@ -134,36 +174,53 @@ export function DonacionesClient({ userId }: { userId: string }) {
   };
 
   const submitEntrega = async () => {
-    if (!entregaForm.brigada_id || !entregaForm.paciente_id) return showToast("Seleccione brigada y paciente", "error");
-    if (entregaForm.cantidad_prendas < 1 || entregaForm.cantidad_prendas > 2) return showToast("Máximo 2 prendas por paciente", "error");
-    
+    if (!entregaForm.brigada_id || !entregaForm.paciente_id)
+      return showToast("Seleccione brigada y paciente", "error");
+    if (entregaForm.cantidad_prendas < 1 || entregaForm.cantidad_prendas > 2)
+      return showToast("Máximo 2 prendas por paciente", "error");
+
     // Check if patient selected has enough availability
-    const pac = pacientesElegibles.find(p => p.id === entregaForm.paciente_id);
+    const pac = pacientesElegibles.find(
+      (p) => p.id === entregaForm.paciente_id
+    );
     if (!pac || entregaForm.cantidad_prendas > pac.prendasDisponibles) {
-      return showToast("El paciente no puede recibir esa cantidad de prendas. Límite: 2 por paciente.", "error");
+      return showToast(
+        "El paciente no puede recibir esa cantidad de prendas. Límite: 2 por paciente.",
+        "error"
+      );
     }
 
     try {
       await createEntregaRopa({
         ...entregaForm,
-        entregado_por: userId
+        entregado_por: userId,
       });
       setIsEntregaModalOpen(false);
       showToast("Entrega de ropa registrada", "success");
       fetchData();
     } catch (e: any) {
+      logger.error("Clothing delivery failed", {
+        ...errorInfo(e),
+        brigadaId: entregaForm.brigada_id,
+      });
       showToast(e.message, "error");
     }
   };
 
   // Paginación de la pestaña activa (las entregas se filtran por brigada)
-  const entregasFiltradas = filtroBrigada === "todas"
-    ? entregas
-    : entregas.filter(e => e.brigada_id === filtroBrigada);
-  const listaActiva = activeTab === "donaciones" ? donaciones : entregasFiltradas;
+  const entregasFiltradas =
+    filtroBrigada === "todas"
+      ? entregas
+      : entregas.filter((e) => e.brigada_id === filtroBrigada);
+  const listaActiva =
+    activeTab === "donaciones" ? donaciones : entregasFiltradas;
   const totalPages = Math.ceil(listaActiva.length / itemsPerPage);
-  const curPage = activeTab === "donaciones" ? currentPageDonaciones : currentPageEntregas;
-  const setCurPage = activeTab === "donaciones" ? setCurrentPageDonaciones : setCurrentPageEntregas;
+  const curPage =
+    activeTab === "donaciones" ? currentPageDonaciones : currentPageEntregas;
+  const setCurPage =
+    activeTab === "donaciones"
+      ? setCurrentPageDonaciones
+      : setCurrentPageEntregas;
 
   return (
     <div className={styles.stack}>
@@ -176,14 +233,30 @@ export function DonacionesClient({ userId }: { userId: string }) {
         </div>
       ) : (
         <div className={`${styles.statGrid} tone-rotate`}>
-          <StatCard label="Prendas Donadas" value={resumen?.prendas_donadas || 0} icon={<Shirt />} />
-          <StatCard label="Prendas Entregadas" value={dashboard?.prendas_entregadas || 0} icon={<Gift />} />
-          <StatCard label="Pacientes Beneficiados" value={dashboard?.pacientes_beneficiados || 0} icon={<Users />} />
+          <StatCard
+            label="Prendas Donadas"
+            value={resumen?.prendas_donadas || 0}
+            icon={<Shirt />}
+          />
+          <StatCard
+            label="Prendas Entregadas"
+            value={dashboard?.prendas_entregadas || 0}
+            icon={<Gift />}
+          />
+          <StatCard
+            label="Pacientes Beneficiados"
+            value={dashboard?.pacientes_beneficiados || 0}
+            icon={<Users />}
+          />
         </div>
       )}
 
       {/* Tabs */}
-      <div className={styles.tabs} role="tablist" aria-label="Donaciones y entregas de ropa">
+      <div
+        className={styles.tabs}
+        role="tablist"
+        aria-label="Donaciones y entregas de ropa"
+      >
         <button
           type="button"
           role="tab"
@@ -192,7 +265,8 @@ export function DonacionesClient({ userId }: { userId: string }) {
           onClick={() => setActiveTab("donaciones")}
         >
           <Shirt aria-hidden="true" />
-          Donaciones Recibidas <span className={styles.tabCount}>{donaciones.length}</span>
+          Donaciones Recibidas{" "}
+          <span className={styles.tabCount}>{donaciones.length}</span>
         </button>
         <button
           type="button"
@@ -202,7 +276,8 @@ export function DonacionesClient({ userId }: { userId: string }) {
           onClick={() => setActiveTab("entregas")}
         >
           <Gift aria-hidden="true" />
-          Ropa Entregada <span className={styles.tabCount}>{entregas.length}</span>
+          Ropa Entregada{" "}
+          <span className={styles.tabCount}>{entregas.length}</span>
         </button>
       </div>
 
@@ -210,15 +285,25 @@ export function DonacionesClient({ userId }: { userId: string }) {
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
           <h2 className={styles.panelTitle}>
-            {activeTab === "donaciones" ? "Historial de Donaciones" : "Ropa Entregada en Brigadas"}
+            {activeTab === "donaciones"
+              ? "Historial de Donaciones"
+              : "Ropa Entregada en Brigadas"}
           </h2>
           {can(PERMISSIONS.DONACIONES_CREATE) && (
             <div className={styles.panelActions}>
-              <button type="button" className="btn-ghost btn-sm" onClick={openDonacionModal}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={openDonacionModal}
+              >
                 <Plus aria-hidden="true" />
                 Nueva Donación
               </button>
-              <button type="button" className="btn-primary btn-sm" onClick={openEntregaModal}>
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={openEntregaModal}
+              >
                 <Plus aria-hidden="true" />
                 Registrar Entrega
               </button>
@@ -229,16 +314,20 @@ export function DonacionesClient({ userId }: { userId: string }) {
         {activeTab === "entregas" && (
           <div className={styles.toolbar}>
             <div className={styles.filter}>
-              <label className={styles.filterLabel} htmlFor="filtro-brigada">Filtrar Historial por Brigada:</label>
+              <label className={styles.filterLabel} htmlFor="filtro-brigada">
+                Filtrar Historial por Brigada:
+              </label>
               <select
                 id="filtro-brigada"
                 className="form-input form-input-sm"
                 value={filtroBrigada}
-                onChange={e => setFiltroBrigada(e.target.value)}
+                onChange={(e) => setFiltroBrigada(e.target.value)}
               >
                 <option value="todas">Todas las Brigadas</option>
-                {todasLasBrigadas.map(b => (
-                  <option key={b.id} value={b.id}>{b.nombre}</option>
+                {todasLasBrigadas.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.nombre}
+                  </option>
                 ))}
               </select>
             </div>
@@ -265,18 +354,37 @@ export function DonacionesClient({ userId }: { userId: string }) {
                 </thead>
                 <tbody>
                   {donaciones.length === 0 ? (
-                    <tr><td colSpan={6} className={styles.emptyCell}>No hay donaciones registradas</td></tr>
+                    <tr>
+                      <td colSpan={6} className={styles.emptyCell}>
+                        No hay donaciones registradas
+                      </td>
+                    </tr>
                   ) : (
-                    donaciones.slice((currentPageDonaciones - 1) * itemsPerPage, currentPageDonaciones * itemsPerPage).map(d => (
-                      <tr key={d.id}>
-                        <td className={styles.cellCode}>{d.codigo}</td>
-                        <td className={styles.nowrap}>{new Date(d.fecha_donacion).toLocaleDateString()}</td>
-                        <td><span className={`${styles.badge} ${styles.badgeInfo}`}>{d.tipo_donacion || 'Ropa'}</span></td>
-                        <td>{d.nombre_donante || "-"}</td>
-                        <td className={`${styles.num} ${styles.cellMain}`}>{d.cantidad_prendas}</td>
-                        <td>{d.observaciones || "-"}</td>
-                      </tr>
-                    ))
+                    donaciones
+                      .slice(
+                        (currentPageDonaciones - 1) * itemsPerPage,
+                        currentPageDonaciones * itemsPerPage
+                      )
+                      .map((d) => (
+                        <tr key={d.id}>
+                          <td className={styles.cellCode}>{d.codigo}</td>
+                          <td className={styles.nowrap}>
+                            {new Date(d.fecha_donacion).toLocaleDateString()}
+                          </td>
+                          <td>
+                            <span
+                              className={`${styles.badge} ${styles.badgeInfo}`}
+                            >
+                              {d.tipo_donacion || "Ropa"}
+                            </span>
+                          </td>
+                          <td>{d.nombre_donante || "-"}</td>
+                          <td className={`${styles.num} ${styles.cellMain}`}>
+                            {d.cantidad_prendas}
+                          </td>
+                          <td>{d.observaciones || "-"}</td>
+                        </tr>
+                      ))
                   )}
                 </tbody>
               </table>
@@ -294,18 +402,33 @@ export function DonacionesClient({ userId }: { userId: string }) {
                 </thead>
                 <tbody>
                   {entregasFiltradas.length === 0 ? (
-                    <tr><td colSpan={6} className={styles.emptyCell}>No hay entregas registradas en esta brigada</td></tr>
+                    <tr>
+                      <td colSpan={6} className={styles.emptyCell}>
+                        No hay entregas registradas en esta brigada
+                      </td>
+                    </tr>
                   ) : (
-                    entregasFiltradas.slice((currentPageEntregas - 1) * itemsPerPage, currentPageEntregas * itemsPerPage).map(e => (
-                      <tr key={e.id}>
-                        <td className={styles.nowrap}>{new Date(e.fecha_entrega).toLocaleDateString()}</td>
-                        <td>{e.brigadas?.nombre}</td>
-                        <td className={styles.cellMain}>{e.pacientes?.nombres} {e.pacientes?.apellidos}</td>
-                        <td className={`${styles.num} ${styles.cellMain}`}>{e.cantidad_prendas}</td>
-                        <td>{e.perfiles?.nombre_completo}</td>
-                        <td>{e.observaciones || "-"}</td>
-                      </tr>
-                    ))
+                    entregasFiltradas
+                      .slice(
+                        (currentPageEntregas - 1) * itemsPerPage,
+                        currentPageEntregas * itemsPerPage
+                      )
+                      .map((e) => (
+                        <tr key={e.id}>
+                          <td className={styles.nowrap}>
+                            {new Date(e.fecha_entrega).toLocaleDateString()}
+                          </td>
+                          <td>{e.brigadas?.nombre}</td>
+                          <td className={styles.cellMain}>
+                            {e.pacientes?.nombres} {e.pacientes?.apellidos}
+                          </td>
+                          <td className={`${styles.num} ${styles.cellMain}`}>
+                            {e.cantidad_prendas}
+                          </td>
+                          <td>{e.perfiles?.nombre_completo}</td>
+                          <td>{e.observaciones || "-"}</td>
+                        </tr>
+                      ))
                   )}
                 </tbody>
               </table>
@@ -315,13 +438,15 @@ export function DonacionesClient({ userId }: { userId: string }) {
 
         {totalPages > 1 && (
           <div className={styles.panelFooter}>
-            <span className={styles.pagerInfo}>Página {curPage} de {totalPages}</span>
+            <span className={styles.pagerInfo}>
+              Página {curPage} de {totalPages}
+            </span>
             <div className={styles.row}>
               <button
                 type="button"
                 className="btn-ghost btn-sm"
                 disabled={curPage === 1}
-                onClick={() => setCurPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => setCurPage((prev) => Math.max(prev - 1, 1))}
               >
                 <ChevronLeft aria-hidden="true" />
                 Anterior
@@ -330,7 +455,9 @@ export function DonacionesClient({ userId }: { userId: string }) {
                 type="button"
                 className="btn-ghost btn-sm"
                 disabled={curPage === totalPages}
-                onClick={() => setCurPage(prev => Math.min(prev + 1, totalPages))}
+                onClick={() =>
+                  setCurPage((prev) => Math.min(prev + 1, totalPages))
+                }
               >
                 Siguiente
                 <ChevronRight aria-hidden="true" />
@@ -342,15 +469,38 @@ export function DonacionesClient({ userId }: { userId: string }) {
 
       {/* Modal Donacion */}
       {isDonacionModalOpen && (
-        <AdminModal title="Registrar Donación de Ropa" size="sm" onClose={() => setIsDonacionModalOpen(false)}>
-          <form className={styles.modalForm} onSubmit={(e) => { e.preventDefault(); submitDonacion(); }}>
+        <AdminModal
+          title="Registrar Donación de Ropa"
+          size="sm"
+          onClose={() => setIsDonacionModalOpen(false)}
+        >
+          <form
+            className={styles.modalForm}
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitDonacion();
+            }}
+          >
             <div className={styles.modalBody}>
               <div className="form-grid">
                 <label className="form-field">
                   <span className="form-label">
-                    Tipo de Donación <span className="form-required" aria-hidden="true">*</span>
+                    Tipo de Donación{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
-                  <select className="form-input" value={donacionForm.tipo_donacion} onChange={e => setDonacionForm({...donacionForm, tipo_donacion: e.target.value})} required>
+                  <select
+                    className="form-input"
+                    value={donacionForm.tipo_donacion}
+                    onChange={(e) =>
+                      setDonacionForm({
+                        ...donacionForm,
+                        tipo_donacion: e.target.value,
+                      })
+                    }
+                    required
+                  >
                     <option value="Ropa">Ropa</option>
                     <option value="Dinero">Dinero</option>
                     <option value="Juguetes">Juguetes</option>
@@ -358,29 +508,87 @@ export function DonacionesClient({ userId }: { userId: string }) {
                 </label>
                 <label className="form-field">
                   <span className="form-label">
-                    Fecha de Donación <span className="form-required" aria-hidden="true">*</span>
+                    Fecha de Donación{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
-                  <input className="form-input" type="date" value={donacionForm.fecha_donacion} onChange={e => setDonacionForm({...donacionForm, fecha_donacion: e.target.value})} required />
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={donacionForm.fecha_donacion}
+                    onChange={(e) =>
+                      setDonacionForm({
+                        ...donacionForm,
+                        fecha_donacion: e.target.value,
+                      })
+                    }
+                    required
+                  />
                 </label>
               </div>
               <label className="form-field">
                 <span className="form-label">Donante</span>
-                <input className="form-input" value={donacionForm.nombre_donante} onChange={e => setDonacionForm({...donacionForm, nombre_donante: e.target.value})} placeholder="Nombre de la persona o institución" />
+                <input
+                  className="form-input"
+                  value={donacionForm.nombre_donante}
+                  onChange={(e) =>
+                    setDonacionForm({
+                      ...donacionForm,
+                      nombre_donante: e.target.value,
+                    })
+                  }
+                  placeholder="Nombre de la persona o institución"
+                />
               </label>
               <label className="form-field">
                 <span className="form-label">
-                  Cantidad (Prendas, Lempiras o Unidades) <span className="form-required" aria-hidden="true">*</span>
+                  Cantidad (Prendas, Lempiras o Unidades){" "}
+                  <span className="form-required" aria-hidden="true">
+                    *
+                  </span>
                 </span>
-                <input className="form-input" type="number" min="1" step="any" value={donacionForm.cantidad_prendas} onChange={e => setDonacionForm({...donacionForm, cantidad_prendas: Number(e.target.value)})} required />
+                <input
+                  className="form-input"
+                  type="number"
+                  min="1"
+                  step="any"
+                  value={donacionForm.cantidad_prendas}
+                  onChange={(e) =>
+                    setDonacionForm({
+                      ...donacionForm,
+                      cantidad_prendas: Number(e.target.value),
+                    })
+                  }
+                  required
+                />
               </label>
               <label className="form-field">
                 <span className="form-label">Observaciones</span>
-                <textarea className="form-input" rows={2} value={donacionForm.observaciones} onChange={e => setDonacionForm({...donacionForm, observaciones: e.target.value})} />
+                <textarea
+                  className="form-input"
+                  rows={2}
+                  value={donacionForm.observaciones}
+                  onChange={(e) =>
+                    setDonacionForm({
+                      ...donacionForm,
+                      observaciones: e.target.value,
+                    })
+                  }
+                />
               </label>
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsDonacionModalOpen(false)}>Cancelar</button>
-              <button type="submit" className="btn-primary btn-sm">Guardar Donación</button>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => setIsDonacionModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="btn-primary btn-sm">
+                Guardar Donación
+              </button>
             </div>
           </form>
         </AdminModal>
@@ -388,17 +596,39 @@ export function DonacionesClient({ userId }: { userId: string }) {
 
       {/* Modal Entrega */}
       {isEntregaModalOpen && (
-        <AdminModal title="Registrar Entrega a Paciente" size="sm" onClose={() => setIsEntregaModalOpen(false)}>
-          <form className={styles.modalForm} onSubmit={(e) => { e.preventDefault(); submitEntrega(); }}>
+        <AdminModal
+          title="Registrar Entrega a Paciente"
+          size="sm"
+          onClose={() => setIsEntregaModalOpen(false)}
+        >
+          <form
+            className={styles.modalForm}
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitEntrega();
+            }}
+          >
             <div className={styles.modalBody}>
               <label className="form-field">
                 <span className="form-label">
-                  Brigada Activa <span className="form-required" aria-hidden="true">*</span>
+                  Brigada Activa{" "}
+                  <span className="form-required" aria-hidden="true">
+                    *
+                  </span>
                 </span>
-                <select className="form-input" value={entregaForm.brigada_id} onChange={e => handleBrigadaChange(e.target.value)} required>
-                  <option value="" disabled>-- Seleccionar Brigada --</option>
-                  {brigadasActivas.map(b => (
-                    <option key={b.id} value={b.id}>{b.nombre}</option>
+                <select
+                  className="form-input"
+                  value={entregaForm.brigada_id}
+                  onChange={(e) => handleBrigadaChange(e.target.value)}
+                  required
+                >
+                  <option value="" disabled>
+                    -- Seleccionar Brigada --
+                  </option>
+                  {brigadasActivas.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.nombre}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -413,20 +643,37 @@ export function DonacionesClient({ userId }: { userId: string }) {
               {entregaForm.brigada_id && !isFetchingPacientes && (
                 <label className="form-field">
                   <span className="form-label">
-                    Paciente (Elegibles para Ropa) <span className="form-required" aria-hidden="true">*</span>
+                    Paciente (Elegibles para Ropa){" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
-                  <select className="form-input" value={entregaForm.paciente_id} onChange={e => setEntregaForm({...entregaForm, paciente_id: e.target.value})} required>
-                    <option value="" disabled>-- Seleccionar Paciente --</option>
-                    {pacientesElegibles.map(p => (
+                  <select
+                    className="form-input"
+                    value={entregaForm.paciente_id}
+                    onChange={(e) =>
+                      setEntregaForm({
+                        ...entregaForm,
+                        paciente_id: e.target.value,
+                      })
+                    }
+                    required
+                  >
+                    <option value="" disabled>
+                      -- Seleccionar Paciente --
+                    </option>
+                    {pacientesElegibles.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.nombres} {p.apellidos} (Max. disp: {p.prendasDisponibles})
+                        {p.nombres} {p.apellidos} (Max. disp:{" "}
+                        {p.prendasDisponibles})
                       </option>
                     ))}
                   </select>
                   {pacientesElegibles.length === 0 && (
                     <span className="form-error">
                       <CircleAlert size={14} aria-hidden="true" />
-                      No hay pacientes elegibles en esta brigada (o todos ya recibieron sus 2 prendas).
+                      No hay pacientes elegibles en esta brigada (o todos ya
+                      recibieron sus 2 prendas).
                     </span>
                   )}
                 </label>
@@ -434,9 +681,22 @@ export function DonacionesClient({ userId }: { userId: string }) {
 
               <label className="form-field">
                 <span className="form-label">
-                  Cantidad (Máx 2 por paciente) <span className="form-required" aria-hidden="true">*</span>
+                  Cantidad (Máx 2 por paciente){" "}
+                  <span className="form-required" aria-hidden="true">
+                    *
+                  </span>
                 </span>
-                <select className="form-input" value={entregaForm.cantidad_prendas} onChange={e => setEntregaForm({...entregaForm, cantidad_prendas: Number(e.target.value)})} required>
+                <select
+                  className="form-input"
+                  value={entregaForm.cantidad_prendas}
+                  onChange={(e) =>
+                    setEntregaForm({
+                      ...entregaForm,
+                      cantidad_prendas: Number(e.target.value),
+                    })
+                  }
+                  required
+                >
                   <option value={1}>1 Prenda</option>
                   <option value={2}>2 Prendas</option>
                 </select>
@@ -444,12 +704,34 @@ export function DonacionesClient({ userId }: { userId: string }) {
 
               <label className="form-field">
                 <span className="form-label">Observaciones</span>
-                <textarea className="form-input" rows={2} value={entregaForm.observaciones} onChange={e => setEntregaForm({...entregaForm, observaciones: e.target.value})} />
+                <textarea
+                  className="form-input"
+                  rows={2}
+                  value={entregaForm.observaciones}
+                  onChange={(e) =>
+                    setEntregaForm({
+                      ...entregaForm,
+                      observaciones: e.target.value,
+                    })
+                  }
+                />
               </label>
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsEntregaModalOpen(false)}>Cancelar</button>
-              <button type="submit" className="btn-primary btn-sm" disabled={!entregaForm.paciente_id}>Registrar Entrega</button>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => setIsEntregaModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="btn-primary btn-sm"
+                disabled={!entregaForm.paciente_id}
+              >
+                Registrar Entrega
+              </button>
             </div>
           </form>
         </AdminModal>

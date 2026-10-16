@@ -1,8 +1,11 @@
-import { requireRouteAccess } from "@/lib/auth/session";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
 import PageHeader from "@/app/administracion/components/PageHeader";
+import { requireRouteAccess } from "@/lib/auth/session";
+import { errorInfo, getLogger } from "@/lib/logger";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "@/styles/pages/admin.module.css";
 import BrigadasAdminClient from "./BrigadasAdminClient";
+
+const logger = getLogger("brigadas");
 
 export default async function BrigadasPage({
   searchParams,
@@ -24,17 +27,34 @@ export default async function BrigadasPage({
     { data: profiles },
     { data: images },
   ] = await Promise.all([
-    supabase.from("brigadas").select("*").order("fecha_brigada", { ascending: false }),
+    supabase
+      .from("brigadas")
+      .select("*")
+      .order("fecha_brigada", { ascending: false }),
     supabase.from("presupuestos_brigada").select("*"),
-    supabase.from("gastos_brigada").select("*").order("fecha_gasto", { ascending: false }),
-    supabase.from("inscripciones_voluntarios").select("*").order("created_at", { ascending: false }),
+    supabase
+      .from("gastos_brigada")
+      .select("*")
+      .order("fecha_gasto", { ascending: false }),
+    supabase
+      .from("inscripciones_voluntarios")
+      .select("*")
+      .order("created_at", { ascending: false }),
     supabase.from("asignaciones_voluntarios").select("*"),
-    supabase.from("perfiles").select("*, rol:rol_id(nombre), especialidades:especialidad_id(id, nombre)").order("nombre_completo", { ascending: true }),
-    supabase.from("brigada_imagenes").select("*").order("orden", { ascending: true }),
+    supabase
+      .from("perfiles")
+      .select(
+        "*, rol:rol_id(nombre), especialidades:especialidad_id(id, nombre)"
+      )
+      .order("nombre_completo", { ascending: true }),
+    supabase
+      .from("brigada_imagenes")
+      .select("*")
+      .order("orden", { ascending: true }),
   ]);
 
   if (bError) {
-    console.error("Error fetching brigades data:", bError.message);
+    logger.error("Brigades page load failed", errorInfo(bError));
   }
 
   return (

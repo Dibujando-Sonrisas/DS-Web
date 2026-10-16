@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { SOCIAL_LINKS } from "./SocialIcons";
 import styles from "../../styles/components/footer.module.css";
+import { SOCIAL_LINKS } from "./SocialIcons";
 
 export default function Footer() {
   return (

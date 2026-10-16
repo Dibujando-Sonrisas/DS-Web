@@ -28,10 +28,15 @@ export interface Brigada {
   updated_at?: string;
 }
 
-export type BrigadaInsert = Omit<Brigada, "id" | "created_at" | "updated_at"> & {
+export type BrigadaInsert = Omit<
+  Brigada,
+  "id" | "created_at" | "updated_at"
+> & {
   id?: string;
 };
-export type BrigadaUpdate = Partial<Omit<Brigada, "id" | "created_at" | "updated_at">>;
+export type BrigadaUpdate = Partial<
+  Omit<Brigada, "id" | "created_at" | "updated_at">
+>;
 
 export async function getBrigadas(
   client: SupabaseClient = supabase

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { type CSSProperties, useState } from "react";
 import styles from "@/styles/pages/admin.module.css";
 
 type UserAvatarProps = {
@@ -12,7 +12,11 @@ type UserAvatarProps = {
 };
 
 /** Iniciales: "Urias Flores" → "UF"; sin nombre, la primera letra del correo. */
-function getInitials(nombres?: string | null, apellidos?: string | null, email?: string | null) {
+function getInitials(
+  nombres?: string | null,
+  apellidos?: string | null,
+  email?: string | null
+) {
   if (nombres || apellidos) {
     if (nombres && !apellidos) {
       const parts = nombres.trim().split(/\s+/);
@@ -41,12 +45,19 @@ export default function UserAvatar({
   const initials = getInitials(nombres, apellidos, email);
 
   return (
-    <span className={styles.avatar} style={{ "--size": `${size / 10}rem` } as CSSProperties}>
+    <span
+      className={styles.avatar}
+      style={{ "--size": `${size / 10}rem` } as CSSProperties}
+    >
       {avatarUrl && !failed ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={avatarUrl}
-          alt={nombres ? `${nombres} ${apellidos || ""}`.trim() : "Avatar de usuario"}
+          alt={
+            nombres
+              ? `${nombres} ${apellidos || ""}`.trim()
+              : "Avatar de usuario"
+          }
           onError={() => setFailed(true)}
         />
       ) : (

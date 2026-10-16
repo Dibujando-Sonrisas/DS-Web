@@ -1,20 +1,5 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import {
-  getDashboardVentasAction as getDashboardVentas,
-  getCategoriasProductosAction as getCategoriasProductos,
-  getProductosAction as getProductos,
-  getHistorialVentasAction as getHistorialVentas,
-  getBajoStockAction as getBajoStock,
-  crearCategoriaProductoAction as createCategoriaProducto,
-  crearProductoAction as createProducto,
-  updateStockProductoAction as updateStockProducto,
-  registrarVentaAction as registrarVenta,
-  deleteCategoriaProductoAction as deleteCategoriaProducto,
-  deleteProductoAction as deleteProducto,
-} from "./actions";
-import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
 import {
   Banknote,
   Boxes,
@@ -29,17 +14,38 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
+import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import StatCard from "@/app/administracion/components/StatCard";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
 import ventas from "@/styles/pages/admin-ventas.module.css";
-import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
-import { PERMISSIONS } from "@/lib/auth/permissions";
+import {
+  crearCategoriaProductoAction as createCategoriaProducto,
+  crearProductoAction as createProducto,
+  deleteCategoriaProductoAction as deleteCategoriaProducto,
+  deleteProductoAction as deleteProducto,
+  getBajoStockAction as getBajoStock,
+  getCategoriasProductosAction as getCategoriasProductos,
+  getDashboardVentasAction as getDashboardVentas,
+  getHistorialVentasAction as getHistorialVentas,
+  getProductosAction as getProductos,
+  registrarVentaAction as registrarVenta,
+  updateStockProductoAction as updateStockProducto,
+} from "./actions";
+
+const logger = getLogger("ventas", "client");
 
 export function VentasClient({ userId }: { userId: string }) {
   const { can } = usePermissions();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "nueva_venta" | "inventario" | "historial">("dashboard");
+  const [activeTab, setActiveTab] = useState<
+    "dashboard" | "nueva_venta" | "inventario" | "historial"
+  >("dashboard");
   const [isLoading, setIsLoading] = useState(true);
 
   // Data
@@ -56,8 +62,19 @@ export function VentasClient({ userId }: { userId: string }) {
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
 
   // Forms state
-  const [catForm, setCatForm] = useState({ codigo: "", nombre: "", descripcion: "" });
-  const [prodForm, setProdForm] = useState({ categoria_id: "", codigo: "", nombre: "", descripcion: "", precio: 0, stock: 0 });
+  const [catForm, setCatForm] = useState({
+    codigo: "",
+    nombre: "",
+    descripcion: "",
+  });
+  const [prodForm, setProdForm] = useState({
+    categoria_id: "",
+    codigo: "",
+    nombre: "",
+    descripcion: "",
+    precio: 0,
+    stock: 0,
+  });
   const [stockForm, setStockForm] = useState({ id: "", nombre: "", stock: 0 });
 
   // Delete target states
@@ -67,10 +84,18 @@ export function VentasClient({ userId }: { userId: string }) {
   // Venta state (Cart)
   const [ventaBrigadaId, setVentaBrigadaId] = useState("");
   const [ventaObservaciones, setVentaObservaciones] = useState("");
-  const [cart, setCart] = useState<Array<{ producto_id: string, nombre: string, cantidad: number, precio_unitario: number, maxStock: number }>>([]);
+  const [cart, setCart] = useState<
+    Array<{
+      producto_id: string;
+      nombre: string;
+      cantidad: number;
+      precio_unitario: number;
+      maxStock: number;
+    }>
+  >([]);
   const [isSubmittingVenta, setIsSubmittingVenta] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [dash, hist, bs, cats, prods, brigs] = await Promise.all([
@@ -79,7 +104,7 @@ export function VentasClient({ userId }: { userId: string }) {
         getBajoStock(),
         getCategoriasProductos(),
         getProductos(),
-        getBrigadas()
+        getBrigadas(),
       ]);
       setDashboard(dash);
       setHistorial(hist);
@@ -88,15 +113,15 @@ export function VentasClient({ userId }: { userId: string }) {
       setProductos(prods);
       setBrigadas(brigs.data || []);
     } catch (e) {
-      console.error(e);
+      logger.error("Sales data load failed", errorInfo(e));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   // -- Handlers Inventario --
   const submitCategoria = async (e: React.FormEvent) => {
@@ -105,7 +130,10 @@ export function VentasClient({ userId }: { userId: string }) {
       await createCategoriaProducto(catForm);
       setIsCatModalOpen(false);
       fetchData();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) {
+      logger.error("Product category creation failed", errorInfo(e));
+      alert(e.message);
+    }
   };
 
   const submitProducto = async (e: React.FormEvent) => {
@@ -114,7 +142,10 @@ export function VentasClient({ userId }: { userId: string }) {
       await createProducto(prodForm);
       setIsProdModalOpen(false);
       fetchData();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) {
+      logger.error("Product creation failed", errorInfo(e));
+      alert(e.message);
+    }
   };
 
   const submitStock = async (e: React.FormEvent) => {
@@ -123,45 +154,67 @@ export function VentasClient({ userId }: { userId: string }) {
       await updateStockProducto(stockForm.id, stockForm.stock);
       setIsStockModalOpen(false);
       fetchData();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) {
+      logger.error("Product stock update failed", {
+        ...errorInfo(e),
+        productoId: stockForm.id,
+      });
+      alert(e.message);
+    }
   };
 
   // -- Handlers Carrito de Ventas --
   const addToCart = (productoId: string) => {
-    const prod = productos.find(p => p.id === productoId);
+    const prod = productos.find((p) => p.id === productoId);
     if (!prod || prod.stock <= 0) return;
 
-    setCart(prev => {
-      const exists = prev.find(item => item.producto_id === productoId);
+    setCart((prev) => {
+      const exists = prev.find((item) => item.producto_id === productoId);
       if (exists) {
         if (exists.cantidad >= prod.stock) {
           alert("No puedes vender más del stock disponible.");
           return prev;
         }
-        return prev.map(item => item.producto_id === productoId ? { ...item, cantidad: item.cantidad + 1 } : item);
+        return prev.map((item) =>
+          item.producto_id === productoId
+            ? { ...item, cantidad: item.cantidad + 1 }
+            : item
+        );
       }
-      return [...prev, { producto_id: prod.id, nombre: prod.nombre, cantidad: 1, precio_unitario: prod.precio, maxStock: prod.stock }];
+      return [
+        ...prev,
+        {
+          producto_id: prod.id,
+          nombre: prod.nombre,
+          cantidad: 1,
+          precio_unitario: prod.precio,
+          maxStock: prod.stock,
+        },
+      ];
     });
   };
 
   const removeFromCart = (productoId: string) => {
-    setCart(prev => prev.filter(item => item.producto_id !== productoId));
+    setCart((prev) => prev.filter((item) => item.producto_id !== productoId));
   };
 
   const updateCartQty = (productoId: string, qty: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.producto_id === productoId) {
-        if (qty > item.maxStock) {
-          alert("Límite de stock excedido.");
-          return item;
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.producto_id === productoId) {
+          if (qty > item.maxStock) {
+            alert("Límite de stock excedido.");
+            return item;
+          }
+          return { ...item, cantidad: qty > 0 ? qty : 1 };
         }
-        return { ...item, cantidad: qty > 0 ? qty : 1 };
-      }
-      return item;
-    }));
+        return item;
+      })
+    );
   };
 
-  const calcularTotalCarrito = () => cart.reduce((acc, item) => acc + (item.cantidad * item.precio_unitario), 0);
+  const calcularTotalCarrito = () =>
+    cart.reduce((acc, item) => acc + item.cantidad * item.precio_unitario, 0);
 
   const confirmarVenta = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,7 +226,7 @@ export function VentasClient({ userId }: { userId: string }) {
         vendedor_id: userId,
         brigada_id: ventaBrigadaId || undefined,
         observaciones: ventaObservaciones,
-        detalles: cart
+        detalles: cart,
       });
       alert(`Venta registrada exitosamente. Código: ${res.codigo}`);
       setCart([]);
@@ -182,6 +235,10 @@ export function VentasClient({ userId }: { userId: string }) {
       fetchData();
       setActiveTab("dashboard");
     } catch (e: any) {
+      logger.error("Sale registration failed", {
+        ...errorInfo(e),
+        items: cart.length,
+      });
       alert(e.message);
     } finally {
       setIsSubmittingVenta(false);
@@ -189,16 +246,36 @@ export function VentasClient({ userId }: { userId: string }) {
   };
 
   const TABS = [
-    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard aria-hidden="true" /> },
-    { id: "nueva_venta", label: "Nueva Venta", icon: <ShoppingCart aria-hidden="true" /> },
-    { id: "inventario", label: "Inventario", icon: <Boxes aria-hidden="true" /> },
-    { id: "historial", label: "Historial", icon: <History aria-hidden="true" /> },
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: <LayoutDashboard aria-hidden="true" />,
+    },
+    {
+      id: "nueva_venta",
+      label: "Nueva Venta",
+      icon: <ShoppingCart aria-hidden="true" />,
+    },
+    {
+      id: "inventario",
+      label: "Inventario",
+      icon: <Boxes aria-hidden="true" />,
+    },
+    {
+      id: "historial",
+      label: "Historial",
+      icon: <History aria-hidden="true" />,
+    },
   ] as const;
 
   return (
     <div className={styles.stack}>
       {/* Menu Pestañas */}
-      <div className={styles.tabs} role="tablist" aria-label="Secciones de ventas">
+      <div
+        className={styles.tabs}
+        role="tablist"
+        aria-label="Secciones de ventas"
+      >
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -249,7 +326,9 @@ export function VentasClient({ userId }: { userId: string }) {
 
               <section className={styles.panel}>
                 <div className={styles.panelHeader}>
-                  <h2 className={styles.panelTitle}>Productos con Bajo Stock (5 o menos)</h2>
+                  <h2 className={styles.panelTitle}>
+                    Productos con Bajo Stock (5 o menos)
+                  </h2>
                 </div>
                 <div className={styles.tableWrap}>
                   <table className={styles.table}>
@@ -275,7 +354,9 @@ export function VentasClient({ userId }: { userId: string }) {
                             <td className={styles.num}>
                               <span
                                 className={`${styles.badge} ${
-                                  p.stock === 0 ? styles.badgeDanger : styles.badgeWarning
+                                  p.stock === 0
+                                    ? styles.badgeDanger
+                                    : styles.badgeWarning
                                 }`}
                               >
                                 {p.stock}
@@ -301,66 +382,83 @@ export function VentasClient({ userId }: { userId: string }) {
                 </div>
                 <div className={styles.panelBody}>
                   <div className={styles.gridAuto}>
-                    {productos.filter((p) => p.activo).map((p) => (
-                      <div key={p.id} className={ventas.product}>
-                        <span className={ventas.productCode}>{p.codigo}</span>
-                        <h3 className={ventas.productName}>{p.nombre}</h3>
-                        <span className={ventas.productPrice}>L. {p.precio}</span>
-                        <span
-                          className={`${ventas.productStock} ${
-                            p.stock > 0 ? "" : ventas.productStockOut
-                          }`}
-                        >
-                          Stock: {p.stock}
-                        </span>
-                        <button
-                          type="button"
-                          className="btn-primary btn-xs"
-                          onClick={() => addToCart(p.id)}
-                          disabled={p.stock === 0}
-                        >
-                          <Plus aria-hidden="true" />
-                          {p.stock === 0 ? "Agotado" : "Añadir"}
-                        </button>
-                      </div>
-                    ))}
+                    {productos
+                      .filter((p) => p.activo)
+                      .map((p) => (
+                        <div key={p.id} className={ventas.product}>
+                          <span className={ventas.productCode}>{p.codigo}</span>
+                          <h3 className={ventas.productName}>{p.nombre}</h3>
+                          <span className={ventas.productPrice}>
+                            L. {p.precio}
+                          </span>
+                          <span
+                            className={`${ventas.productStock} ${
+                              p.stock > 0 ? "" : ventas.productStockOut
+                            }`}
+                          >
+                            Stock: {p.stock}
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-primary btn-xs"
+                            onClick={() => addToCart(p.id)}
+                            disabled={p.stock === 0}
+                          >
+                            <Plus aria-hidden="true" />
+                            {p.stock === 0 ? "Agotado" : "Añadir"}
+                          </button>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </section>
 
               {/* Carrito */}
-              <form className={`${styles.panel} ${styles.sticky}`} onSubmit={confirmarVenta}>
+              <form
+                className={`${styles.panel} ${styles.sticky}`}
+                onSubmit={confirmarVenta}
+              >
                 <div className={styles.panelHeader}>
                   <h2 className={styles.panelTitle}>
                     Resumen de Venta
-                    {cart.length > 0 && <span className={styles.count}>{cart.length}</span>}
+                    {cart.length > 0 && (
+                      <span className={styles.count}>{cart.length}</span>
+                    )}
                   </h2>
                 </div>
 
                 <div className={styles.panelBody}>
                   <ul className={ventas.cartList}>
                     {cart.length === 0 ? (
-                      <li className={`${ventas.cartEmpty} ${styles.muted}`}>Carrito vacío</li>
+                      <li className={`${ventas.cartEmpty} ${styles.muted}`}>
+                        Carrito vacío
+                      </li>
                     ) : (
-                      cart.map((item, idx) => (
-                        <li key={idx} className={ventas.cartItem}>
+                      cart.map((item) => (
+                        <li key={item.producto_id} className={ventas.cartItem}>
                           <span className={ventas.cartName}>{item.nombre}</span>
                           <label className={ventas.cartQty}>
-                            <span className="sr-only">Cantidad de {item.nombre}</span>
+                            <span className="sr-only">
+                              Cantidad de {item.nombre}
+                            </span>
                             <input
                               type="number"
                               min="1"
                               max={item.maxStock}
                               value={item.cantidad}
                               onChange={(e) =>
-                                updateCartQty(item.producto_id, Number(e.target.value))
+                                updateCartQty(
+                                  item.producto_id,
+                                  Number(e.target.value)
+                                )
                               }
                               className="form-input form-input-sm"
                             />
                             <span>x L. {item.precio_unitario}</span>
                           </label>
                           <span className={ventas.cartSubtotal}>
-                            L. {(item.cantidad * item.precio_unitario).toFixed(2)}
+                            L.{" "}
+                            {(item.cantidad * item.precio_unitario).toFixed(2)}
                           </span>
                           <button
                             type="button"
@@ -383,7 +481,8 @@ export function VentasClient({ userId }: { userId: string }) {
                   <div className={ventas.cartForm}>
                     <label className="form-field">
                       <span className="form-label">
-                        Asociar a Brigada <span className="form-optional">(Opcional)</span>
+                        Asociar a Brigada{" "}
+                        <span className="form-optional">(Opcional)</span>
                       </span>
                       <select
                         className="form-input"
@@ -401,7 +500,8 @@ export function VentasClient({ userId }: { userId: string }) {
 
                     <label className="form-field">
                       <span className="form-label">
-                        Observaciones <span className="form-optional">(Opcional)</span>
+                        Observaciones{" "}
+                        <span className="form-optional">(Opcional)</span>
                       </span>
                       <textarea
                         className="form-input"
@@ -423,7 +523,9 @@ export function VentasClient({ userId }: { userId: string }) {
                         ) : (
                           <Check aria-hidden="true" />
                         )}
-                        {isSubmittingVenta ? "Procesando Venta..." : "Confirmar Venta"}
+                        {isSubmittingVenta
+                          ? "Procesando Venta..."
+                          : "Confirmar Venta"}
                       </button>
                     )}
                   </div>
@@ -438,7 +540,8 @@ export function VentasClient({ userId }: { userId: string }) {
               <section className={styles.panel}>
                 <div className={styles.panelHeader}>
                   <h2 className={styles.panelTitle}>
-                    Categorías <span className={styles.count}>{categorias.length}</span>
+                    Categorías{" "}
+                    <span className={styles.count}>{categorias.length}</span>
                   </h2>
                   {can(PERMISSIONS.VENTAS_CREATE) && (
                     <button
@@ -495,14 +598,22 @@ export function VentasClient({ userId }: { userId: string }) {
               <section className={styles.panel}>
                 <div className={styles.panelHeader}>
                   <h2 className={styles.panelTitle}>
-                    Productos <span className={styles.count}>{productos.length}</span>
+                    Productos{" "}
+                    <span className={styles.count}>{productos.length}</span>
                   </h2>
                   {can(PERMISSIONS.VENTAS_CREATE) && (
                     <button
                       type="button"
                       className="btn-primary btn-sm"
                       onClick={() => {
-                        setProdForm({ categoria_id: "", codigo: "", nombre: "", descripcion: "", precio: 0, stock: 0 });
+                        setProdForm({
+                          categoria_id: "",
+                          codigo: "",
+                          nombre: "",
+                          descripcion: "",
+                          precio: 0,
+                          stock: 0,
+                        });
                         setIsProdModalOpen(true);
                       }}
                     >
@@ -532,7 +643,11 @@ export function VentasClient({ userId }: { userId: string }) {
                           <td className={styles.num}>L. {p.precio}</td>
                           <td className={styles.num}>
                             {p.stock === 0 ? (
-                              <span className={`${styles.badge} ${styles.badgeDanger}`}>0</span>
+                              <span
+                                className={`${styles.badge} ${styles.badgeDanger}`}
+                              >
+                                0
+                              </span>
                             ) : (
                               p.stock
                             )}
@@ -543,7 +658,11 @@ export function VentasClient({ userId }: { userId: string }) {
                                 type="button"
                                 className="btn-ghost btn-xs"
                                 onClick={() => {
-                                  setStockForm({ id: p.id, nombre: p.nombre, stock: p.stock });
+                                  setStockForm({
+                                    id: p.id,
+                                    nombre: p.nombre,
+                                    stock: p.stock,
+                                  });
                                   setIsStockModalOpen(true);
                                 }}
                               >
@@ -575,7 +694,8 @@ export function VentasClient({ userId }: { userId: string }) {
             <section className={styles.panel}>
               <div className={styles.panelHeader}>
                 <h2 className={styles.panelTitle}>
-                  Historial de Ventas <span className={styles.count}>{historial.length}</span>
+                  Historial de Ventas{" "}
+                  <span className={styles.count}>{historial.length}</span>
                 </h2>
               </div>
               <div className={styles.tableWrap}>
@@ -598,7 +718,9 @@ export function VentasClient({ userId }: { userId: string }) {
                     ) : (
                       historial.map((v) => (
                         <tr key={v.id}>
-                          <td className={styles.nowrap}>{new Date(v.fecha).toLocaleString()}</td>
+                          <td className={styles.nowrap}>
+                            {new Date(v.fecha).toLocaleString()}
+                          </td>
                           <td className={styles.cellCode}>{v.codigo}</td>
                           <td>{v.vendedor}</td>
                           <td className={`${styles.num} ${styles.cellMain}`}>
@@ -617,19 +739,33 @@ export function VentasClient({ userId }: { userId: string }) {
 
       {/* MODAL CATEGORIA */}
       {isCatModalOpen && (
-        <AdminModal title="Nueva Categoría de Producto" size="sm" onClose={() => setIsCatModalOpen(false)}>
+        <AdminModal
+          title="Nueva Categoría de Producto"
+          size="sm"
+          onClose={() => setIsCatModalOpen(false)}
+        >
           <form className={styles.modalForm} onSubmit={submitCategoria}>
             <div className={styles.modalBody}>
               <div className={styles.formSection}>
-                <h3 className={styles.formSectionTitle}>1. Clasificación de Recaudación</h3>
+                <h3 className={styles.formSectionTitle}>
+                  1. Clasificación de Recaudación
+                </h3>
                 <label className="form-field">
                   <span className="form-label">
-                    Código de Categoría <span className="form-required" aria-hidden="true">*</span>
+                    Código de Categoría{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     className="form-input"
                     value={catForm.codigo}
-                    onChange={(e) => setCatForm({ ...catForm, codigo: e.target.value.toUpperCase() })}
+                    onChange={(e) =>
+                      setCatForm({
+                        ...catForm,
+                        codigo: e.target.value.toUpperCase(),
+                      })
+                    }
                     placeholder="Ej. CAM"
                     required
                     maxLength={15}
@@ -637,31 +773,43 @@ export function VentasClient({ userId }: { userId: string }) {
                 </label>
                 <label className="form-field">
                   <span className="form-label">
-                    Nombre de Categoría <span className="form-required" aria-hidden="true">*</span>
+                    Nombre de Categoría{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     className="form-input"
                     value={catForm.nombre}
-                    onChange={(e) => setCatForm({ ...catForm, nombre: e.target.value })}
+                    onChange={(e) =>
+                      setCatForm({ ...catForm, nombre: e.target.value })
+                    }
                     placeholder="Ej. Camisetas"
                     required
                   />
                 </label>
                 <label className="form-field">
                   <span className="form-label">
-                    Descripción <span className="form-optional">(Opcional)</span>
+                    Descripción{" "}
+                    <span className="form-optional">(Opcional)</span>
                   </span>
                   <textarea
                     className="form-input"
                     rows={2}
                     value={catForm.descripcion}
-                    onChange={(e) => setCatForm({ ...catForm, descripcion: e.target.value })}
+                    onChange={(e) =>
+                      setCatForm({ ...catForm, descripcion: e.target.value })
+                    }
                   />
                 </label>
               </div>
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsCatModalOpen(false)}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => setIsCatModalOpen(false)}
+              >
                 Cancelar
               </button>
               <button type="submit" className="btn-primary btn-sm">
@@ -674,19 +822,30 @@ export function VentasClient({ userId }: { userId: string }) {
 
       {/* MODAL PRODUCTO */}
       {isProdModalOpen && (
-        <AdminModal title="Nuevo Producto de Recaudación" size="sm" onClose={() => setIsProdModalOpen(false)}>
+        <AdminModal
+          title="Nuevo Producto de Recaudación"
+          size="sm"
+          onClose={() => setIsProdModalOpen(false)}
+        >
           <form className={styles.modalForm} onSubmit={submitProducto}>
             <div className={styles.modalBody}>
               <div className={styles.formSection}>
-                <h3 className={styles.formSectionTitle}>1. Información del Producto</h3>
+                <h3 className={styles.formSectionTitle}>
+                  1. Información del Producto
+                </h3>
                 <label className="form-field">
                   <span className="form-label">
-                    Categoría <span className="form-required" aria-hidden="true">*</span>
+                    Categoría{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <select
                     className="form-input"
                     value={prodForm.categoria_id}
-                    onChange={(e) => setProdForm({ ...prodForm, categoria_id: e.target.value })}
+                    onChange={(e) =>
+                      setProdForm({ ...prodForm, categoria_id: e.target.value })
+                    }
                     required
                   >
                     <option value="">-- Seleccionar --</option>
@@ -699,24 +858,37 @@ export function VentasClient({ userId }: { userId: string }) {
                 </label>
                 <label className="form-field">
                   <span className="form-label">
-                    Código Identificador <span className="form-required" aria-hidden="true">*</span>
+                    Código Identificador{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     className="form-input"
                     value={prodForm.codigo}
-                    onChange={(e) => setProdForm({ ...prodForm, codigo: e.target.value.toUpperCase() })}
+                    onChange={(e) =>
+                      setProdForm({
+                        ...prodForm,
+                        codigo: e.target.value.toUpperCase(),
+                      })
+                    }
                     placeholder="Ej. CAM-001"
                     required
                   />
                 </label>
                 <label className="form-field">
                   <span className="form-label">
-                    Nombre del Producto <span className="form-required" aria-hidden="true">*</span>
+                    Nombre del Producto{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     className="form-input"
                     value={prodForm.nombre}
-                    onChange={(e) => setProdForm({ ...prodForm, nombre: e.target.value })}
+                    onChange={(e) =>
+                      setProdForm({ ...prodForm, nombre: e.target.value })
+                    }
                     placeholder="Ej. Camiseta Oficial Blanca"
                     required
                   />
@@ -724,11 +896,16 @@ export function VentasClient({ userId }: { userId: string }) {
               </div>
 
               <div className={styles.formSection}>
-                <h3 className={styles.formSectionTitle}>2. Precio y Existencias</h3>
+                <h3 className={styles.formSectionTitle}>
+                  2. Precio y Existencias
+                </h3>
                 <div className="form-grid">
                   <label className="form-field">
                     <span className="form-label">
-                      Precio (L.) <span className="form-required" aria-hidden="true">*</span>
+                      Precio (L.){" "}
+                      <span className="form-required" aria-hidden="true">
+                        *
+                      </span>
                     </span>
                     <input
                       className="form-input"
@@ -736,39 +913,59 @@ export function VentasClient({ userId }: { userId: string }) {
                       step="0.01"
                       min="0"
                       value={prodForm.precio}
-                      onChange={(e) => setProdForm({ ...prodForm, precio: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setProdForm({
+                          ...prodForm,
+                          precio: Number(e.target.value),
+                        })
+                      }
                       required
                     />
                   </label>
                   <label className="form-field">
                     <span className="form-label">
-                      Stock Inicial <span className="form-required" aria-hidden="true">*</span>
+                      Stock Inicial{" "}
+                      <span className="form-required" aria-hidden="true">
+                        *
+                      </span>
                     </span>
                     <input
                       className="form-input"
                       type="number"
                       min="0"
                       value={prodForm.stock}
-                      onChange={(e) => setProdForm({ ...prodForm, stock: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setProdForm({
+                          ...prodForm,
+                          stock: Number(e.target.value),
+                        })
+                      }
                       required
                     />
                   </label>
                 </div>
                 <label className="form-field">
                   <span className="form-label">
-                    Descripción <span className="form-optional">(Opcional)</span>
+                    Descripción{" "}
+                    <span className="form-optional">(Opcional)</span>
                   </span>
                   <textarea
                     className="form-input"
                     rows={2}
                     value={prodForm.descripcion}
-                    onChange={(e) => setProdForm({ ...prodForm, descripcion: e.target.value })}
+                    onChange={(e) =>
+                      setProdForm({ ...prodForm, descripcion: e.target.value })
+                    }
                   />
                 </label>
               </div>
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsProdModalOpen(false)}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => setIsProdModalOpen(false)}
+              >
                 Cancelar
               </button>
               <button type="submit" className="btn-primary btn-sm">
@@ -795,20 +992,32 @@ export function VentasClient({ userId }: { userId: string }) {
             <div className={styles.modalBody}>
               <label className="form-field">
                 <span className="form-label">
-                  Nuevo Nivel de Stock <span className="form-required" aria-hidden="true">*</span>
+                  Nuevo Nivel de Stock{" "}
+                  <span className="form-required" aria-hidden="true">
+                    *
+                  </span>
                 </span>
                 <input
                   className="form-input"
                   type="number"
                   min="0"
                   value={stockForm.stock}
-                  onChange={(e) => setStockForm({ ...stockForm, stock: Number(e.target.value) })}
+                  onChange={(e) =>
+                    setStockForm({
+                      ...stockForm,
+                      stock: Number(e.target.value),
+                    })
+                  }
                   required
                 />
               </label>
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => setIsStockModalOpen(false)}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={() => setIsStockModalOpen(false)}
+              >
                 Cancelar
               </button>
               <button type="submit" className="btn-primary btn-sm">
@@ -830,10 +1039,18 @@ export function VentasClient({ userId }: { userId: string }) {
               await deleteCategoriaProducto(deleteCatTarget.id);
               setDeleteCatTarget(null);
               fetchData();
-            } catch (e: any) { alert("Error al eliminar: " + e.message); }
+            } catch (e: any) {
+              logger.error("Product category deletion failed", {
+                ...errorInfo(e),
+                categoriaId: deleteCatTarget.id,
+              });
+              alert("Error al eliminar: " + e.message);
+            }
           }}
         >
-          ¿Estás seguro de que deseas eliminar la categoría <strong>{deleteCatTarget.nombre}</strong>? (No debe tener productos asociados). Esta acción no se puede deshacer.
+          ¿Estás seguro de que deseas eliminar la categoría{" "}
+          <strong>{deleteCatTarget.nombre}</strong>? (No debe tener productos
+          asociados). Esta acción no se puede deshacer.
         </ConfirmDialog>
       )}
 
@@ -848,10 +1065,18 @@ export function VentasClient({ userId }: { userId: string }) {
               await deleteProducto(deleteProdTarget.id);
               setDeleteProdTarget(null);
               fetchData();
-            } catch (e: any) { alert("Error al eliminar: " + e.message); }
+            } catch (e: any) {
+              logger.error("Product deletion failed", {
+                ...errorInfo(e),
+                productoId: deleteProdTarget.id,
+              });
+              alert("Error al eliminar: " + e.message);
+            }
           }}
         >
-          ¿Estás seguro de que deseas eliminar el producto <strong>{deleteProdTarget.nombre}</strong>? (No debe tener ventas asociadas). Esta acción no se puede deshacer.
+          ¿Estás seguro de que deseas eliminar el producto{" "}
+          <strong>{deleteProdTarget.nombre}</strong>? (No debe tener ventas
+          asociadas). Esta acción no se puede deshacer.
         </ConfirmDialog>
       )}
     </div>

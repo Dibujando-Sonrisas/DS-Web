@@ -23,7 +23,9 @@ export default function ModulePlaceholder({
         {description ??
           "Este módulo estará disponible próximamente. Por ahora puedes navegar desde el menú lateral."}
       </p>
-      <span className={`${styles.badge} ${styles.badgeBrand}`}>Próximamente</span>
+      <span className={`${styles.badge} ${styles.badgeBrand}`}>
+        Próximamente
+      </span>
     </div>
   );
 }

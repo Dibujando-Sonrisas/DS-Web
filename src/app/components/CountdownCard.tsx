@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Play } from "lucide-react";
+import { useEffect, useState } from "react";
 import styles from "@/styles/components/countdown.module.css";
 
 type CountdownCardProps = {
@@ -32,7 +32,10 @@ export default function CountdownCard({ targetDateStr }: CountdownCardProps) {
   if (now === null) {
     // Mismas cajas vacías antes de montar en el cliente, para no saltar
     return (
-      <div className={`${styles.units} ${styles.placeholder}`} aria-hidden="true">
+      <div
+        className={`${styles.units} ${styles.placeholder}`}
+        aria-hidden="true"
+      >
         {UNITS.map((u) => (
           <div key={u.key} className={styles.unit} />
         ))}

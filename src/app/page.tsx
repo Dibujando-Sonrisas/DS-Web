@@ -1,12 +1,12 @@
+import { HeartHandshake } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import BrigadaBanner, { CuposInfo } from "./components/BrigadaBanner";
 import type { Brigada } from "@/lib/db/brigadas";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "../styles/pages/home.module.css";
-import { HeartHandshake } from "lucide-react";
+import BrigadaBanner, { type CuposInfo } from "./components/BrigadaBanner";
+import Footer from "./components/Footer";
+import Header from "./components/Header";
 
 export const metadata: Metadata = {
   title: "Inicio | Dibujando Sonrisas",
@@ -28,12 +28,15 @@ export default async function Home() {
     .order("fecha_brigada", { ascending: true })
     .limit(1);
 
-  const activeBrigada: Brigada | null = (upcomingBrigadas?.[0] as Brigada) ?? null;
+  const activeBrigada: Brigada | null =
+    (upcomingBrigadas?.[0] as Brigada) ?? null;
 
-  let cuposInfo: CuposInfo | undefined = undefined;
+  let cuposInfo: CuposInfo | undefined;
   if (activeBrigada) {
     // anon no lee inscripciones: la base cuenta los cupos ocupados
-    const { data: count } = await supabase.rpc("cupos_ocupados", { p_brigada: activeBrigada.id });
+    const { data: count } = await supabase.rpc("cupos_ocupados", {
+      p_brigada: activeBrigada.id,
+    });
 
     const totalCupos = activeBrigada.capacidad_voluntarios ?? null;
     const registrados = count || 0;
@@ -61,6 +64,7 @@ export default async function Home() {
           playsInline
           className={styles.heroVideo}
           aria-hidden="true"
+          tabIndex={-1}
         >
           <source src="/video-brigada.mp4" type="video/mp4" />
           Tu navegador no soporta videos.
@@ -109,12 +113,11 @@ export default async function Home() {
         <h2 className={styles.impactHeader} id="impacto-heading">
           Nuestro Impacto
         </h2>
-        <div
+        <ul
           className={`${styles.impactGrid} container`}
-          role="list"
           aria-labelledby="impacto-heading"
         >
-          <article className={styles.impactCard} role="listitem">
+          <li className={styles.impactCard}>
             <div className={styles.cardImg1} aria-hidden="true" />
             <div className={styles.impactCardBody}>
               <h3>Consultas Médicas</h3>
@@ -123,9 +126,9 @@ export default async function Home() {
                 que no tienen acceso a centros de salud.
               </p>
             </div>
-          </article>
+          </li>
 
-          <article className={styles.impactCard} role="listitem">
+          <li className={styles.impactCard}>
             <div className={styles.cardImg2} aria-hidden="true" />
             <div className={styles.impactCardBody}>
               <h3>Atención Odontológica</h3>
@@ -134,9 +137,9 @@ export default async function Home() {
                 comunidades sin clínicas cercanas.
               </p>
             </div>
-          </article>
+          </li>
 
-          <article className={styles.impactCard} role="listitem">
+          <li className={styles.impactCard}>
             <div className={styles.cardImg3} aria-hidden="true" />
             <div className={styles.impactCardBody}>
               <h3>Apoyo Comunitario</h3>
@@ -145,18 +148,17 @@ export default async function Home() {
                 asilos de ancianos de nuestra región.
               </p>
             </div>
-          </article>
-        </div>
+          </li>
+        </ul>
 
         <h2 className={styles.testimonialsHeader} id="testimonios-heading">
           Testimonios
         </h2>
-        <div
+        <ul
           className={`${styles.testimonialsGrid} container`}
-          role="list"
           aria-labelledby="testimonios-heading"
         >
-          <article className={styles.testimonialCard} role="listitem">
+          <li className={styles.testimonialCard}>
             <div
               className={styles.testimonialImgPlaceholder}
               aria-hidden="true"
@@ -165,9 +167,9 @@ export default async function Home() {
               <h4>&#34;Dibujando Sonrisas cambió la vida de mi familia&#34;</h4>
               <p>— María Rodríguez</p>
             </div>
-          </article>
+          </li>
 
-          <article className={styles.testimonialCard} role="listitem">
+          <li className={styles.testimonialCard}>
             <div
               className={styles.testimonialImgPlaceholder}
               aria-hidden="true"
@@ -176,9 +178,9 @@ export default async function Home() {
               <h4>&#34;La atención que recibimos fue un regalo de Dios&#34;</h4>
               <p>— Carlos López</p>
             </div>
-          </article>
+          </li>
 
-          <article className={styles.testimonialCard} role="listitem">
+          <li className={styles.testimonialCard}>
             <div
               className={styles.testimonialImgPlaceholder}
               aria-hidden="true"
@@ -187,8 +189,8 @@ export default async function Home() {
               <h4>&#34;Su dedicación y amor nos inspira profundamente&#34;</h4>
               <p>— Sofía Martínez</p>
             </div>
-          </article>
-        </div>
+          </li>
+        </ul>
       </main>
 
       <section className={styles.support} aria-labelledby="cta-heading">

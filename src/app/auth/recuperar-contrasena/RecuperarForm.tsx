@@ -1,15 +1,25 @@
 "use client";
 
+import {
+  CircleCheck,
+  KeyRound,
+  LoaderCircle,
+  Mail,
+  Send,
+  TriangleAlert,
+} from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
-import { CircleCheck, KeyRound, LoaderCircle, Mail, Send, TriangleAlert } from "lucide-react";
 import { recuperarContrasenaAction } from "@/app/auth/actions";
+import styles from "@/styles/pages/auth.module.css";
 import AuthField from "../AuthField";
 import AuthShell from "../AuthShell";
-import styles from "@/styles/pages/auth.module.css";
 
 export default function RecuperarForm() {
-  const [state, formAction, isPending] = useActionState(recuperarContrasenaAction, null);
+  const [state, formAction, isPending] = useActionState(
+    recuperarContrasenaAction,
+    null
+  );
 
   return (
     <AuthShell>
@@ -57,7 +67,11 @@ export default function RecuperarForm() {
             disabled={isPending}
           />
 
-          <button type="submit" className="btn-primary btn-block" disabled={isPending}>
+          <button
+            type="submit"
+            className="btn-primary btn-block"
+            disabled={isPending}
+          >
             {isPending ? (
               <>
                 <LoaderCircle className="spin" aria-hidden="true" />

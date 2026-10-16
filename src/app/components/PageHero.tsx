@@ -10,7 +10,12 @@ type PageHeroProps = {
   children?: ReactNode;
 };
 
-export default function PageHero({ image, title, subtitle, children }: PageHeroProps) {
+export default function PageHero({
+  image,
+  title,
+  subtitle,
+  children,
+}: PageHeroProps) {
   return (
     <div className={styles.hero} style={{ backgroundImage: `url(${image})` }}>
       <div className="container">

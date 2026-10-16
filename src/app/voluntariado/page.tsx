@@ -1,9 +1,3 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import PageHero from "../components/PageHero";
 import {
   BriefcaseMedical,
   Check,
@@ -13,10 +7,16 @@ import {
   Quote,
   Stethoscope,
 } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
 import type { Brigada } from "@/lib/db/brigadas";
-import VolunteerForm from "./VolunteerForm";
-import BrigadaBanner from "../components/BrigadaBanner";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "../../styles/pages/volunteer.module.css";
+import BrigadaBanner from "../components/BrigadaBanner";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import PageHero from "../components/PageHero";
+import VolunteerForm from "./VolunteerForm";
 
 export const metadata: Metadata = {
   title: "Voluntariado | Dibujando Sonrisas",
@@ -28,7 +28,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Voluntariado() {
   const supabase = await createSupabaseServerClient();
-  
+
   // Buscar brigada activa con inscripciones abiertas
   const { data: activeBrigada } = await supabase
     .from("brigadas")
@@ -47,7 +47,9 @@ export default async function Voluntariado() {
 
   if (activeBrigada) {
     // anon no lee inscripciones: la base cuenta los cupos ocupados
-    const { data: count } = await supabase.rpc("cupos_ocupados", { p_brigada: activeBrigada.id });
+    const { data: count } = await supabase.rpc("cupos_ocupados", {
+      p_brigada: activeBrigada.id,
+    });
 
     const totalCupos = activeBrigada.capacidad_voluntarios ?? null;
     const registrados = count || 0;
@@ -91,7 +93,10 @@ export default async function Voluntariado() {
       <main className={styles.volunteerMain}>
         {/* ── BANNER DINÁMICO DE PRÓXIMA BRIGADA ── */}
         {!isClosed && activeBrigada && (
-          <BrigadaBanner brigada={activeBrigada as Brigada} cuposInfo={cuposInfo} />
+          <BrigadaBanner
+            brigada={activeBrigada as Brigada}
+            cuposInfo={cuposInfo}
+          />
         )}
 
         <div className="container">
@@ -145,14 +150,17 @@ export default async function Voluntariado() {
           >
             <h2 id="roles-heading">Roles Disponibles</h2>
             <p className={styles.rolesSubtitle}>
-              Necesitamos tanto profesionales de la salud como personal de
-              apoyo para hacer exitosas nuestras misiones.
+              Necesitamos tanto profesionales de la salud como personal de apoyo
+              para hacer exitosas nuestras misiones.
             </p>
             <div className={styles.rolesGrid}>
               <article className={`${styles.roleCard} card-soft tone-primary`}>
                 <div className={styles.roleImg1} aria-hidden="true" />
                 <div className={styles.roleName}>
-                  <span className="icon-circle icon-circle-sm" aria-hidden="true">
+                  <span
+                    className="icon-circle icon-circle-sm"
+                    aria-hidden="true"
+                  >
                     <Stethoscope />
                   </span>
                   <h3>Profesionales de Salud</h3>
@@ -180,7 +188,10 @@ export default async function Voluntariado() {
               <article className={`${styles.roleCard} card-soft tone-tertiary`}>
                 <div className={styles.roleImg2} aria-hidden="true" />
                 <div className={styles.roleName}>
-                  <span className="icon-circle icon-circle-sm" aria-hidden="true">
+                  <span
+                    className="icon-circle icon-circle-sm"
+                    aria-hidden="true"
+                  >
                     <Handshake />
                   </span>
                   <h3>Apoyo y Logística</h3>
@@ -215,7 +226,10 @@ export default async function Voluntariado() {
             <h2 id="steps-heading">¿Cómo Unirte?</h2>
             <ol className={`${styles.stepsGrid} tone-rotate`}>
               <li className={`${styles.step} card-soft`}>
-                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
+                <div
+                  className={`${styles.stepNumber} icon-circle`}
+                  aria-hidden="true"
+                >
                   1
                 </div>
                 <h3>Aplica en Línea</h3>
@@ -224,21 +238,30 @@ export default async function Voluntariado() {
                 </p>
               </li>
               <li className={`${styles.step} card-soft`}>
-                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
+                <div
+                  className={`${styles.stepNumber} icon-circle`}
+                  aria-hidden="true"
+                >
                   2
                 </div>
                 <h3>Entrevista</h3>
                 <p>Una breve llamada para conocerte y alinear expectativas.</p>
               </li>
               <li className={`${styles.step} card-soft`}>
-                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
+                <div
+                  className={`${styles.stepNumber} icon-circle`}
+                  aria-hidden="true"
+                >
                   3
                 </div>
                 <h3>Preparación</h3>
                 <p>Te informamos sobre la próxima brigada y qué llevar.</p>
               </li>
               <li className={`${styles.step} card-soft`}>
-                <div className={`${styles.stepNumber} icon-circle`} aria-hidden="true">
+                <div
+                  className={`${styles.stepNumber} icon-circle`}
+                  aria-hidden="true"
+                >
                   4
                 </div>
                 <h3>¡A Servir!</h3>

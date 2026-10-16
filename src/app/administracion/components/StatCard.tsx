@@ -44,7 +44,9 @@ export default function StatCard({
   featured = false,
 }: StatCardProps) {
   return (
-    <div className={`${styles.statCard} ${featured ? styles.statCardFeatured : ""}`}>
+    <div
+      className={`${styles.statCard} ${featured ? styles.statCardFeatured : ""}`}
+    >
       <div className={styles.statTop}>
         <p className={styles.statLabel}>{label}</p>
         {icon && (
@@ -53,12 +55,16 @@ export default function StatCard({
           </span>
         )}
       </div>
-      <p className={`${styles.statValue} ${valueTone ? VALUE_CLASSES[valueTone] ?? "" : ""}`}>
+      <p
+        className={`${styles.statValue} ${valueTone ? (VALUE_CLASSES[valueTone] ?? "") : ""}`}
+      >
         {value}
       </p>
       {meta && (
         <div className={styles.statMeta}>
-          <span className={`${styles.badge} ${BADGE_CLASSES[metaTone]}`}>{meta}</span>
+          <span className={`${styles.badge} ${BADGE_CLASSES[metaTone]}`}>
+            {meta}
+          </span>
         </div>
       )}
     </div>

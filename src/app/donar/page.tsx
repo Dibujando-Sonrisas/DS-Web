@@ -1,8 +1,3 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import PageHero from "../components/PageHero";
 import {
   ArrowRight,
   BookOpenText,
@@ -13,7 +8,12 @@ import {
   Stethoscope,
   Users,
 } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
 import styles from "../../styles/pages/donate.module.css";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import PageHero from "../components/PageHero";
 
 export const metadata: Metadata = {
   title: "Donar | Dibujando Sonrisas",
@@ -103,7 +103,10 @@ export default function Donar() {
 
         <div className={`${styles.altGrid} tone-rotate`}>
           {alternatives.map((alt) => (
-            <article key={alt.id} className={`${styles.altCard} card-drawn lift`}>
+            <article
+              key={alt.id}
+              className={`${styles.altCard} card-drawn lift`}
+            >
               <div className="icon-circle" aria-hidden="true">
                 {alt.icon}
               </div>
@@ -134,8 +137,8 @@ export default function Donar() {
 
         <p className={styles.note}>
           <span className={styles.noteBadge}>Próximamente</span>
-          Sistema de pagos en línea: estamos configurando plataformas para
-          hacer las donaciones más sencillas.
+          Sistema de pagos en línea: estamos configurando plataformas para hacer
+          las donaciones más sencillas.
         </p>
       </main>
 

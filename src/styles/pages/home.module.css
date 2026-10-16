@@ -146,7 +146,9 @@
   font-size: 1.5rem;
 }
 
-.cardImg1, .cardImg2, .cardImg3 {
+.cardImg1,
+.cardImg2,
+.cardImg3 {
   background-size: cover;
   background-position: center;
   height: 18rem;

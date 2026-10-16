@@ -1,4 +1,14 @@
-import { Activity, Boxes, Clock, HandHeart, HeartPulse, Pill, Shirt, ShoppingCart, Tent } from "lucide-react";
+import {
+  Activity,
+  Boxes,
+  Clock,
+  HandHeart,
+  HeartPulse,
+  Pill,
+  Shirt,
+  ShoppingCart,
+  Tent,
+} from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import StatCard from "../StatCard";
 

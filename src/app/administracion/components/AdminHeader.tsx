@@ -1,9 +1,5 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
-import Form from "next/form";
-import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   ChevronDown,
@@ -13,12 +9,17 @@ import {
   PanelLeftOpen,
   Search,
 } from "lucide-react";
+import Form from "next/form";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { logoutAction } from "@/app/auth/actions";
+import styles from "@/styles/pages/admin.module.css";
+import AvisoOffline from "./AvisoOffline";
+import NotificacionesBtn from "./NotificacionesBtn";
 import { accountModules, findModule } from "./navModules";
 import { usePermissions } from "./PermissionsProvider";
 import UserAvatar from "./UserAvatar";
-import NotificacionesBtn from "./NotificacionesBtn";
-import styles from "@/styles/pages/admin.module.css";
 
 interface AdminHeaderProps {
   displayName: string;
@@ -31,21 +32,81 @@ interface AdminHeaderProps {
 }
 
 const MODULE_TITLES: { prefix: string; title: string; subtitle: string }[] = [
-  { prefix: "/administracion/pacientes", title: "Atención de Pacientes", subtitle: "Expedientes clínicos y consultas" },
-  { prefix: "/administracion/brigadas", title: "Gestión de Brigadas", subtitle: "Planificación, estado y asignaciones" },
-  { prefix: "/administracion/voluntarios", title: "Gestión de Voluntarios", subtitle: "Registro, perfiles y especialidades" },
-  { prefix: "/administracion/inventario", title: "Inventario Médico", subtitle: "Medicamentos, insumos y movimientos" },
-  { prefix: "/administracion/farmacia", title: "Farmacia", subtitle: "Despacho de recetas y control de stock" },
-  { prefix: "/administracion/donaciones", title: "Donaciones y Ropa", subtitle: "Recepción, inventario y entregas" },
-  { prefix: "/administracion/actividades-infantiles", title: "Actividades Infantiles", subtitle: "Recreación, apoyo y dinámicas comunitarias" },
-  { prefix: "/administracion/ventas", title: "Ventas de Apoyo", subtitle: "Kits, artículos institucionales y recaudación" },
-  { prefix: "/administracion/reportes", title: "Reportes y Estadísticas", subtitle: "Análisis de datos, atenciones y brigadas" },
-  { prefix: "/administracion/usuarios", title: "Gestión de Usuarios", subtitle: "Administración de accesos y credenciales" },
-  { prefix: "/administracion/perfil", title: "Mi Perfil", subtitle: "Información personal y cuenta" },
-  { prefix: "/administracion/contacto", title: "Mensajes de Contacto", subtitle: "Bandeja de mensajes del sitio web" },
-  { prefix: "/administracion/ajustes", title: "Ajustes", subtitle: "Configuración general del sistema" },
-  { prefix: "/administracion/buscar", title: "Búsqueda", subtitle: "Pacientes, brigadas e inventario" },
-  { prefix: "/administracion", title: "Dashboard General", subtitle: "Resumen ejecutivo y métricas globales" },
+  {
+    prefix: "/administracion/pacientes",
+    title: "Atención de Pacientes",
+    subtitle: "Expedientes clínicos y consultas",
+  },
+  {
+    prefix: "/administracion/brigadas",
+    title: "Gestión de Brigadas",
+    subtitle: "Planificación, estado y asignaciones",
+  },
+  {
+    prefix: "/administracion/voluntarios",
+    title: "Gestión de Voluntarios",
+    subtitle: "Registro, perfiles y especialidades",
+  },
+  {
+    prefix: "/administracion/inventario",
+    title: "Inventario Médico",
+    subtitle: "Medicamentos, insumos y movimientos",
+  },
+  {
+    prefix: "/administracion/farmacia",
+    title: "Farmacia",
+    subtitle: "Despacho de recetas y control de stock",
+  },
+  {
+    prefix: "/administracion/donaciones",
+    title: "Donaciones y Ropa",
+    subtitle: "Recepción, inventario y entregas",
+  },
+  {
+    prefix: "/administracion/actividades-infantiles",
+    title: "Actividades Infantiles",
+    subtitle: "Recreación, apoyo y dinámicas comunitarias",
+  },
+  {
+    prefix: "/administracion/ventas",
+    title: "Ventas de Apoyo",
+    subtitle: "Kits, artículos institucionales y recaudación",
+  },
+  {
+    prefix: "/administracion/reportes",
+    title: "Reportes y Estadísticas",
+    subtitle: "Análisis de datos, atenciones y brigadas",
+  },
+  {
+    prefix: "/administracion/usuarios",
+    title: "Gestión de Usuarios",
+    subtitle: "Administración de accesos y credenciales",
+  },
+  {
+    prefix: "/administracion/perfil",
+    title: "Mi Perfil",
+    subtitle: "Información personal y cuenta",
+  },
+  {
+    prefix: "/administracion/contacto",
+    title: "Mensajes de Contacto",
+    subtitle: "Bandeja de mensajes del sitio web",
+  },
+  {
+    prefix: "/administracion/ajustes",
+    title: "Ajustes",
+    subtitle: "Configuración general del sistema",
+  },
+  {
+    prefix: "/administracion/buscar",
+    title: "Búsqueda",
+    subtitle: "Pacientes, brigadas e inventario",
+  },
+  {
+    prefix: "/administracion",
+    title: "Dashboard General",
+    subtitle: "Resumen ejecutivo y métricas globales",
+  },
 ];
 
 export default function AdminHeader({
@@ -63,15 +124,22 @@ export default function AdminHeader({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const activeModule = MODULE_TITLES.find((m) =>
-    m.prefix === "/administracion" ? pathname === "/administracion" : pathname.startsWith(m.prefix)
+    m.prefix === "/administracion"
+      ? pathname === "/administracion"
+      : pathname.startsWith(m.prefix)
   ) || { title: "Sistema Integral", subtitle: "Fundación Dibujando Sonrisas" };
   const moduleIcon = findModule(pathname)?.icon;
-  const canSearch = ["/administracion/pacientes", "/administracion/brigadas", "/administracion/inventario"].some(
-    (ruta) => canRoute(ruta)
-  );
+  const canSearch = [
+    "/administracion/pacientes",
+    "/administracion/brigadas",
+    "/administracion/inventario",
+  ].some((ruta) => canRoute(ruta));
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     };
@@ -99,10 +167,18 @@ export default function AdminHeader({
           type="button"
           className={`btn-icon ${styles.collapseBtn}`}
           onClick={onToggleSidebar}
-          title={isCollapsed ? "Expandir menú lateral" : "Contraer menú lateral"}
-          aria-label={isCollapsed ? "Expandir menú lateral" : "Contraer menú lateral"}
+          title={
+            isCollapsed ? "Expandir menú lateral" : "Contraer menú lateral"
+          }
+          aria-label={
+            isCollapsed ? "Expandir menú lateral" : "Contraer menú lateral"
+          }
         >
-          {isCollapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
+          {isCollapsed ? (
+            <PanelLeftOpen aria-hidden="true" />
+          ) : (
+            <PanelLeftClose aria-hidden="true" />
+          )}
         </button>
 
         <button
@@ -129,7 +205,11 @@ export default function AdminHeader({
       </div>
 
       {canSearch && (
-        <Form action="/administracion/buscar" className={styles.headerSearch} role="search">
+        <Form
+          action="/administracion/buscar"
+          className={styles.headerSearch}
+          role="search"
+        >
           <Search aria-hidden="true" />
           <input
             type="search"
@@ -144,7 +224,13 @@ export default function AdminHeader({
       )}
 
       <div className={styles.headerRight}>
-        <span className={styles.headerDate} title="Fecha del sistema" suppressHydrationWarning>
+        <AvisoOffline lugar="encabezado" />
+
+        <span
+          className={styles.headerDate}
+          title="Fecha del sistema"
+          suppressHydrationWarning
+        >
           <CalendarDays aria-hidden="true" />
           {todayFormatted}
         </span>
@@ -161,7 +247,12 @@ export default function AdminHeader({
             aria-haspopup="menu"
             aria-expanded={dropdownOpen}
           >
-            <UserAvatar avatarUrl={avatarUrl} nombres={displayName} email={email} size={36} />
+            <UserAvatar
+              avatarUrl={avatarUrl}
+              nombres={displayName}
+              email={email}
+              size={36}
+            />
             <span className={styles.userText}>
               <span className={styles.userName}>{displayName}</span>
               <span className={styles.userRole}>{roleLabel}</span>

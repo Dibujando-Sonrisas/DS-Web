@@ -1,6 +1,6 @@
-import { requirePermission } from "@/lib/auth/session";
-import { PERMISSIONS } from "@/lib/auth/permissions";
 import PageHeader from "@/app/administracion/components/PageHeader";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/session";
 import styles from "@/styles/pages/admin.module.css";
 import { NuevoExpedienteClient } from "./NuevoExpedienteClient";
 
@@ -13,7 +13,9 @@ export default async function NuevoExpedientePage({
   const { paciente } = await searchParams;
   const pacienteId = typeof paciente === "string" ? paciente : undefined;
   // crear pide pacientes.create; continuar, pacientes.update (igual que el botón del listado)
-  await requirePermission(pacienteId ? PERMISSIONS.PACIENTES_UPDATE : PERMISSIONS.PACIENTES_CREATE);
+  await requirePermission(
+    pacienteId ? PERMISSIONS.PACIENTES_UPDATE : PERMISSIONS.PACIENTES_CREATE
+  );
 
   return (
     <div className={styles.page}>
@@ -27,7 +29,10 @@ export default async function NuevoExpedientePage({
       />
 
       {/* key: al pasar de un expediente a otro el formulario empieza de cero */}
-      <NuevoExpedienteClient key={pacienteId ?? "nuevo"} pacienteId={pacienteId} />
+      <NuevoExpedienteClient
+        key={pacienteId ?? "nuevo"}
+        pacienteId={pacienteId}
+      />
     </div>
   );
 }

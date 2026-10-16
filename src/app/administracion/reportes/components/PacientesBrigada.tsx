@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Printer, Search } from "lucide-react";
-import styles from "@/styles/pages/admin.module.css";
-import rep from "@/styles/pages/reportes.module.css";
-import listas from "@/styles/pages/admin-reportes-listas.module.css";
+import { useEffect, useState } from "react";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { supabase } from "@/lib/supabase";
+import styles from "@/styles/pages/admin.module.css";
+import listas from "@/styles/pages/admin-reportes-listas.module.css";
+import rep from "@/styles/pages/reportes.module.css";
 import PrintReportDocument from "./PrintReportDocument";
+
+const logger = getLogger("reportes", "client");
 
 interface Brigada {
   id: string;
@@ -35,6 +38,7 @@ export default function PacientesBrigada() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: los filtros son el disparador; al cambiarlos se vuelve a la página 1
   useEffect(() => {
     setCurrentPage(1);
   }, [brigadaSeleccionada, busqueda]);
@@ -52,7 +56,7 @@ export default function PacientesBrigada() {
           setBrigadaSeleccionada(data[0].id);
         }
       } catch (err) {
-        console.error("Error fetching brigadas:", err);
+        logger.error("Brigade list load failed", errorInfo(err));
       }
     }
     fetchBrigadas();
@@ -90,38 +94,48 @@ export default function PacientesBrigada() {
         interface ConsultaData {
           motivo_consulta: string | null;
           medico: { nombre_completo: string | null } | null;
-          medicamentos_consulta: {
-            medicamentos: { nombre: string } | null;
-          }[] | null;
+          medicamentos_consulta:
+            | {
+                medicamentos: { nombre: string } | null;
+              }[]
+            | null;
         }
 
-        let formatted = (data || []).map((p: {
-          id: string;
-          nombres: string;
-          apellidos: string | null;
-          edad: number | null;
-          comunidad: string | null;
-          consultas: ConsultaData[] | null;
-        }) => {
-          const consulta = p.consultas && p.consultas[0];
-          const meds = consulta
-            ? (consulta.medicamentos_consulta || [])
-                .map((mc: { medicamentos: { nombre: string } | null }) => mc.medicamentos?.nombre)
-                .filter(Boolean) as string[]
-            : [];
-          return {
-            id: p.id,
-            nombre: `${p.nombres} ${p.apellidos}`,
-            edad: p.edad || 0,
-            comunidad: p.comunidad || "N/A",
-            motivo: consulta?.motivo_consulta || "Solo registro/triage",
-            medico: consulta?.medico?.nombre_completo || "No asignado",
-            medicamentos: meds,
-          };
-        });
+        const formatted = (data || []).map(
+          (p: {
+            id: string;
+            nombres: string;
+            apellidos: string | null;
+            edad: number | null;
+            comunidad: string | null;
+            consultas: ConsultaData[] | null;
+          }) => {
+            const consulta = p.consultas && p.consultas[0];
+            const meds = consulta
+              ? ((consulta.medicamentos_consulta || [])
+                  .map(
+                    (mc: { medicamentos: { nombre: string } | null }) =>
+                      mc.medicamentos?.nombre
+                  )
+                  .filter(Boolean) as string[])
+              : [];
+            return {
+              id: p.id,
+              nombre: `${p.nombres} ${p.apellidos}`,
+              edad: p.edad || 0,
+              comunidad: p.comunidad || "N/A",
+              motivo: consulta?.motivo_consulta || "Solo registro/triage",
+              medico: consulta?.medico?.nombre_completo || "No asignado",
+              medicamentos: meds,
+            };
+          }
+        );
         setPacientes(formatted);
       } catch (err) {
-        console.error("Error fetching patients:", err);
+        logger.error("Brigade patients load failed", {
+          ...errorInfo(err),
+          brigadaId: brigadaSeleccionada,
+        });
       } finally {
         setLoading(false);
       }
@@ -139,7 +153,8 @@ export default function PacientesBrigada() {
     )
     .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 
-  const nombreBrigada = brigadas.find((b) => b.id === brigadaSeleccionada)?.nombre || "";
+  const nombreBrigada =
+    brigadas.find((b) => b.id === brigadaSeleccionada)?.nombre || "";
   const totalPages = Math.ceil(pacientesFiltrados.length / itemsPerPage);
 
   const [fechaActualCompleta, setFechaActualCompleta] = useState("");
@@ -178,13 +193,19 @@ export default function PacientesBrigada() {
         {/* Encabezado */}
         <div className={styles.sectionHead}>
           <div>
-            <h2 className={styles.sectionTitle}>Reporte de Pacientes por Brigada</h2>
+            <h2 className={styles.sectionTitle}>
+              Reporte de Pacientes por Brigada
+            </h2>
             <p className={styles.sectionLead}>
               Listado detallado de pacientes atendidos, diagnóstico y
               medicamentos recetados.
             </p>
           </div>
-          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            onClick={handlePrint}
+          >
             <Printer aria-hidden="true" />
             Imprimir
           </button>
@@ -194,7 +215,9 @@ export default function PacientesBrigada() {
           {/* Filtros */}
           <div className={styles.toolbar}>
             <div className={styles.filter}>
-              <label className={styles.filterLabel} htmlFor="brigada-select">Brigada</label>
+              <label className={styles.filterLabel} htmlFor="brigada-select">
+                Brigada
+              </label>
               <select
                 id="brigada-select"
                 className="form-input form-input-sm"
@@ -209,7 +232,9 @@ export default function PacientesBrigada() {
               </select>
             </div>
             <div className={`${styles.filter} ${styles.filterWide}`}>
-              <label className={styles.filterLabel} htmlFor="busqueda-paciente">Buscar paciente</label>
+              <label className={styles.filterLabel} htmlFor="busqueda-paciente">
+                Buscar paciente
+              </label>
               <div className={styles.search}>
                 <Search aria-hidden="true" />
                 <input
@@ -228,7 +253,9 @@ export default function PacientesBrigada() {
           {loading ? (
             <div className={styles.panelBody}>
               <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
-                <span className="sr-only">Cargando pacientes de la brigada...</span>
+                <span className="sr-only">
+                  Cargando pacientes de la brigada...
+                </span>
               </div>
             </div>
           ) : (
@@ -254,9 +281,13 @@ export default function PacientesBrigada() {
                     </tr>
                   ) : (
                     pacientesFiltrados
-                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .slice(
+                        (currentPage - 1) * itemsPerPage,
+                        currentPage * itemsPerPage
+                      )
                       .map((p, relativeIdx) => {
-                        const absoluteIdx = (currentPage - 1) * itemsPerPage + relativeIdx;
+                        const absoluteIdx =
+                          (currentPage - 1) * itemsPerPage + relativeIdx;
                         return (
                           <tr key={p.id}>
                             <td className={styles.muted}>{absoluteIdx + 1}</td>
@@ -271,7 +302,11 @@ export default function PacientesBrigada() {
                               ) : (
                                 <div className={listas.pills}>
                                   {p.medicamentos.map((med, i) => (
-                                    <span key={`${med}-${i}`} className={`${styles.badge} ${styles.badgeInfo}`}>
+                                    <span
+                                      // biome-ignore lint/suspicious/noArrayIndexKey: un mismo medicamento puede repetirse entre consultas; lista de solo lectura que no se reordena
+                                      key={`${med}-${i}`}
+                                      className={`${styles.badge} ${styles.badgeInfo}`}
+                                    >
                                       {med}
                                     </span>
                                   ))}
@@ -297,7 +332,9 @@ export default function PacientesBrigada() {
                   type="button"
                   className="btn-ghost btn-sm"
                   disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                 >
                   <ChevronLeft aria-hidden="true" />
                   Anterior
@@ -306,7 +343,9 @@ export default function PacientesBrigada() {
                   type="button"
                   className="btn-ghost btn-sm"
                   disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                 >
                   Siguiente
                   <ChevronRight aria-hidden="true" />

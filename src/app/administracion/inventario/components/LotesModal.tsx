@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { CircleAlert, CircleCheck, Pencil, Plus, Trash2 } from "lucide-react";
-import type { LoteMedicamento } from "@/lib/db/inventario";
-import {
-  getLotesByMedicamentoAction as getLotesByMedicamento,
-  createLoteAction as createLote,
-  updateLoteAction as updateLote,
-  deleteLoteAction as deleteLote,
-} from "../actions";
-import { LoteForm, LoteFormValues } from "./LoteForm";
+import { useCallback, useEffect, useState } from "react";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
+import type { LoteMedicamento } from "@/lib/db/inventario";
+import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
+import {
+  createLoteAction as createLote,
+  deleteLoteAction as deleteLote,
+  getLotesByMedicamentoAction as getLotesByMedicamento,
+  updateLoteAction as updateLote,
+} from "../actions";
+import { LoteForm, type LoteFormValues } from "./LoteForm";
+
+const logger = getLogger("inventario", "client");
 
 interface LotesModalProps {
   medicamentoId: string;
@@ -22,36 +25,49 @@ interface LotesModalProps {
   onLotesChanged?: () => void;
 }
 
-export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, onLotesChanged }: LotesModalProps) {
+export function LotesModal({
+  medicamentoId,
+  medicamentoNombre,
+  isOpen,
+  onClose,
+  onLotesChanged,
+}: LotesModalProps) {
   const [lotes, setLotes] = useState<LoteMedicamento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedLote, setSelectedLote] = useState<LoteMedicamento | null>(null);
+  const [selectedLote, setSelectedLote] = useState<LoteMedicamento | null>(
+    null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<LoteMedicamento | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LoteMedicamento | null>(
+    null
+  );
 
-  const fetchLotes = async () => {
+  const fetchLotes = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getLotesByMedicamento(medicamentoId);
       setLotes(data);
-    } catch (_error) {
-      console.error("Error al cargar lotes");
+    } catch (error) {
+      logger.error("Lots load failed", { ...errorInfo(error), medicamentoId });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [medicamentoId]);
 
   useEffect(() => {
     let mounted = true;
     if (isOpen && medicamentoId && mounted) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchLotes();
     }
-    return () => { mounted = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, medicamentoId]);
+    return () => {
+      mounted = false;
+    };
+  }, [isOpen, medicamentoId, fetchLotes]);
 
   if (!isOpen) return null;
 
@@ -76,7 +92,10 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
           fecha_vencimiento: data.fecha_vencimiento,
           cantidad_actual: data.cantidad_actual,
         });
-        setFeedbackMessage({ type: "success", text: "¡Lote actualizado exitosamente!" });
+        setFeedbackMessage({
+          type: "success",
+          text: "¡Lote actualizado exitosamente!",
+        });
       } else {
         await createLote({
           medicamento_id: medicamentoId,
@@ -86,7 +105,10 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
           cantidad_actual: data.cantidad_actual,
           cantidad_inicial: data.cantidad_actual,
         });
-        setFeedbackMessage({ type: "success", text: "¡Lote registrado exitosamente!" });
+        setFeedbackMessage({
+          type: "success",
+          text: "¡Lote registrado exitosamente!",
+        });
       }
       setTimeout(() => {
         handleCloseForm();
@@ -94,6 +116,11 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
         if (onLotesChanged) onLotesChanged();
       }, 1200);
     } catch (error: unknown) {
+      logger.error("Lot save failed", {
+        ...errorInfo(error),
+        loteId: selectedLote?.id ?? null,
+        medicamentoId,
+      });
       if (error instanceof Error) {
         setFeedbackMessage({ type: "error", text: error.message });
       } else {
@@ -106,7 +133,10 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
 
   const handleDelete = (lote: LoteMedicamento) => {
     if (lote.cantidad_actual !== lote.cantidad_inicial) {
-      setFeedbackMessage({ type: "error", text: "No se puede eliminar un lote que ya ha sido utilizado." });
+      setFeedbackMessage({
+        type: "error",
+        text: "No se puede eliminar un lote que ya ha sido utilizado.",
+      });
       return;
     }
     setDeleteTarget(lote);
@@ -118,37 +148,59 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
     try {
       await deleteLote(deleteTarget.id);
       setDeleteTarget(null);
-      setFeedbackMessage({ type: "success", text: "Lote eliminado correctamente." });
+      setFeedbackMessage({
+        type: "success",
+        text: "Lote eliminado correctamente.",
+      });
       fetchLotes();
       if (onLotesChanged) onLotesChanged();
-    } catch (_error) {
+    } catch (error) {
+      logger.error("Lot deletion failed", {
+        ...errorInfo(error),
+        loteId: deleteTarget.id,
+      });
       setFeedbackMessage({ type: "error", text: "Error al eliminar el lote" });
     }
   };
 
   const getStatusBadge = (lote: LoteMedicamento) => {
     if (lote.cantidad_actual === 0) {
-      return <span className={`${styles.badge} ${styles.badgeNeutral}`}>Sin existencias</span>;
+      return (
+        <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+          Sin existencias
+        </span>
+      );
     }
 
     const hoy = new Date();
     const vencimiento = new Date(lote.fecha_vencimiento);
-    const diasVencimiento = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 3600 * 24));
+    const diasVencimiento = Math.ceil(
+      (vencimiento.getTime() - hoy.getTime()) / (1000 * 3600 * 24)
+    );
 
     if (diasVencimiento < 0) {
-      return <span className={`${styles.badge} ${styles.badgeDanger}`}>Vencido</span>;
+      return (
+        <span className={`${styles.badge} ${styles.badgeDanger}`}>Vencido</span>
+      );
     }
     if (diasVencimiento <= 30) {
-      return <span className={`${styles.badge} ${styles.badgeWarning}`}>Próximo a vencer</span>;
+      return (
+        <span className={`${styles.badge} ${styles.badgeWarning}`}>
+          Próximo a vencer
+        </span>
+      );
     }
-    return <span className={`${styles.badge} ${styles.badgeSuccess}`}>Normal</span>;
+    return (
+      <span className={`${styles.badge} ${styles.badgeSuccess}`}>Normal</span>
+    );
   };
 
   const formatDate = (dateStr: string) => {
     try {
       const date = new Date(dateStr);
-      return new Intl.DateTimeFormat('es-ES').format(date);
-    } catch {
+      return new Intl.DateTimeFormat("es-ES").format(date);
+    } catch (error) {
+      logger.debug("Lot date formatting failed", errorInfo(error));
       return dateStr;
     }
   };
@@ -158,7 +210,11 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
       className={`notice ${feedbackMessage.type === "success" ? "notice-ok" : "notice-bad"}`}
       role={feedbackMessage.type === "error" ? "alert" : "status"}
     >
-      {feedbackMessage.type === "success" ? <CircleCheck aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}
+      {feedbackMessage.type === "success" ? (
+        <CircleCheck aria-hidden="true" />
+      ) : (
+        <CircleAlert aria-hidden="true" />
+      )}
       <span>{feedbackMessage.text}</span>
     </p>
   );
@@ -203,10 +259,16 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
                       ) : (
                         lotes.map((lote) => (
                           <tr key={lote.id}>
-                            <td className={styles.cellCode}>{lote.numero_lote}</td>
+                            <td className={styles.cellCode}>
+                              {lote.numero_lote}
+                            </td>
                             <td>{lote.fabricante || "-"}</td>
-                            <td className={styles.nowrap}>{formatDate(lote.fecha_vencimiento)}</td>
-                            <td className={`${styles.num} ${styles.cellMain}`}>{lote.cantidad_actual}</td>
+                            <td className={styles.nowrap}>
+                              {formatDate(lote.fecha_vencimiento)}
+                            </td>
+                            <td className={`${styles.num} ${styles.cellMain}`}>
+                              {lote.cantidad_actual}
+                            </td>
                             <td>{getStatusBadge(lote)}</td>
                             <td>
                               <div className={styles.rowActions}>
@@ -240,7 +302,11 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
             </div>
 
             <div className={styles.modalFooter}>
-              <button type="button" className="btn-primary btn-sm" onClick={() => handleOpenForm()}>
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={() => handleOpenForm()}
+              >
                 <Plus aria-hidden="true" />
                 Agregar Lote
               </button>
@@ -254,7 +320,9 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
             onCancel={handleCloseForm}
           >
             {feedbackNotice}
-            <h3 className={styles.formSectionTitle}>{selectedLote ? "Editar Lote" : "Nuevo Lote"}</h3>
+            <h3 className={styles.formSectionTitle}>
+              {selectedLote ? "Editar Lote" : "Nuevo Lote"}
+            </h3>
           </LoteForm>
         )}
       </AdminModal>
@@ -267,7 +335,9 @@ export function LotesModal({ medicamentoId, medicamentoNombre, isOpen, onClose, 
           onCancel={() => setDeleteTarget(null)}
           onConfirm={confirmDelete}
         >
-          ¿Estás seguro de que deseas eliminar el lote <strong>{deleteTarget.numero_lote}</strong>? Esta acción no se puede deshacer.
+          ¿Estás seguro de que deseas eliminar el lote{" "}
+          <strong>{deleteTarget.numero_lote}</strong>? Esta acción no se puede
+          deshacer.
         </ConfirmDialog>
       )}
     </>

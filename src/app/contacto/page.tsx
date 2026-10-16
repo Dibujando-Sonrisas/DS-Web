@@ -1,11 +1,11 @@
-import type { Metadata } from "next";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import PageHero from "../components/PageHero";
 import { Heart, Mail, MapPin, Share2 } from "lucide-react";
+import type { Metadata } from "next";
+import styles from "../../styles/pages/contact.module.css";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import PageHero from "../components/PageHero";
 import { SOCIAL_LINKS, WhatsappIcon } from "../components/SocialIcons";
 import ContactForm from "./ContactForm";
-import styles from "../../styles/pages/contact.module.css";
 
 export const metadata: Metadata = {
   title: "Contacto | Dibujando Sonrisas",

@@ -1,42 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
-import { getMedicamentosAction as getMedicamentos } from "@/app/administracion/inventario/actions";
-import {
-  getPacienteDetalleAction as getPacienteDetalle,
-  getProfesionalesConsultaAction as getProfesionalesConsulta,
-  liberarConsultaAction as liberarConsulta,
-  registrarConsultaAction as registrarConsulta,
-  registrarPacienteAction as registrarPaciente,
-  registrarPreclinicaAction as registrarPreclinica,
-  tomarConsultaAction as tomarConsulta,
-} from "../actions";
-import { ESTADOS } from "../estados";
-import {
-  CampoDiagnosticos,
-  CamposConsulta,
-  CamposPaciente,
-  CamposSignos,
-  FieldError,
-  useFieldFocus,
-} from "../components/CamposExpediente";
-import { FichaPaciente } from "../components/FichaPaciente";
-import Combobox from "@/app/components/Combobox";
-import { useToast } from "@/app/administracion/components/AdminToast";
-import {
-  CAMPOS_CONSULTA,
-  CAMPOS_PACIENTE,
-  CAMPOS_SIGNOS,
-  sinNulos,
-  validarConsulta,
-  validarDiagnosticos,
-  validarPaciente,
-  validarSignos,
-  type Errores,
-} from "@/lib/validation/expediente";
 import {
   ArrowLeft,
   ArrowRight,
@@ -51,8 +14,46 @@ import {
   Trash2,
   UserX,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/actions";
+import { useToast } from "@/app/administracion/components/AdminToast";
+import { getMedicamentosAction as getMedicamentos } from "@/app/administracion/inventario/actions";
+import Combobox from "@/app/components/Combobox";
+import { errorInfo, getLogger } from "@/lib/logger";
+import {
+  CAMPOS_CONSULTA,
+  CAMPOS_PACIENTE,
+  CAMPOS_SIGNOS,
+  type Errores,
+  sinNulos,
+  validarConsulta,
+  validarDiagnosticos,
+  validarPaciente,
+  validarSignos,
+} from "@/lib/validation/expediente";
 import styles from "@/styles/pages/admin.module.css";
 import pac from "@/styles/pages/admin-pacientes.module.css";
+import {
+  getPacienteDetalleAction as getPacienteDetalle,
+  getProfesionalesConsultaAction as getProfesionalesConsulta,
+  liberarConsultaAction as liberarConsulta,
+  registrarConsultaAction as registrarConsulta,
+  registrarPacienteAction as registrarPaciente,
+  registrarPreclinicaAction as registrarPreclinica,
+  tomarConsultaAction as tomarConsulta,
+} from "../actions";
+import {
+  CampoDiagnosticos,
+  CamposConsulta,
+  CamposPaciente,
+  CamposSignos,
+  FieldError,
+  useFieldFocus,
+} from "../components/CamposExpediente";
+import { FichaPaciente } from "../components/FichaPaciente";
+import { ESTADOS } from "../estados";
 
 // pasos del asistente; "next" es el texto del botón que lleva al siguiente
 const STEPS = [
@@ -63,14 +64,22 @@ const STEPS = [
   { id: 5, label: "Receta Médica" },
 ];
 
-export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacienteId?: string }) {
+const logger = getLogger("pacientes", "client");
+
+export function NuevoExpedienteClient({
+  pacienteId: pacienteInicial,
+}: {
+  pacienteId?: string;
+}) {
   const router = useRouter();
 
   // El expediente se llena por etapas, cada una puede hacerla otro usuario:
   // 1 ingresado (datos del paciente), 2 preclínica (signos), 3 finalizada (consulta, diagnósticos y receta).
   // savedStep es la última etapa guardada; sus pasos quedan de solo lectura.
   // Entre la preclínica y el final, quien abre la consulta toma al paciente (estado "consulta").
-  const [pacienteId, setPacienteId] = useState<string | null>(pacienteInicial ?? null);
+  const [pacienteId, setPacienteId] = useState<string | null>(
+    pacienteInicial ?? null
+  );
   const [savedStep, setSavedStep] = useState(0);
   const [tomada, setTomada] = useState(false);
   const [ocupadoPor, setOcupadoPor] = useState<string | null>(null);
@@ -149,14 +158,28 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
           getProfesionalesConsulta(),
           pacienteInicial ? getPacienteDetalle(pacienteInicial) : null,
         ]);
-        const etapa = det ? (det.consultas.length > 0 ? 3 : det.signos ? 2 : 1) : 0;
+        const etapa = det
+          ? det.consultas.length > 0
+            ? 3
+            : det.signos
+              ? 2
+              : 1
+          : 0;
         // abrir la consulta toma al paciente; si ya lo tiene otro usuario, se avisa quién
-        const ocupado = etapa === 2 ? await tomarConsulta(pacienteInicial!) : null;
+        const ocupado =
+          etapa === 2 ? await tomarConsulta(pacienteInicial!) : null;
         if (mounted) {
           // expediente ya ingresado: se cargan sus etapas y se abre la que sigue
           if (det) {
-            setPaciente((prev: Record<string, unknown>) => ({ ...prev, ...sinNulos(det.paciente) }));
-            if (det.signos) setSignos((prev: Record<string, unknown>) => ({ ...prev, ...sinNulos(det.signos) }));
+            setPaciente((prev: Record<string, unknown>) => ({
+              ...prev,
+              ...sinNulos(det.paciente),
+            }));
+            if (det.signos)
+              setSignos((prev: Record<string, unknown>) => ({
+                ...prev,
+                ...sinNulos(det.signos),
+              }));
             setSavedStep(etapa);
             setActiveTab(etapa + 1);
             setTomada(etapa === 2 && !ocupado);
@@ -164,16 +187,23 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
           }
 
           const activeBrigadas =
-            bRes.data?.filter((b: any) => b.estado !== "finalizada" && b.estado !== "cancelada") || [];
+            bRes.data?.filter(
+              (b: any) => b.estado !== "finalizada" && b.estado !== "cancelada"
+            ) || [];
           setBrigadas(activeBrigadas);
-          const prescribibles = (mRes || []).filter((m: any) => m.tipo_recurso !== "material_brigada");
+          const prescribibles = (mRes || []).filter(
+            (m: any) => m.tipo_recurso !== "material_brigada"
+          );
           setMedicamentosList(prescribibles);
 
           setMedicos(pRes.medicos);
           setOdontologos(pRes.odontologos);
         }
       } catch (e) {
-        console.error(e);
+        logger.error("Patient form data load failed", {
+          ...errorInfo(e),
+          pacienteId: pacienteInicial ?? null,
+        });
         if (mounted && pacienteInicial) setLoadError(true);
       } finally {
         if (mounted) setIsLoading(false);
@@ -195,22 +225,37 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
   const validateStep1 = () =>
     aplicar(
       {
-        ...(paciente.brigada_id ? {} : { brigada_id: "Debe seleccionar una brigada activa obligatoriamente." }),
+        ...(paciente.brigada_id
+          ? {}
+          : {
+              brigada_id:
+                "Debe seleccionar una brigada activa obligatoriamente.",
+            }),
         ...validarPaciente(paciente),
       },
       ["brigada_id", ...CAMPOS_PACIENTE]
     );
   const validateStep2 = () => aplicar(validarSignos(signos), CAMPOS_SIGNOS);
-  const validateStep3 = () => aplicar(validarConsulta(consulta), CAMPOS_CONSULTA);
-  const validateStep4 = () => aplicar(validarDiagnosticos(diagnosticosStr), ["diagnosticosStr"]);
+  const validateStep3 = () =>
+    aplicar(validarConsulta(consulta), CAMPOS_CONSULTA);
+  const validateStep4 = () =>
+    aplicar(validarDiagnosticos(diagnosticosStr), ["diagnosticosStr"]);
 
-  const validators = [validateStep1, validateStep2, validateStep3, validateStep4];
+  const validators = [
+    validateStep1,
+    validateStep2,
+    validateStep3,
+    validateStep4,
+  ];
 
   // Etapa 1: guarda el paciente y devuelve su id
   const guardarPaciente = async (): Promise<string> => {
     const nuevo = await registrarPaciente(paciente);
     setPacienteId(nuevo.id);
-    setPaciente((prev: Record<string, unknown>) => ({ ...prev, codigo: nuevo.codigo }));
+    setPaciente((prev: Record<string, unknown>) => ({
+      ...prev,
+      codigo: nuevo.codigo,
+    }));
     setSavedStep(1);
     // si se recarga la página, continúa este expediente en lugar de ingresar al paciente otra vez
     window.history.replaceState(null, "", `?paciente=${nuevo.id}`);
@@ -224,15 +269,25 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
   };
 
   // Guarda la etapa que cierra el paso 1 o 2; devuelve el id del paciente, o null si falló
-  const guardarEtapa = async (step: number, id: string | null): Promise<string | null> => {
+  const guardarEtapa = async (
+    step: number,
+    id: string | null
+  ): Promise<string | null> => {
     setIsSubmitting(true);
     try {
       if (step === 1) return await guardarPaciente();
       await guardarPreclinica(id!);
       return id;
     } catch (e) {
-      console.error("Error técnico al guardar la etapa del expediente:", e);
-      showToast("No fue posible guardar la información. Verifique los datos e intente nuevamente.", "error");
+      logger.error("Patient record stage save failed", {
+        ...errorInfo(e),
+        step,
+        pacienteId: id,
+      });
+      showToast(
+        "No fue posible guardar la información. Verifique los datos e intente nuevamente.",
+        "error"
+      );
       return null;
     } finally {
       setIsSubmitting(false);
@@ -258,8 +313,14 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
       setTomada(true);
       return true;
     } catch (e) {
-      console.error("Error técnico al tomar al paciente para la consulta:", e);
-      showToast("No fue posible iniciar la consulta. Intente nuevamente.", "error");
+      logger.error("Consultation claim failed", {
+        ...errorInfo(e),
+        pacienteId: id,
+      });
+      showToast(
+        "No fue posible iniciar la consulta. Intente nuevamente.",
+        "error"
+      );
       return false;
     } finally {
       setIsSubmitting(false);
@@ -273,8 +334,14 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
       await liberarConsulta(pacienteId!);
       salir("Paciente liberado: vuelve a quedar en espera de consulta.");
     } catch (e) {
-      console.error("Error técnico al liberar al paciente:", e);
-      showToast("No fue posible liberar al paciente. Intente nuevamente.", "error");
+      logger.error("Consultation release failed", {
+        ...errorInfo(e),
+        pacienteId,
+      });
+      showToast(
+        "No fue posible liberar al paciente. Intente nuevamente.",
+        "error"
+      );
       setIsSubmitting(false);
     }
   };
@@ -331,8 +398,14 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
     }
 
     const numCant = Number(newMedCantidad);
-    if (!newMedCantidad || isNaN(numCant) || !Number.isInteger(numCant) || numCant <= 0) {
-      medErrorObj.newMedCantidad = "La cantidad debe ser un número entero mayor a 0.";
+    if (
+      !newMedCantidad ||
+      isNaN(numCant) ||
+      !Number.isInteger(numCant) ||
+      numCant <= 0
+    ) {
+      medErrorObj.newMedCantidad =
+        "La cantidad debe ser un número entero mayor a 0.";
     }
 
     const indicClean = newMedIndicaciones.trim();
@@ -342,18 +415,28 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
 
     if (Object.keys(medErrorObj).length > 0) {
       setErrors((prev) => ({ ...prev, ...medErrorObj }));
-      focusFirstError(medErrorObj, ["newMedId", "newMedCantidad", "newMedIndicaciones"]);
+      focusFirstError(medErrorObj, [
+        "newMedId",
+        "newMedCantidad",
+        "newMedIndicaciones",
+      ]);
       return;
     }
 
-    const m = medicamentosList.find((x) => x.medicamento_id === newMedId || x.id === newMedId);
+    const m = medicamentosList.find(
+      (x) => x.medicamento_id === newMedId || x.id === newMedId
+    );
     if (!m) return;
 
     const targetId = m.medicamento_id || m.id;
-    const isDuplicate = medsRecetados.some((x) => x.medicamento_id === targetId);
+    const isDuplicate = medsRecetados.some(
+      (x) => x.medicamento_id === targetId
+    );
 
     if (isDuplicate) {
-      const dup = { newMedId: `El medicamento "${m.nombre}" ya fue agregado a la receta.` };
+      const dup = {
+        newMedId: `El medicamento "${m.nombre}" ya fue agregado a la receta.`,
+      };
       setErrors((prev) => ({ ...prev, ...dup }));
       focusFirstError(dup, ["newMedId"]);
       return;
@@ -410,10 +493,16 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
       await registrarConsulta(pacienteId, consulta, diagnosticosStr, mList);
 
       salir("Expediente guardado correctamente.");
-    } catch (e: any) {
-      console.error("Error técnico al guardar el expediente en Supabase:", e);
+    } catch (e) {
+      logger.error("Consultation save failed", {
+        ...errorInfo(e),
+        pacienteId,
+      });
       setIsSubmitting(false);
-      showToast("No fue posible guardar el expediente. Verifique la información ingresada e intente nuevamente.", "error");
+      showToast(
+        "No fue posible guardar el expediente. Verifique la información ingresada e intente nuevamente.",
+        "error"
+      );
     }
   };
 
@@ -429,8 +518,15 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
     const finalizado = !loadError && !ocupadoPor;
     return (
       <div className={styles.stackSm}>
-        <p className={`notice ${loadError ? "notice-bad" : ocupadoPor ? "notice-warn" : "notice-ok"}`} role="status">
-          {finalizado ? <CircleCheck aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}
+        <p
+          className={`notice ${loadError ? "notice-bad" : ocupadoPor ? "notice-warn" : "notice-ok"}`}
+          role="status"
+        >
+          {finalizado ? (
+            <CircleCheck aria-hidden="true" />
+          ) : (
+            <CircleAlert aria-hidden="true" />
+          )}
           <span>
             {loadError
               ? "No fue posible cargar el expediente."
@@ -449,7 +545,8 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
 
   // paso de una etapa ya guardada: se muestra solo para revisar
   const locked = activeTab <= savedStep;
-  const estado = ESTADOS[tomada ? "consulta" : savedStep === 2 ? "preclinica" : "ingresado"];
+  const estado =
+    ESTADOS[tomada ? "consulta" : savedStep === 2 ? "preclinica" : "ingresado"];
 
   return (
     <div className={styles.stack}>
@@ -476,7 +573,9 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
                 onClick={() => goToTab(t.id)}
                 disabled={isSubmitting}
               >
-                <span className={styles.stepNum}>{done ? <Check aria-hidden="true" /> : t.id}</span>
+                <span className={styles.stepNum}>
+                  {done ? <Check aria-hidden="true" /> : t.id}
+                </span>
                 {t.label}
               </button>
             </li>
@@ -489,222 +588,264 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
           {locked && (
             <p className="notice">
               <Lock aria-hidden="true" />
-              <span>Esta etapa ya fue guardada; se muestra solo para consulta.</span>
+              <span>
+                Esta etapa ya fue guardada; se muestra solo para consulta.
+              </span>
             </p>
           )}
 
           <fieldset className={pac.fieldset} disabled={locked}>
-          {/* TAB 1: PACIENTE */}
-          {activeTab === 1 && (
-            <div className={styles.formSection}>
-              <h2 className={styles.formSectionTitle}>1. Datos Personales del Paciente</h2>
-
-              <label className="form-field">
-                <span className="form-label">
-                  Brigada Médica <span className="form-required" aria-hidden="true">*</span>
-                </span>
-                <select
-                  ref={registerRef("brigada_id")}
-                  className="form-input"
-                  aria-required="true"
-                  aria-invalid={!!errors.brigada_id}
-                  value={paciente.brigada_id}
-                  onChange={(e) => {
-                    setPaciente({ ...paciente, brigada_id: e.target.value });
-                    if (errors.brigada_id) setErrors((prev) => ({ ...prev, brigada_id: "" }));
-                  }}
-                >
-                  <option value="">-- Seleccionar Brigada --</option>
-                  {brigadas.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.nombre} ({b.departamento})
-                    </option>
-                  ))}
-                </select>
-                <FieldError msg={errors.brigada_id} />
-              </label>
-
-              <CamposPaciente
-                value={paciente}
-                setValue={setPaciente}
-                errors={errors}
-                setErrors={setErrors}
-                registerRef={registerRef}
-              />
-            </div>
-          )}
-
-          {/* TAB 2: SIGNOS VITALES */}
-          {activeTab === 2 && (
-            <div className={styles.formSection}>
-              <h2 className={styles.formSectionTitle}>2. Signos Vitales del Paciente</h2>
-              <CamposSignos
-                value={signos}
-                setValue={setSignos}
-                errors={errors}
-                setErrors={setErrors}
-                registerRef={registerRef}
-              />
-            </div>
-          )}
-
-          {/* TAB 3: CONSULTA */}
-          {activeTab === 3 && (
-            <div className={styles.formSection}>
-              <h2 className={styles.formSectionTitle}>3. Consulta Médica / Odontológica</h2>
-
-              <CamposConsulta
-                value={consulta}
-                setValue={setConsulta}
-                errors={errors}
-                setErrors={setErrors}
-                registerRef={registerRef}
-                medicos={medicos}
-                odontologos={odontologos}
-              />
-            </div>
-          )}
-
-          {/* TAB 4: DIAGNÓSTICOS */}
-          {activeTab === 4 && (
-            <div className={styles.formSection}>
-              <h2 className={styles.formSectionTitle}>4. Diagnósticos Clínicos</h2>
-              <CampoDiagnosticos
-                value={diagnosticosStr}
-                setValue={setDiagnosticosStr}
-                errors={errors}
-                setErrors={setErrors}
-                registerRef={registerRef}
-              />
-            </div>
-          )}
-
-          {/* TAB 5: MEDICAMENTOS */}
-          {activeTab === 5 && (
-            <div className={styles.stack}>
+            {/* TAB 1: PACIENTE */}
+            {activeTab === 1 && (
               <div className={styles.formSection}>
-                <h2 className={styles.formSectionTitle}>5. Receta de Medicamentos</h2>
+                <h2 className={styles.formSectionTitle}>
+                  1. Datos Personales del Paciente
+                </h2>
 
-                <h3 className={styles.subTitle}>Añadir Medicamento a la Receta</h3>
-                <div className="form-grid">
-                  <div className="form-field">
-                    <label htmlFor="receta-medicamento">
-                      Medicamento <span className="form-required" aria-hidden="true">*</span>
-                    </label>
-                    <Combobox
-                      id="receta-medicamento"
-                      ref={registerRef("newMedId")}
-                      aria-required="true"
-                      aria-invalid={!!errors.newMedId}
-                      placeholder="Buscar medicamento..."
-                      emptyText="Ningún medicamento coincide con la búsqueda."
-                      options={medicamentosList.map((m) => ({
-                        value: m.medicamento_id || m.id,
-                        label: m.nombre,
-                        detail: `Stock: ${m.stock_total || 0}`,
-                      }))}
-                      value={newMedId}
-                      onChange={(v) => {
-                        setNewMedId(v);
-                        if (errors.newMedId) setErrors((prev) => ({ ...prev, newMedId: "" }));
-                      }}
-                    />
-                    <FieldError msg={errors.newMedId} />
-                  </div>
-                  <label className="form-field">
-                    <span className="form-label">
-                      Cantidad <span className="form-required" aria-hidden="true">*</span>
+                <label className="form-field">
+                  <span className="form-label">
+                    Brigada Médica{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
                     </span>
-                    <input
-                      ref={registerRef("newMedCantidad")}
-                      className="form-input"
-                      aria-required="true"
-                      aria-invalid={!!errors.newMedCantidad}
-                      type="number"
-                      min="1"
-                      value={newMedCantidad}
-                      onChange={(e) => {
-                        setNewMedCantidad(e.target.value);
-                        if (errors.newMedCantidad) setErrors((prev) => ({ ...prev, newMedCantidad: "" }));
-                      }}
-                    />
-                    <FieldError msg={errors.newMedCantidad} />
-                  </label>
-                  <label className="form-field form-field-full">
-                    <span className="form-label">
-                      Indicaciones (Dosis, Frecuencia) <span className="form-required" aria-hidden="true">*</span>
-                    </span>
-                    <input
-                      ref={registerRef("newMedIndicaciones")}
-                      className="form-input"
-                      aria-required="true"
-                      aria-invalid={!!errors.newMedIndicaciones}
-                      placeholder="Ej. 1 tableta cada 8 horas por 5 días"
-                      value={newMedIndicaciones}
-                      onChange={(e) => {
-                        setNewMedIndicaciones(e.target.value);
-                        if (errors.newMedIndicaciones) setErrors((prev) => ({ ...prev, newMedIndicaciones: "" }));
-                      }}
-                    />
-                    <FieldError msg={errors.newMedIndicaciones} />
-                  </label>
-                </div>
-                <button type="button" className="btn-ghost btn-sm" onClick={handleAddMed} disabled={isSubmitting}>
-                  <Plus aria-hidden="true" />
-                  Añadir a Receta
-                </button>
+                  </span>
+                  <select
+                    ref={registerRef("brigada_id")}
+                    className="form-input"
+                    aria-required="true"
+                    aria-invalid={!!errors.brigada_id}
+                    value={paciente.brigada_id}
+                    onChange={(e) => {
+                      setPaciente({ ...paciente, brigada_id: e.target.value });
+                      if (errors.brigada_id)
+                        setErrors((prev) => ({ ...prev, brigada_id: "" }));
+                    }}
+                  >
+                    <option value="">-- Seleccionar Brigada --</option>
+                    {brigadas.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.nombre} ({b.departamento})
+                      </option>
+                    ))}
+                  </select>
+                  <FieldError msg={errors.brigada_id} />
+                </label>
+
+                <CamposPaciente
+                  value={paciente}
+                  setValue={setPaciente}
+                  errors={errors}
+                  setErrors={setErrors}
+                  registerRef={registerRef}
+                />
               </div>
+            )}
 
+            {/* TAB 2: SIGNOS VITALES */}
+            {activeTab === 2 && (
               <div className={styles.formSection}>
-                <h3 className={styles.subTitle}>
-                  Medicamentos Agregados <span className={styles.count}>{medsRecetados.length}</span>
-                </h3>
-                <div className={styles.tableWrap}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Medicamento</th>
-                        <th className={styles.num}>Cantidad</th>
-                        <th>Indicaciones</th>
-                        <th className={styles.num}>Quitar</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {medsRecetados.length === 0 ? (
+                <h2 className={styles.formSectionTitle}>
+                  2. Signos Vitales del Paciente
+                </h2>
+                <CamposSignos
+                  value={signos}
+                  setValue={setSignos}
+                  errors={errors}
+                  setErrors={setErrors}
+                  registerRef={registerRef}
+                />
+              </div>
+            )}
+
+            {/* TAB 3: CONSULTA */}
+            {activeTab === 3 && (
+              <div className={styles.formSection}>
+                <h2 className={styles.formSectionTitle}>
+                  3. Consulta Médica / Odontológica
+                </h2>
+
+                <CamposConsulta
+                  value={consulta}
+                  setValue={setConsulta}
+                  errors={errors}
+                  setErrors={setErrors}
+                  registerRef={registerRef}
+                  medicos={medicos}
+                  odontologos={odontologos}
+                />
+              </div>
+            )}
+
+            {/* TAB 4: DIAGNÓSTICOS */}
+            {activeTab === 4 && (
+              <div className={styles.formSection}>
+                <h2 className={styles.formSectionTitle}>
+                  4. Diagnósticos Clínicos
+                </h2>
+                <CampoDiagnosticos
+                  value={diagnosticosStr}
+                  setValue={setDiagnosticosStr}
+                  errors={errors}
+                  setErrors={setErrors}
+                  registerRef={registerRef}
+                />
+              </div>
+            )}
+
+            {/* TAB 5: MEDICAMENTOS */}
+            {activeTab === 5 && (
+              <div className={styles.stack}>
+                <div className={styles.formSection}>
+                  <h2 className={styles.formSectionTitle}>
+                    5. Receta de Medicamentos
+                  </h2>
+
+                  <h3 className={styles.subTitle}>
+                    Añadir Medicamento a la Receta
+                  </h3>
+                  <div className="form-grid">
+                    <div className="form-field">
+                      <label htmlFor="receta-medicamento">
+                        Medicamento{" "}
+                        <span className="form-required" aria-hidden="true">
+                          *
+                        </span>
+                      </label>
+                      <Combobox
+                        id="receta-medicamento"
+                        ref={registerRef("newMedId")}
+                        aria-required="true"
+                        aria-invalid={!!errors.newMedId}
+                        placeholder="Buscar medicamento..."
+                        emptyText="Ningún medicamento coincide con la búsqueda."
+                        options={medicamentosList.map((m) => ({
+                          value: m.medicamento_id || m.id,
+                          label: m.nombre,
+                          detail: `Stock: ${m.stock_total || 0}`,
+                        }))}
+                        value={newMedId}
+                        onChange={(v) => {
+                          setNewMedId(v);
+                          if (errors.newMedId)
+                            setErrors((prev) => ({ ...prev, newMedId: "" }));
+                        }}
+                      />
+                      <FieldError msg={errors.newMedId} />
+                    </div>
+                    <label className="form-field">
+                      <span className="form-label">
+                        Cantidad{" "}
+                        <span className="form-required" aria-hidden="true">
+                          *
+                        </span>
+                      </span>
+                      <input
+                        ref={registerRef("newMedCantidad")}
+                        className="form-input"
+                        aria-required="true"
+                        aria-invalid={!!errors.newMedCantidad}
+                        type="number"
+                        min="1"
+                        value={newMedCantidad}
+                        onChange={(e) => {
+                          setNewMedCantidad(e.target.value);
+                          if (errors.newMedCantidad)
+                            setErrors((prev) => ({
+                              ...prev,
+                              newMedCantidad: "",
+                            }));
+                        }}
+                      />
+                      <FieldError msg={errors.newMedCantidad} />
+                    </label>
+                    <label className="form-field form-field-full">
+                      <span className="form-label">
+                        Indicaciones (Dosis, Frecuencia){" "}
+                        <span className="form-required" aria-hidden="true">
+                          *
+                        </span>
+                      </span>
+                      <input
+                        ref={registerRef("newMedIndicaciones")}
+                        className="form-input"
+                        aria-required="true"
+                        aria-invalid={!!errors.newMedIndicaciones}
+                        placeholder="Ej. 1 tableta cada 8 horas por 5 días"
+                        value={newMedIndicaciones}
+                        onChange={(e) => {
+                          setNewMedIndicaciones(e.target.value);
+                          if (errors.newMedIndicaciones)
+                            setErrors((prev) => ({
+                              ...prev,
+                              newMedIndicaciones: "",
+                            }));
+                        }}
+                      />
+                      <FieldError msg={errors.newMedIndicaciones} />
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-ghost btn-sm"
+                    onClick={handleAddMed}
+                    disabled={isSubmitting}
+                  >
+                    <Plus aria-hidden="true" />
+                    Añadir a Receta
+                  </button>
+                </div>
+
+                <div className={styles.formSection}>
+                  <h3 className={styles.subTitle}>
+                    Medicamentos Agregados{" "}
+                    <span className={styles.count}>{medsRecetados.length}</span>
+                  </h3>
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                      <thead>
                         <tr>
-                          <td colSpan={4} className={styles.emptyCell}>
-                            No hay medicamentos recetados aún.
-                          </td>
+                          <th>Medicamento</th>
+                          <th className={styles.num}>Cantidad</th>
+                          <th>Indicaciones</th>
+                          <th className={styles.num}>Quitar</th>
                         </tr>
-                      ) : (
-                        medsRecetados.map((m, idx) => (
-                          <tr key={idx}>
-                            <td className={styles.cellMain}>{m.nombre}</td>
-                            <td className={styles.num}>{m.cantidad}</td>
-                            <td>{m.indicaciones}</td>
-                            <td>
-                              <div className={styles.rowActions}>
-                                <button
-                                  type="button"
-                                  className="btn-icon btn-icon-danger"
-                                  onClick={() => handleRemoveMed(idx)}
-                                  disabled={isSubmitting}
-                                  aria-label={`Quitar ${m.nombre} de la receta`}
-                                  title="Quitar"
-                                >
-                                  <Trash2 aria-hidden="true" />
-                                </button>
-                              </div>
+                      </thead>
+                      <tbody>
+                        {medsRecetados.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className={styles.emptyCell}>
+                              No hay medicamentos recetados aún.
                             </td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                        ) : (
+                          medsRecetados.map((m, idx) => (
+                            <tr key={m.medicamento_id}>
+                              <td className={styles.cellMain}>{m.nombre}</td>
+                              <td className={styles.num}>{m.cantidad}</td>
+                              <td>{m.indicaciones}</td>
+                              <td>
+                                <div className={styles.rowActions}>
+                                  <button
+                                    type="button"
+                                    className="btn-icon btn-icon-danger"
+                                    onClick={() => handleRemoveMed(idx)}
+                                    disabled={isSubmitting}
+                                    aria-label={`Quitar ${m.nombre} de la receta`}
+                                    title="Quitar"
+                                  >
+                                    <Trash2 aria-hidden="true" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
           </fieldset>
         </div>
 
@@ -724,13 +865,23 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
           <div className={`${styles.row} ${pac.next}`}>
             {/* cierra la etapa y deja el expediente listo para que otro usuario lo continúe */}
             {activeTab <= 2 && !locked && (
-              <button type="button" className="btn-ghost btn-sm" onClick={guardarYSalir} disabled={isSubmitting}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={guardarYSalir}
+                disabled={isSubmitting}
+              >
                 <LogOut aria-hidden="true" />
                 Guardar y salir
               </button>
             )}
             {activeTab >= 3 && tomada && (
-              <button type="button" className="btn-ghost btn-sm" onClick={liberar} disabled={isSubmitting}>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                onClick={liberar}
+                disabled={isSubmitting}
+              >
                 <UserX aria-hidden="true" />
                 Liberar paciente
               </button>
@@ -761,7 +912,9 @@ export function NuevoExpedienteClient({ pacienteId: pacienteInicial }: { pacient
                 ) : (
                   <Save aria-hidden="true" />
                 )}
-                {isSubmitting ? "Guardando expediente..." : "Guardar Expediente"}
+                {isSubmitting
+                  ? "Guardando expediente..."
+                  : "Guardar Expediente"}
               </button>
             )}
           </div>

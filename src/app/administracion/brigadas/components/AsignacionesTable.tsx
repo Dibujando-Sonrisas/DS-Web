@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
 import { Search } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
 
@@ -55,13 +55,15 @@ export default function AsignacionesTable({
       if (!p.activo) return false;
 
       const fullName = (p.nombre_completo || "").toLowerCase();
-      const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
+      const matchesSearch =
+        fullName.includes(searchTerm.toLowerCase()) ||
         p.cargo?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const assignedArea = assignments[p.id];
       const isAssigned = !!assignedArea;
 
-      const matchesAssignment = assignmentFilter === "all" ||
+      const matchesAssignment =
+        assignmentFilter === "all" ||
         (assignmentFilter === "assigned" && isAssigned) ||
         (assignmentFilter === "unassigned" && !isAssigned);
 
@@ -133,7 +135,8 @@ export default function AsignacionesTable({
               {filteredProfiles.length === 0 ? (
                 <tr>
                   <td colSpan={4} className={styles.emptyCell}>
-                    No se encontró personal activo con los filtros seleccionados.
+                    No se encontró personal activo con los filtros
+                    seleccionados.
                   </td>
                 </tr>
               ) : (
@@ -142,14 +145,24 @@ export default function AsignacionesTable({
 
                   return (
                     <tr key={p.id}>
-                      <td className={styles.cellMain}>{p.nombre_completo || "Usuario Sin Nombre"}</td>
+                      <td className={styles.cellMain}>
+                        {p.nombre_completo || "Usuario Sin Nombre"}
+                      </td>
                       <td>
-                        <span className={styles.cellMain}>{p.rol?.nombre ?? "—"}</span>
-                        {p.cargo && <span className={styles.cellSub}>{p.cargo}</span>}
+                        <span className={styles.cellMain}>
+                          {p.rol?.nombre ?? "—"}
+                        </span>
+                        {p.cargo && (
+                          <span className={styles.cellSub}>{p.cargo}</span>
+                        )}
                       </td>
                       <td>
                         {p.especialidades ? (
-                          <span className={`${styles.badge} ${styles.badgeInfo}`}>{p.especialidades.nombre}</span>
+                          <span
+                            className={`${styles.badge} ${styles.badgeInfo}`}
+                          >
+                            {p.especialidades.nombre}
+                          </span>
                         ) : (
                           <span className={styles.muted}>—</span>
                         )}
@@ -161,7 +174,9 @@ export default function AsignacionesTable({
                           }`}
                           aria-label={`Área asignada a ${p.nombre_completo || "Usuario Sin Nombre"}`}
                           value={currentArea}
-                          onChange={(e) => handleAssignChange(p.id, e.target.value)}
+                          onChange={(e) =>
+                            handleAssignChange(p.id, e.target.value)
+                          }
                           disabled={isPending || isReadOnly}
                         >
                           <option value="none">Sin asignar</option>

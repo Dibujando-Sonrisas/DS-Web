@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, type Dispatch, type SetStateAction } from "react";
 import { CircleAlert } from "lucide-react";
+import { type Dispatch, type SetStateAction, useRef } from "react";
 import type { Datos, Errores } from "@/lib/validation/expediente";
 
 // Campos de cada etapa del expediente: los usan el asistente de nuevo expediente y la edición del expediente.
@@ -49,16 +49,26 @@ export function useFieldFocus() {
 }
 
 /** Datos personales (la brigada se elige aparte: solo al ingresar al paciente). */
-export function CamposPaciente({ value, setValue, errors, setErrors, registerRef }: CamposProps) {
+export function CamposPaciente({
+  value,
+  setValue,
+  errors,
+  setErrors,
+  registerRef,
+}: CamposProps) {
   // menor de 18 años: el responsable pasa a ser obligatorio
-  const esMenor = value.edad !== "" && !isNaN(Number(value.edad)) && Number(value.edad) < 18;
+  const esMenor =
+    value.edad !== "" && !isNaN(Number(value.edad)) && Number(value.edad) < 18;
 
   return (
     <>
       <div className="form-grid">
         <label className="form-field">
           <span className="form-label">
-            Nombres <span className="form-required" aria-hidden="true">*</span>
+            Nombres{" "}
+            <span className="form-required" aria-hidden="true">
+              *
+            </span>
           </span>
           <input
             ref={registerRef("nombres")}
@@ -69,14 +79,18 @@ export function CamposPaciente({ value, setValue, errors, setErrors, registerRef
             value={value.nombres}
             onChange={(e) => {
               setValue({ ...value, nombres: e.target.value });
-              if (errors.nombres) setErrors((prev) => ({ ...prev, nombres: "" }));
+              if (errors.nombres)
+                setErrors((prev) => ({ ...prev, nombres: "" }));
             }}
           />
           <FieldError msg={errors.nombres} />
         </label>
         <label className="form-field">
           <span className="form-label">
-            Apellidos <span className="form-required" aria-hidden="true">*</span>
+            Apellidos{" "}
+            <span className="form-required" aria-hidden="true">
+              *
+            </span>
           </span>
           <input
             ref={registerRef("apellidos")}
@@ -87,7 +101,8 @@ export function CamposPaciente({ value, setValue, errors, setErrors, registerRef
             value={value.apellidos}
             onChange={(e) => {
               setValue({ ...value, apellidos: e.target.value });
-              if (errors.apellidos) setErrors((prev) => ({ ...prev, apellidos: "" }));
+              if (errors.apellidos)
+                setErrors((prev) => ({ ...prev, apellidos: "" }));
             }}
           />
           <FieldError msg={errors.apellidos} />
@@ -97,7 +112,10 @@ export function CamposPaciente({ value, setValue, errors, setErrors, registerRef
       <div className="form-grid-3">
         <label className="form-field">
           <span className="form-label">
-            Sexo <span className="form-required" aria-hidden="true">*</span>
+            Sexo{" "}
+            <span className="form-required" aria-hidden="true">
+              *
+            </span>
           </span>
           <select
             ref={registerRef("sexo")}
@@ -117,7 +135,10 @@ export function CamposPaciente({ value, setValue, errors, setErrors, registerRef
         </label>
         <label className="form-field">
           <span className="form-label">
-            Edad (Años) <span className="form-required" aria-hidden="true">*</span>
+            Edad (Años){" "}
+            <span className="form-required" aria-hidden="true">
+              *
+            </span>
           </span>
           <input
             ref={registerRef("edad")}
@@ -152,7 +173,8 @@ export function CamposPaciente({ value, setValue, errors, setErrors, registerRef
             value={value.telefono}
             onChange={(e) => {
               setValue({ ...value, telefono: e.target.value });
-              if (errors.telefono) setErrors((prev) => ({ ...prev, telefono: "" }));
+              if (errors.telefono)
+                setErrors((prev) => ({ ...prev, telefono: "" }));
             }}
           />
           <FieldError msg={errors.telefono} />
@@ -171,7 +193,8 @@ export function CamposPaciente({ value, setValue, errors, setErrors, registerRef
           value={value.comunidad}
           onChange={(e) => {
             setValue({ ...value, comunidad: e.target.value });
-            if (errors.comunidad) setErrors((prev) => ({ ...prev, comunidad: "" }));
+            if (errors.comunidad)
+              setErrors((prev) => ({ ...prev, comunidad: "" }));
           }}
         />
         <FieldError msg={errors.comunidad} />
@@ -181,7 +204,9 @@ export function CamposPaciente({ value, setValue, errors, setErrors, registerRef
         <span className="form-label">
           Responsable (Padre/Tutor){" "}
           {esMenor ? (
-            <span className="form-required" aria-hidden="true">*</span>
+            <span className="form-required" aria-hidden="true">
+              *
+            </span>
           ) : (
             <span className="form-optional">(Opcional)</span>
           )}
@@ -199,7 +224,8 @@ export function CamposPaciente({ value, setValue, errors, setErrors, registerRef
           value={value.responsable}
           onChange={(e) => {
             setValue({ ...value, responsable: e.target.value });
-            if (errors.responsable) setErrors((prev) => ({ ...prev, responsable: "" }));
+            if (errors.responsable)
+              setErrors((prev) => ({ ...prev, responsable: "" }));
           }}
         />
         <FieldError msg={errors.responsable} />
@@ -208,11 +234,18 @@ export function CamposPaciente({ value, setValue, errors, setErrors, registerRef
   );
 }
 
-export function CamposSignos({ value, setValue, errors, setErrors, registerRef }: CamposProps) {
+export function CamposSignos({
+  value,
+  setValue,
+  errors,
+  setErrors,
+  registerRef,
+}: CamposProps) {
   return (
     <>
       <p className="form-hint">
-        Todos los campos son opcionales. Si ingresas datos, se verificarán sus rangos normales.
+        Todos los campos son opcionales. Si ingresas datos, se verificarán sus
+        rangos normales.
       </p>
 
       <div className="form-grid-3">
@@ -268,7 +301,8 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
             value={value.temperatura}
             onChange={(e) => {
               setValue({ ...value, temperatura: e.target.value });
-              if (errors.temperatura) setErrors((prev) => ({ ...prev, temperatura: "" }));
+              if (errors.temperatura)
+                setErrors((prev) => ({ ...prev, temperatura: "" }));
             }}
           />
           <FieldError msg={errors.temperatura} />
@@ -278,7 +312,8 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
       <div className="form-grid">
         <label className="form-field">
           <span className="form-label">
-            Frecuencia Cardíaca (lpm) <span className="form-optional">(Opcional)</span>
+            Frecuencia Cardíaca (lpm){" "}
+            <span className="form-optional">(Opcional)</span>
           </span>
           <input
             ref={registerRef("frecuencia_cardiaca")}
@@ -289,14 +324,16 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
             value={value.frecuencia_cardiaca}
             onChange={(e) => {
               setValue({ ...value, frecuencia_cardiaca: e.target.value });
-              if (errors.frecuencia_cardiaca) setErrors((prev) => ({ ...prev, frecuencia_cardiaca: "" }));
+              if (errors.frecuencia_cardiaca)
+                setErrors((prev) => ({ ...prev, frecuencia_cardiaca: "" }));
             }}
           />
           <FieldError msg={errors.frecuencia_cardiaca} />
         </label>
         <label className="form-field">
           <span className="form-label">
-            Frecuencia Respiratoria (rpm) <span className="form-optional">(Opcional)</span>
+            Frecuencia Respiratoria (rpm){" "}
+            <span className="form-optional">(Opcional)</span>
           </span>
           <input
             ref={registerRef("frecuencia_respiratoria")}
@@ -307,7 +344,8 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
             value={value.frecuencia_respiratoria}
             onChange={(e) => {
               setValue({ ...value, frecuencia_respiratoria: e.target.value });
-              if (errors.frecuencia_respiratoria) setErrors((prev) => ({ ...prev, frecuencia_respiratoria: "" }));
+              if (errors.frecuencia_respiratoria)
+                setErrors((prev) => ({ ...prev, frecuencia_respiratoria: "" }));
             }}
           />
           <FieldError msg={errors.frecuencia_respiratoria} />
@@ -317,7 +355,8 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
       <div className="form-grid-3">
         <label className="form-field">
           <span className="form-label">
-            Presión Arterial <span className="form-optional">(Opcional, ej. 120/80)</span>
+            Presión Arterial{" "}
+            <span className="form-optional">(Opcional, ej. 120/80)</span>
           </span>
           <input
             ref={registerRef("presion_arterial")}
@@ -327,7 +366,8 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
             value={value.presion_arterial}
             onChange={(e) => {
               setValue({ ...value, presion_arterial: e.target.value });
-              if (errors.presion_arterial) setErrors((prev) => ({ ...prev, presion_arterial: "" }));
+              if (errors.presion_arterial)
+                setErrors((prev) => ({ ...prev, presion_arterial: "" }));
             }}
           />
           <FieldError msg={errors.presion_arterial} />
@@ -345,7 +385,8 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
             value={value.saturacion}
             onChange={(e) => {
               setValue({ ...value, saturacion: e.target.value });
-              if (errors.saturacion) setErrors((prev) => ({ ...prev, saturacion: "" }));
+              if (errors.saturacion)
+                setErrors((prev) => ({ ...prev, saturacion: "" }));
             }}
           />
           <FieldError msg={errors.saturacion} />
@@ -364,7 +405,8 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
             value={value.glucosa}
             onChange={(e) => {
               setValue({ ...value, glucosa: e.target.value });
-              if (errors.glucosa) setErrors((prev) => ({ ...prev, glucosa: "" }));
+              if (errors.glucosa)
+                setErrors((prev) => ({ ...prev, glucosa: "" }));
             }}
           />
           <FieldError msg={errors.glucosa} />
@@ -373,7 +415,10 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
 
       <label className="form-field">
         <span className="form-label">
-          Observaciones de Preclínica <span className="form-optional">(Opcional, máx. 1000 caracteres)</span>
+          Observaciones de Preclínica{" "}
+          <span className="form-optional">
+            (Opcional, máx. 1000 caracteres)
+          </span>
         </span>
         <textarea
           ref={registerRef("observaciones")}
@@ -384,7 +429,8 @@ export function CamposSignos({ value, setValue, errors, setErrors, registerRef }
           value={value.observaciones}
           onChange={(e) => {
             setValue({ ...value, observaciones: e.target.value });
-            if (errors.observaciones) setErrors((prev) => ({ ...prev, observaciones: "" }));
+            if (errors.observaciones)
+              setErrors((prev) => ({ ...prev, observaciones: "" }));
           }}
         />
         <FieldError msg={errors.observaciones} />
@@ -411,7 +457,10 @@ export function CamposConsulta({
       <div className="form-grid">
         <label className="form-field">
           <span className="form-label">
-            Tipo de Consulta <span className="form-required" aria-hidden="true">*</span>
+            Tipo de Consulta{" "}
+            <span className="form-required" aria-hidden="true">
+              *
+            </span>
           </span>
           <select
             ref={registerRef("tipo_consulta")}
@@ -421,8 +470,13 @@ export function CamposConsulta({
             value={value.tipo_consulta}
             onChange={(e) => {
               // el profesional depende del tipo de consulta: se vuelve a elegir
-              setValue({ ...value, tipo_consulta: e.target.value, medico_id: "" });
-              if (errors.tipo_consulta) setErrors((prev) => ({ ...prev, tipo_consulta: "" }));
+              setValue({
+                ...value,
+                tipo_consulta: e.target.value,
+                medico_id: "",
+              });
+              if (errors.tipo_consulta)
+                setErrors((prev) => ({ ...prev, tipo_consulta: "" }));
             }}
           >
             <option value="Medica">Médica</option>
@@ -432,7 +486,10 @@ export function CamposConsulta({
         </label>
         <label className="form-field">
           <span className="form-label">
-            Médico / Odontólogo que atendió <span className="form-required" aria-hidden="true">*</span>
+            Médico / Odontólogo que atendió{" "}
+            <span className="form-required" aria-hidden="true">
+              *
+            </span>
           </span>
           <select
             ref={registerRef("medico_id")}
@@ -443,7 +500,8 @@ export function CamposConsulta({
             disabled={profesionales.length === 0}
             onChange={(e) => {
               setValue({ ...value, medico_id: e.target.value });
-              if (errors.medico_id) setErrors((prev) => ({ ...prev, medico_id: "" }));
+              if (errors.medico_id)
+                setErrors((prev) => ({ ...prev, medico_id: "" }));
             }}
           >
             {profesionales.length === 0 ? (
@@ -467,7 +525,10 @@ export function CamposConsulta({
 
       <label className="form-field">
         <span className="form-label">
-          Motivo de Consulta <span className="form-required" aria-hidden="true">*</span>
+          Motivo de Consulta{" "}
+          <span className="form-required" aria-hidden="true">
+            *
+          </span>
         </span>
         <textarea
           ref={registerRef("motivo_consulta")}
@@ -479,7 +540,8 @@ export function CamposConsulta({
           value={value.motivo_consulta}
           onChange={(e) => {
             setValue({ ...value, motivo_consulta: e.target.value });
-            if (errors.motivo_consulta) setErrors((prev) => ({ ...prev, motivo_consulta: "" }));
+            if (errors.motivo_consulta)
+              setErrors((prev) => ({ ...prev, motivo_consulta: "" }));
           }}
         />
         <FieldError msg={errors.motivo_consulta} />
@@ -487,7 +549,10 @@ export function CamposConsulta({
 
       <label className="form-field">
         <span className="form-label">
-          Enfermedad Actual <span className="form-required" aria-hidden="true">*</span>
+          Enfermedad Actual{" "}
+          <span className="form-required" aria-hidden="true">
+            *
+          </span>
         </span>
         <textarea
           ref={registerRef("enfermedad_actual")}
@@ -499,7 +564,8 @@ export function CamposConsulta({
           value={value.enfermedad_actual}
           onChange={(e) => {
             setValue({ ...value, enfermedad_actual: e.target.value });
-            if (errors.enfermedad_actual) setErrors((prev) => ({ ...prev, enfermedad_actual: "" }));
+            if (errors.enfermedad_actual)
+              setErrors((prev) => ({ ...prev, enfermedad_actual: "" }));
           }}
         />
         <FieldError msg={errors.enfermedad_actual} />
@@ -507,7 +573,10 @@ export function CamposConsulta({
 
       <label className="form-field">
         <span className="form-label">
-          Plan de Tratamiento <span className="form-required" aria-hidden="true">*</span>
+          Plan de Tratamiento{" "}
+          <span className="form-required" aria-hidden="true">
+            *
+          </span>
         </span>
         <textarea
           ref={registerRef("tratamiento")}
@@ -519,7 +588,8 @@ export function CamposConsulta({
           value={value.tratamiento}
           onChange={(e) => {
             setValue({ ...value, tratamiento: e.target.value });
-            if (errors.tratamiento) setErrors((prev) => ({ ...prev, tratamiento: "" }));
+            if (errors.tratamiento)
+              setErrors((prev) => ({ ...prev, tratamiento: "" }));
           }}
         />
         <FieldError msg={errors.tratamiento} />
@@ -529,7 +599,9 @@ export function CamposConsulta({
         <input
           type="checkbox"
           checked={value.requiere_postclinica}
-          onChange={(e) => setValue({ ...value, requiere_postclinica: e.target.checked })}
+          onChange={(e) =>
+            setValue({ ...value, requiere_postclinica: e.target.checked })
+          }
         />
         Requiere Postclínica
       </label>
@@ -537,16 +609,26 @@ export function CamposConsulta({
   );
 }
 
-export function CampoDiagnosticos({ value, setValue, errors, setErrors, registerRef }: CamposProps<string>) {
+export function CampoDiagnosticos({
+  value,
+  setValue,
+  errors,
+  setErrors,
+  registerRef,
+}: CamposProps<string>) {
   return (
     <>
       <p className="form-hint">
-        Ingresa los diagnósticos separados por coma (,). Cada diagnóstico debe tener al menos 3 caracteres.
+        Ingresa los diagnósticos separados por coma (,). Cada diagnóstico debe
+        tener al menos 3 caracteres.
       </p>
 
       <label className="form-field">
         <span className="form-label">
-          Diagnósticos <span className="form-required" aria-hidden="true">*</span>
+          Diagnósticos{" "}
+          <span className="form-required" aria-hidden="true">
+            *
+          </span>
         </span>
         <textarea
           ref={registerRef("diagnosticosStr")}
@@ -558,7 +640,8 @@ export function CampoDiagnosticos({ value, setValue, errors, setErrors, register
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
-            if (errors.diagnosticosStr) setErrors((prev) => ({ ...prev, diagnosticosStr: "" }));
+            if (errors.diagnosticosStr)
+              setErrors((prev) => ({ ...prev, diagnosticosStr: "" }));
           }}
         />
         <FieldError msg={errors.diagnosticosStr} />

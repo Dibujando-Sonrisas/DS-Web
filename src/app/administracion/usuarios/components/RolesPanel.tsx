@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
 import {
   CircleAlert,
   Info,
@@ -12,27 +11,28 @@ import {
   TriangleAlert,
   UserPlus,
 } from "lucide-react";
-import type { RolDetalle } from "../page";
-import { guardarRolAction, eliminarRolAction } from "../actions";
-import type { RolTono } from "@/lib/auth/session";
+import { useMemo, useRef, useState, useTransition } from "react";
 import {
   ACTION_LABELS,
   ALL_PERMISSIONS,
   IMPLICIT_PERMISSIONS,
-  PERMISSIONS,
   PERMISSION_MODULES,
+  PERMISSIONS,
+  type Permission,
   SPECIAL_PERMISSION_LABELS,
   STANDARD_ACTIONS,
-  type Permission,
 } from "@/lib/auth/permissions";
-import AdminModal from "../../components/AdminModal";
-import ConfirmDialog from "../../components/ConfirmDialog";
-import EmptyState from "../../components/EmptyState";
-import RoleBadge from "../../components/RoleBadge";
-import { useToast } from "../../components/AdminToast";
-import { usePermissions } from "../../components/PermissionsProvider";
+import type { RolTono } from "@/lib/auth/session";
 import styles from "@/styles/pages/admin.module.css";
 import rs from "@/styles/pages/admin-roles.module.css";
+import AdminModal from "../../components/AdminModal";
+import { useToast } from "../../components/AdminToast";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import EmptyState from "../../components/EmptyState";
+import { usePermissions } from "../../components/PermissionsProvider";
+import RoleBadge from "../../components/RoleBadge";
+import { eliminarRolAction, guardarRolAction } from "../actions";
+import type { RolDetalle } from "../page";
 
 /* ── DATOS DE APOYO ── */
 
@@ -74,9 +74,12 @@ const FILAS: Fila[] = (() => {
       const propios = ALL_PERMISSIONS.filter((p) => p.split(".")[0] === m.id);
       return {
         ...m,
-        estandar: STANDARD_ACTIONS.map((a) => propios.find((p) => p === `${m.id}.${a}`) ?? null),
+        estandar: STANDARD_ACTIONS.map(
+          (a) => propios.find((p) => p === `${m.id}.${a}`) ?? null
+        ),
         otros: propios.filter(
-          (p) => !(STANDARD_ACTIONS as readonly string[]).includes(p.split(".")[1])
+          (p) =>
+            !(STANDARD_ACTIONS as readonly string[]).includes(p.split(".")[1])
         ),
       };
     })
@@ -122,7 +125,8 @@ function mismoDraft(a: Draft, b: Draft) {
   );
 }
 
-const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+const plural = (n: number, uno: string, varios: string) =>
+  `${n} ${n === 1 ? uno : varios}`;
 
 /* ── PESTAÑA ROLES ── */
 
@@ -134,35 +138,58 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
 
   // "nuevo" = formulario de creación
   const [selectedId, setSelectedId] = useState<string>(roles[0]?.id ?? "nuevo");
-  const selected = selectedId === "nuevo" ? null : roles.find((r) => r.id === selectedId) ?? null;
+  const selected =
+    selectedId === "nuevo"
+      ? null
+      : (roles.find((r) => r.id === selectedId) ?? null);
   const [draft, setDraft] = useState<Draft>(() => toDraft(selected));
   const inicial = useMemo(() => toDraft(selected), [selected]);
   const dirty = !mismoDraft(draft, inicial);
 
   const [pendingSelect, setPendingSelect] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RolDetalle | null>(null);
-  const [errors, setErrors] = useState<{ nombre?: string; descripcion?: string; general?: string }>({});
+  const [errors, setErrors] = useState<{
+    nombre?: string;
+    descripcion?: string;
+    general?: string;
+  }>({});
 
   const esNuevo = selectedId === "nuevo";
-  const esPropio = !!selected && selected.id === myRole.id && !myRole.es_superadmin;
+  const esPropio =
+    !!selected && selected.id === myRole.id && !myRole.es_superadmin;
   const superadminAjeno = !!selected?.es_superadmin && !myRole.es_superadmin;
-  const puedeEditar = (esNuevo ? can(PERMISSIONS.ROLES_CREATE) : can(PERMISSIONS.ROLES_UPDATE)) && !esPropio && !superadminAjeno;
+  const puedeEditar =
+    (esNuevo ? can(PERMISSIONS.ROLES_CREATE) : can(PERMISSIONS.ROLES_UPDATE)) &&
+    !esPropio &&
+    !superadminAjeno;
   const permisosBloqueados = !puedeEditar || !!selected?.es_superadmin;
   const puedeEliminar =
-    !!selected && can(PERMISSIONS.ROLES_DELETE) && !selected.es_superadmin && !selected.es_predeterminado && !esPropio;
+    !!selected &&
+    can(PERMISSIONS.ROLES_DELETE) &&
+    !selected.es_superadmin &&
+    !selected.es_predeterminado &&
+    !esPropio;
 
-  const otorgable = (p: Permission) => myRole.es_superadmin || myPerms.includes(p);
-  const marcado = (p: Permission) => !!selected?.es_superadmin || draft.permisos.includes(p);
+  const otorgable = (p: Permission) =>
+    myRole.es_superadmin || myPerms.includes(p);
+  const marcado = (p: Permission) =>
+    !!selected?.es_superadmin || draft.permisos.includes(p);
   const bloqueado = (p: Permission) =>
-    permisosBloqueados || IMPLICIT_PERMISSIONS.includes(p) || (!otorgable(p) && !draft.permisos.includes(p));
+    permisosBloqueados ||
+    IMPLICIT_PERMISSIONS.includes(p) ||
+    (!otorgable(p) && !draft.permisos.includes(p));
 
   const seleccionar = (id: string) => {
     setSelectedId(id);
-    setDraft(toDraft(id === "nuevo" ? null : roles.find((r) => r.id === id) ?? null));
+    setDraft(
+      toDraft(id === "nuevo" ? null : (roles.find((r) => r.id === id) ?? null))
+    );
     setErrors({});
     // en pantallas angostas el editor queda debajo de la lista
     if (window.matchMedia("(max-width: 1099px)").matches) {
-      requestAnimationFrame(() => editorRef.current?.scrollIntoView({ block: "start" }));
+      requestAnimationFrame(() =>
+        editorRef.current?.scrollIntoView({ block: "start" })
+      );
     }
   };
 
@@ -175,7 +202,9 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
   const togglePermiso = (p: Permission, on: boolean) => {
     setDraft((d) => ({
       ...d,
-      permisos: on ? [...new Set([...d.permisos, p])] : d.permisos.filter((x) => x !== p),
+      permisos: on
+        ? [...new Set([...d.permisos, p])]
+        : d.permisos.filter((x) => x !== p),
     }));
   };
 
@@ -194,12 +223,21 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
   const validar = () => {
     const e: typeof errors = {};
     const nombre = draft.nombre.trim();
-    if (nombre.length < 2) e.nombre = "Escribe un nombre de al menos 2 caracteres.";
-    else if (nombre.length > 60) e.nombre = "El nombre admite hasta 60 caracteres.";
-    else if (roles.some((r) => r.id !== selected?.id && r.nombre.trim().toLowerCase() === nombre.toLowerCase())) {
+    if (nombre.length < 2)
+      e.nombre = "Escribe un nombre de al menos 2 caracteres.";
+    else if (nombre.length > 60)
+      e.nombre = "El nombre admite hasta 60 caracteres.";
+    else if (
+      roles.some(
+        (r) =>
+          r.id !== selected?.id &&
+          r.nombre.trim().toLowerCase() === nombre.toLowerCase()
+      )
+    ) {
       e.nombre = `Ya existe un rol llamado "${nombre}".`;
     }
-    if (draft.descripcion.trim().length > 240) e.descripcion = "La descripción admite hasta 240 caracteres.";
+    if (draft.descripcion.trim().length > 240)
+      e.descripcion = "La descripción admite hasta 240 caracteres.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -227,18 +265,25 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
         ...draft,
         nombre: draft.nombre.trim(),
         descripcion: draft.descripcion.trim(),
-        permisos: [...new Set([...draft.permisos, ...IMPLICIT_PERMISSIONS])].sort(),
+        permisos: [
+          ...new Set([...draft.permisos, ...IMPLICIT_PERMISSIONS]),
+        ].sort(),
       });
     });
   };
 
-  const totalMarcados = selected?.es_superadmin ? ALL_PERMISSIONS.length : draft.permisos.length;
-  const titulo = esNuevo ? "Nuevo rol" : selected?.nombre ?? "Rol";
+  const totalMarcados = selected?.es_superadmin
+    ? ALL_PERMISSIONS.length
+    : draft.permisos.length;
+  const titulo = esNuevo ? "Nuevo rol" : (selected?.nombre ?? "Rol");
 
   return (
     <div className={rs.layout}>
       {/* Lista de roles */}
-      <section className={`${styles.panel} ${rs.listPanel}`} aria-labelledby="roles-lista">
+      <section
+        className={`${styles.panel} ${rs.listPanel}`}
+        aria-labelledby="roles-lista"
+      >
         <div className={styles.panelHeader}>
           <h2 id="roles-lista" className={styles.panelTitle}>
             Roles <span className={styles.count}>{roles.length}</span>
@@ -270,23 +315,33 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                   aria-current={rol.id === selectedId ? "true" : undefined}
                   onClick={() => pedirSeleccion(rol.id)}
                 >
-                  <span className={rs.roleDot} style={{ background: TONO_PUNTO[rol.color] }} aria-hidden="true" />
+                  <span
+                    className={rs.roleDot}
+                    style={{ background: TONO_PUNTO[rol.color] }}
+                    aria-hidden="true"
+                  />
                   <span className={rs.roleText}>
                     <span className={rs.roleName}>{rol.nombre}</span>
                     <span className={rs.roleMeta}>
                       {plural(rol.usuarios, "usuario", "usuarios")} ·{" "}
-                      {rol.es_superadmin ? "todos los permisos" : plural(rol.permisos.length, "permiso", "permisos")}
+                      {rol.es_superadmin
+                        ? "todos los permisos"
+                        : plural(rol.permisos.length, "permiso", "permisos")}
                     </span>
                     {(rol.es_superadmin || rol.es_predeterminado) && (
                       <span className={rs.roleFlags}>
                         {rol.es_superadmin && (
-                          <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+                          <span
+                            className={`${styles.badge} ${styles.badgeNeutral}`}
+                          >
                             <Lock aria-hidden="true" />
                             Protegido
                           </span>
                         )}
                         {rol.es_predeterminado && (
-                          <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+                          <span
+                            className={`${styles.badge} ${styles.badgeNeutral}`}
+                          >
                             <UserPlus aria-hidden="true" />
                             Usuarios nuevos
                           </span>
@@ -303,7 +358,11 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
 
       {/* Editor del rol seleccionado */}
       {(selected || esNuevo) && (
-        <section ref={editorRef} className={`${styles.panel} ${rs.editor}`} aria-labelledby="rol-editor">
+        <section
+          ref={editorRef}
+          className={`${styles.panel} ${rs.editor}`}
+          aria-labelledby="rol-editor"
+        >
           <div className={styles.panelHeader}>
             <div>
               <h2 id="rol-editor" className={styles.panelTitle}>
@@ -311,7 +370,12 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
               </h2>
               {!esNuevo && selected && (
                 <p className={styles.panelSub}>
-                  {plural(selected.usuarios, "miembro tiene", "miembros tienen")} este rol.
+                  {plural(
+                    selected.usuarios,
+                    "miembro tiene",
+                    "miembros tienen"
+                  )}{" "}
+                  este rol.
                 </p>
               )}
             </div>
@@ -336,27 +400,35 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
               if (puedeEditar && dirty) guardar();
             }}
           >
-            <div className={`${styles.panelBody} ${styles.stack} ${rs.editorBody}`}>
+            <div
+              className={`${styles.panelBody} ${styles.stack} ${rs.editorBody}`}
+            >
               {/* Por qué no se puede editar, si es el caso */}
               {selected?.es_superadmin && (
                 <p className="notice">
                   <Info aria-hidden="true" />
                   <span>
-                    El Administrador tiene <strong>todos los permisos</strong>, también los de apartados que se agreguen
-                    en el futuro. No se puede eliminar ni quitarle permisos.
+                    El Administrador tiene <strong>todos los permisos</strong>,
+                    también los de apartados que se agreguen en el futuro. No se
+                    puede eliminar ni quitarle permisos.
                   </span>
                 </p>
               )}
               {esPropio && (
                 <p className="notice notice-warn">
                   <Lock aria-hidden="true" />
-                  <span>Este es tu rol. Para evitar que alguien se dé más acceso, otro usuario debe editarlo.</span>
+                  <span>
+                    Este es tu rol. Para evitar que alguien se dé más acceso,
+                    otro usuario debe editarlo.
+                  </span>
                 </p>
               )}
               {!esNuevo && !can(PERMISSIONS.ROLES_UPDATE) && !esPropio && (
                 <p className="notice notice-warn">
                   <Lock aria-hidden="true" />
-                  <span>Modo solo lectura: no tienes permiso para editar roles.</span>
+                  <span>
+                    Modo solo lectura: no tienes permiso para editar roles.
+                  </span>
                 </p>
               )}
               {errors.general && (
@@ -366,7 +438,10 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                 </p>
               )}
 
-              <fieldset className={styles.formSection} disabled={!puedeEditar || isPending}>
+              <fieldset
+                className={styles.formSection}
+                disabled={!puedeEditar || isPending}
+              >
                 <h3 className={styles.formSectionTitle}>Datos del rol</h3>
                 <div className="form-grid">
                   <label className="form-field">
@@ -377,7 +452,9 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                       className="form-input"
                       value={draft.nombre}
                       maxLength={60}
-                      onChange={(e) => setDraft({ ...draft, nombre: e.target.value })}
+                      onChange={(e) =>
+                        setDraft({ ...draft, nombre: e.target.value })
+                      }
                       placeholder="Ej. Voluntario de Farmacia"
                       aria-invalid={!!errors.nombre}
                     />
@@ -393,7 +470,11 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                     <span className="form-label" id="rol-color">
                       Color de la etiqueta
                     </span>
-                    <div className={rs.tones} role="radiogroup" aria-labelledby="rol-color">
+                    <div
+                      className={rs.tones}
+                      role="radiogroup"
+                      aria-labelledby="rol-color"
+                    >
                       {TONOS.map((t) => (
                         <label key={t.id} className={rs.tone} title={t.label}>
                           <input
@@ -404,7 +485,12 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                             onChange={() => setDraft({ ...draft, color: t.id })}
                             aria-label={t.label}
                           />
-                          <RoleBadge role={{ nombre: draft.nombre.trim() || "Rol", color: t.id }} />
+                          <RoleBadge
+                            role={{
+                              nombre: draft.nombre.trim() || "Rol",
+                              color: t.id,
+                            }}
+                          />
                         </label>
                       ))}
                     </div>
@@ -412,18 +498,23 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
 
                   <label className="form-field form-field-full">
                     <span className="form-label">
-                      Descripción <span className="form-optional">(opcional)</span>
+                      Descripción{" "}
+                      <span className="form-optional">(opcional)</span>
                     </span>
                     <textarea
                       className="form-input"
                       rows={2}
                       maxLength={240}
                       value={draft.descripcion}
-                      onChange={(e) => setDraft({ ...draft, descripcion: e.target.value })}
+                      onChange={(e) =>
+                        setDraft({ ...draft, descripcion: e.target.value })
+                      }
                       placeholder="Para qué sirve este rol y a quién se asigna."
                       aria-invalid={!!errors.descripcion}
                     />
-                    <span className="form-hint">{draft.descripcion.trim().length}/240</span>
+                    <span className="form-hint">
+                      {draft.descripcion.trim().length}/240
+                    </span>
                     {errors.descripcion && (
                       <span className="form-error">
                         <CircleAlert aria-hidden="true" />
@@ -439,7 +530,12 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                           type="checkbox"
                           checked={draft.predeterminado}
                           disabled={!!selected?.es_predeterminado}
-                          onChange={(e) => setDraft({ ...draft, predeterminado: e.target.checked })}
+                          onChange={(e) =>
+                            setDraft({
+                              ...draft,
+                              predeterminado: e.target.checked,
+                            })
+                          }
                         />
                         Asignar a los usuarios nuevos
                       </label>
@@ -453,7 +549,10 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                 </div>
               </fieldset>
 
-              <section className={styles.formSection} aria-labelledby="rol-permisos">
+              <section
+                className={styles.formSection}
+                aria-labelledby="rol-permisos"
+              >
                 <div className={rs.matrixHead}>
                   <h3 id="rol-permisos" className={styles.formSectionTitle}>
                     Permisos
@@ -463,7 +562,9 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                   </span>
                 </div>
                 {!myRole.es_superadmin && puedeEditar && (
-                  <p className="form-hint">Solo puedes otorgar los permisos que tú mismo tienes.</p>
+                  <p className="form-hint">
+                    Solo puedes otorgar los permisos que tú mismo tienes.
+                  </p>
                 )}
 
                 <div className={`${styles.tableWrap} ${rs.matrixWrap}`}>
@@ -481,7 +582,10 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                     </thead>
                     <tbody>
                       {FILAS.map((fila) => {
-                        const todos = [...fila.estandar.filter(Boolean), ...fila.otros] as Permission[];
+                        const todos = [
+                          ...fila.estandar.filter(Boolean),
+                          ...fila.otros,
+                        ] as Permission[];
                         const n = todos.filter(marcado).length;
                         const toggleables = todos.filter((p) => !bloqueado(p));
                         return (
@@ -492,10 +596,14 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                                   type="checkbox"
                                   checked={n === todos.length}
                                   ref={(el) => {
-                                    if (el) el.indeterminate = n > 0 && n < todos.length;
+                                    if (el)
+                                      el.indeterminate =
+                                        n > 0 && n < todos.length;
                                   }}
                                   disabled={toggleables.length === 0}
-                                  onChange={(e) => toggleModulo(fila, e.target.checked)}
+                                  onChange={(e) =>
+                                    toggleModulo(fila, e.target.checked)
+                                  }
                                   aria-label={`Todos los permisos de ${fila.label}`}
                                 />
                                 <span>
@@ -523,24 +631,33 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                                       type="checkbox"
                                       checked={marcado(p)}
                                       disabled={bloqueado(p)}
-                                      onChange={(e) => togglePermiso(p, e.target.checked)}
+                                      onChange={(e) =>
+                                        togglePermiso(p, e.target.checked)
+                                      }
                                       aria-label={`${ACTION_LABELS[STANDARD_ACTIONS[i]]} · ${fila.label}`}
                                     />
                                   </label>
                                 </td>
                               ) : (
-                                <td key={`${fila.id}-${i}`} className={rs.check}>
-                                  <span className={rs.na} aria-label="No aplica">
+                                <td
+                                  key={`${fila.id}-${STANDARD_ACTIONS[i]}`}
+                                  className={rs.check}
+                                >
+                                  <span className={rs.na} aria-hidden="true">
                                     —
                                   </span>
+                                  <span className="sr-only">No aplica</span>
                                 </td>
                               )
                             )}
                             <td>
                               {fila.otros.length === 0 ? (
-                                <span className={rs.na} aria-label="No aplica">
-                                  —
-                                </span>
+                                <>
+                                  <span className={rs.na} aria-hidden="true">
+                                    —
+                                  </span>
+                                  <span className="sr-only">No aplica</span>
+                                </>
                               ) : (
                                 fila.otros.map((p) => (
                                   <label key={p} className={rs.special}>
@@ -548,9 +665,12 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
                                       type="checkbox"
                                       checked={marcado(p)}
                                       disabled={bloqueado(p)}
-                                      onChange={(e) => togglePermiso(p, e.target.checked)}
+                                      onChange={(e) =>
+                                        togglePermiso(p, e.target.checked)
+                                      }
                                     />
-                                    {SPECIAL_PERMISSION_LABELS[p] ?? p.split(".")[1]}
+                                    {SPECIAL_PERMISSION_LABELS[p] ??
+                                      p.split(".")[1]}
                                   </label>
                                 ))
                               )}
@@ -566,21 +686,42 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
 
             {puedeEditar && (
               <div className={`${styles.panelFooter} ${rs.saveBar}`}>
-                <span className={`${rs.saveState} ${dirty ? rs.saveStateDirty : ""}`} role="status">
-                  {esNuevo ? "Rol sin crear" : dirty ? "Cambios sin guardar" : "Sin cambios"}
+                <span
+                  className={`${rs.saveState} ${dirty ? rs.saveStateDirty : ""}`}
+                  role="status"
+                >
+                  {esNuevo
+                    ? "Rol sin crear"
+                    : dirty
+                      ? "Cambios sin guardar"
+                      : "Sin cambios"}
                 </span>
                 <div className={rs.saveActions}>
                   <button
                     type="button"
                     className="btn-ghost btn-sm"
-                    onClick={() => (esNuevo ? seleccionar(roles[0]?.id ?? "nuevo") : setDraft(inicial))}
+                    onClick={() =>
+                      esNuevo
+                        ? seleccionar(roles[0]?.id ?? "nuevo")
+                        : setDraft(inicial)
+                    }
                     disabled={isPending || (!esNuevo && !dirty)}
                   >
                     {esNuevo ? "Cancelar" : "Descartar"}
                   </button>
-                  <button type="submit" className="btn-primary btn-sm" disabled={isPending || !dirty}>
-                    {isPending && <LoaderCircle className="spin" aria-hidden="true" />}
-                    {isPending ? "Guardando..." : esNuevo ? "Crear rol" : "Guardar cambios"}
+                  <button
+                    type="submit"
+                    className="btn-primary btn-sm"
+                    disabled={isPending || !dirty}
+                  >
+                    {isPending && (
+                      <LoaderCircle className="spin" aria-hidden="true" />
+                    )}
+                    {isPending
+                      ? "Guardando..."
+                      : esNuevo
+                        ? "Crear rol"
+                        : "Guardar cambios"}
                   </button>
                 </div>
               </div>
@@ -602,7 +743,8 @@ export default function RolesPanel({ roles }: { roles: RolDetalle[] }) {
             seleccionar(id);
           }}
         >
-          Tienes cambios sin guardar en <strong>{titulo}</strong>. Si continúas, se perderán.
+          Tienes cambios sin guardar en <strong>{titulo}</strong>. Si continúas,
+          se perderán.
         </ConfirmDialog>
       )}
 
@@ -642,13 +784,19 @@ function EliminarRolDialog({
   const [isPending, startTransition] = useTransition();
   const destinos = roles.filter((r) => r.id !== rol.id);
   const [destinoId, setDestinoId] = useState(
-    (destinos.find((r) => r.es_predeterminado) ?? destinos.find((r) => !r.es_superadmin))?.id ?? ""
+    (
+      destinos.find((r) => r.es_predeterminado) ??
+      destinos.find((r) => !r.es_superadmin)
+    )?.id ?? ""
   );
   const [error, setError] = useState<string | null>(null);
 
   const eliminar = () => {
     startTransition(async () => {
-      const res = await eliminarRolAction(rol.id, rol.usuarios > 0 ? destinoId : null);
+      const res = await eliminarRolAction(
+        rol.id,
+        rol.usuarios > 0 ? destinoId : null
+      );
       if (res?.error) {
         setError(res.error);
         showToast(res.error, "error");
@@ -680,8 +828,10 @@ function EliminarRolDialog({
           {rol.usuarios > 0 ? (
             <>
               <p>
-                <strong>{plural(rol.usuarios, "miembro tiene", "miembros tienen")}</strong> este rol. Antes de
-                eliminarlo, elige qué rol tendrán.
+                <strong>
+                  {plural(rol.usuarios, "miembro tiene", "miembros tienen")}
+                </strong>{" "}
+                este rol. Antes de eliminarlo, elige qué rol tendrán.
               </p>
               <label className="form-field">
                 <span className="form-label">Pasar sus miembros a</span>
@@ -693,7 +843,11 @@ function EliminarRolDialog({
                   required
                 >
                   {destinos.map((r) => (
-                    <option key={r.id} value={r.id} disabled={r.es_superadmin && !puedeAsignarAdmin}>
+                    <option
+                      key={r.id}
+                      value={r.id}
+                      disabled={r.es_superadmin && !puedeAsignarAdmin}
+                    >
                       {r.nombre}
                     </option>
                   ))}
@@ -712,7 +866,12 @@ function EliminarRolDialog({
           )}
         </div>
         <div className={styles.modalFooter}>
-          <button type="button" className="btn-ghost btn-sm" onClick={onCancel} disabled={isPending}>
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            onClick={onCancel}
+            disabled={isPending}
+          >
             Cancelar
           </button>
           <button

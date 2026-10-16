@@ -1,8 +1,9 @@
 "use server";
 
+import { canAccessRoute, PERMISSIONS } from "@/lib/auth/permissions";
+import { type AuthContext, getAuthContext } from "@/lib/auth/session";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getAuthContext, type AuthContext } from "@/lib/auth/session";
-import { PERMISSIONS, canAccessRoute } from "@/lib/auth/permissions";
 
 export type Notificacion = {
   id: string;
@@ -15,13 +16,16 @@ export type Notificacion = {
   alerta: boolean;
 };
 
+const logger = getLogger("notificaciones");
+
 type Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 type Alerta = (supabase: Supabase, ctx: AuthContext) => Promise<Notificacion[]>;
 
 const stockMinimo: Alerta = async (supabase, ctx) => {
-  const gestionaStock = [PERMISSIONS.INVENTARIO_UPDATE, PERMISSIONS.FARMACIA_UPDATE].some((p) =>
-    ctx.permissions.includes(p)
-  );
+  const gestionaStock = [
+    PERMISSIONS.INVENTARIO_UPDATE,
+    PERMISSIONS.FARMACIA_UPDATE,
+  ].some((p) => ctx.permissions.includes(p));
   if (!gestionaStock) return [];
 
   const { data, error } = await supabase
@@ -30,7 +34,9 @@ const stockMinimo: Alerta = async (supabase, ctx) => {
     .order("nombre", { ascending: true });
   if (error) throw new Error(error.message);
 
-  const criticos = (data ?? []).filter((m) => (m.stock_total ?? 0) < (m.stock_minimo ?? 0));
+  const criticos = (data ?? []).filter(
+    (m) => (m.stock_total ?? 0) < (m.stock_minimo ?? 0)
+  );
   if (!criticos.length) return [];
 
   const n = criticos.length;
@@ -42,7 +48,10 @@ const stockMinimo: Alerta = async (supabase, ctx) => {
     {
       id: "stock_minimo",
       tipo: "stock_minimo",
-      titulo: n === 1 ? "1 producto bajo el stock mínimo" : `${n} productos bajo el stock mínimo`,
+      titulo:
+        n === 1
+          ? "1 producto bajo el stock mínimo"
+          : `${n} productos bajo el stock mínimo`,
       detalle: n > 3 ? `${primeros} y ${n - 3} más` : primeros,
       enlace: canAccessRoute(ctx.permissions, "/administracion/reportes")
         ? "/administracion/reportes"
@@ -71,15 +80,18 @@ export async function obtenerNotificacionesAction(): Promise<Notificacion[]> {
     Promise.all(
       ALERTAS.map((alerta) =>
         alerta(supabase, ctx).catch((e) => {
-          console.error("No se pudo calcular una alerta del panel:", e);
+          logger.error("Panel alert computation failed", errorInfo(e));
           return [];
         })
       )
     ).then((r) => r.flat()),
   ]);
-  if (eventos.error) console.error("No se pudieron cargar las notificaciones:", eventos.error);
+  if (eventos.error)
+    logger.error("Notifications load failed", errorInfo(eventos.error));
 
-  const vistasHasta = vistas.data ? new Date(vistas.data.vistas_hasta).getTime() : 0;
+  const vistasHasta = vistas.data
+    ? new Date(vistas.data.vistas_hasta).getTime()
+    : 0;
   return [
     ...alertas,
     ...(eventos.data ?? []).map((e) => ({
@@ -98,6 +110,9 @@ export async function obtenerNotificacionesAction(): Promise<Notificacion[]> {
 export async function marcarNotificacionesVistasAction(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("marcar_notificaciones_vistas");
-  if (error) console.error("No se pudieron marcar las notificaciones como vistas:", error);
+  if (error) {
+    logger.error("Notifications mark as seen failed", errorInfo(error));
+    return;
+  }
+  logger.debug("Notifications marked as seen");
 }
-
