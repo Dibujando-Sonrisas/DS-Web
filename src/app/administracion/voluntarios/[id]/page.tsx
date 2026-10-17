@@ -7,7 +7,9 @@ import { requirePermission } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "@/styles/pages/admin.module.css";
 import AsignacionesCard from "../components/AsignacionesCard";
-import ParticipacionesTable from "../components/ParticipacionesTable";
+import ParticipacionesTable, {
+  type ParticipacionRow,
+} from "../components/ParticipacionesTable";
 import VoluntarioProfile from "../components/VoluntarioProfile";
 
 export default async function VoluntarioDetallePage({
@@ -47,25 +49,26 @@ export default async function VoluntarioDetallePage({
     .order("created_at", { ascending: false });
 
   // Mezclar participaciones con asignaciones para la vista unificada
-  const mergedParticipaciones = [...(participaciones || [])];
+  const mergedParticipaciones: ParticipacionRow[] = (participaciones ?? []).map(
+    (p) => ({ ...p })
+  );
 
-  (asignaciones || []).forEach((asig) => {
+  for (const asig of asignaciones ?? []) {
     const exists = mergedParticipaciones.find(
       (p) => p.brigada_id === asig.brigada_id
     );
     if (exists) {
       // Inyectar el área asignada en la participación existente
-      (exists as any).area_asignada = asig.area_asignada;
+      exists.area_asignada = asig.area_asignada;
     } else {
       // Agregar la asignación como una participación "pendiente"
       mergedParticipaciones.push({
         brigada_id: asig.brigada_id,
-        perfil_id: id,
-        brigada: asig.brigada as any,
+        brigada: asig.brigada,
         area_asignada: asig.area_asignada,
-      } as any);
+      });
     }
-  });
+  }
 
   return (
     <div className={styles.page}>

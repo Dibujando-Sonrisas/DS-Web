@@ -1,10 +1,43 @@
 // Reglas y limpieza de los datos del expediente. Las comparten el asistente de nuevo
 // expediente, la edición desde la vista del expediente y las acciones del servidor.
 
-// los formularios guardan lo que escribe el usuario (texto) o lo que vino de la base
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Datos = Record<string, any>;
+import type { Tables } from "@/lib/database.types";
+
 export type Errores = Record<string, string>;
+
+// Estado de los formularios: los inputs controlados guardan texto
+export type PatientForm = {
+  nombres: string;
+  apellidos: string;
+  sexo: string;
+  edad: string;
+  telefono: string;
+  comunidad: string;
+  responsable: string;
+};
+
+export type PatientIntakeForm = PatientForm & { brigada_id: string };
+
+export type VitalSignsForm = {
+  peso: string;
+  talla: string;
+  temperatura: string;
+  frecuencia_cardiaca: string;
+  frecuencia_respiratoria: string;
+  presion_arterial: string;
+  saturacion: string;
+  glucosa: string;
+  observaciones: string;
+};
+
+export type ConsultationForm = {
+  tipo_consulta: string;
+  medico_id: string;
+  motivo_consulta: string;
+  enfermedad_actual: string;
+  tratamiento: string;
+  requiere_postclinica: boolean;
+};
 
 const vacio = (v: unknown) => v === "" || v === null || v === undefined;
 const texto = (v: unknown) => String(v ?? "").trim();
@@ -14,9 +47,45 @@ const sinEspaciosDobles = (v: unknown) =>
     .trim();
 const NOMBRE = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
 
-/** Fila de la base al estado de un formulario: los null pasan a "" para los inputs controlados. */
-export const sinNulos = (row: Datos): Datos =>
-  Object.fromEntries(Object.entries(row).map(([k, v]) => [k, v ?? ""]));
+// Fila de la base al estado de un formulario: los null pasan a "" para los inputs controlados
+const campo = (v: string | number | null) => (v === null ? "" : String(v));
+
+export const toPatientForm = (
+  row: Pick<Tables<"pacientes">, keyof PatientForm>
+): PatientForm => ({
+  nombres: campo(row.nombres),
+  apellidos: campo(row.apellidos),
+  sexo: campo(row.sexo),
+  edad: campo(row.edad),
+  telefono: campo(row.telefono),
+  comunidad: campo(row.comunidad),
+  responsable: campo(row.responsable),
+});
+
+export const toVitalSignsForm = (
+  row: Pick<Tables<"signos_vitales">, keyof VitalSignsForm>
+): VitalSignsForm => ({
+  peso: campo(row.peso),
+  talla: campo(row.talla),
+  temperatura: campo(row.temperatura),
+  frecuencia_cardiaca: campo(row.frecuencia_cardiaca),
+  frecuencia_respiratoria: campo(row.frecuencia_respiratoria),
+  presion_arterial: campo(row.presion_arterial),
+  saturacion: campo(row.saturacion),
+  glucosa: campo(row.glucosa),
+  observaciones: campo(row.observaciones),
+});
+
+export const toConsultationForm = (
+  row: Pick<Tables<"consultas">, keyof ConsultationForm>
+): ConsultationForm => ({
+  tipo_consulta: campo(row.tipo_consulta),
+  medico_id: campo(row.medico_id),
+  motivo_consulta: campo(row.motivo_consulta),
+  enfermedad_actual: campo(row.enfermedad_actual),
+  tratamiento: campo(row.tratamiento),
+  requiere_postclinica: !!row.requiere_postclinica,
+});
 
 // orden de los campos en pantalla: el foco va al primer error
 export const CAMPOS_PACIENTE = [
@@ -48,9 +117,9 @@ export const CAMPOS_CONSULTA = [
 ];
 
 const esMenorDeEdad = (edad: unknown) =>
-  !vacio(edad) && !isNaN(Number(edad)) && Number(edad) < 18;
+  !vacio(edad) && !Number.isNaN(Number(edad)) && Number(edad) < 18;
 
-export function validarPaciente(p: Datos): Errores {
+export function validarPaciente(p: PatientForm): Errores {
   const e: Errores = {};
 
   const nombres = sinEspaciosDobles(p.nombres);
@@ -74,7 +143,7 @@ export function validarPaciente(p: Datos): Errores {
     e.edad = "La edad es obligatoria.";
   } else {
     const edad = Number(p.edad);
-    if (isNaN(edad) || !Number.isInteger(edad) || edad < 0 || edad > 120)
+    if (Number.isNaN(edad) || !Number.isInteger(edad) || edad < 0 || edad > 120)
       e.edad = "La edad debe ser un número entero entre 0 y 120.";
   }
 
@@ -102,7 +171,7 @@ export function validarPaciente(p: Datos): Errores {
 
 // rangos de los signos vitales; todos son obligatorios (solo las observaciones son opcionales)
 const RANGOS: {
-  campo: string;
+  campo: Exclude<keyof VitalSignsForm, "presion_arterial" | "observaciones">;
   min: number;
   max: number;
   entero?: boolean;
@@ -162,7 +231,7 @@ const RANGOS: {
   },
 ];
 
-export function validarSignos(s: Datos): Errores {
+export function validarSignos(s: VitalSignsForm): Errores {
   const e: Errores = {};
 
   for (const r of RANGOS) {
@@ -172,7 +241,7 @@ export function validarSignos(s: Datos): Errores {
     }
     const val = Number(s[r.campo]);
     if (
-      isNaN(val) ||
+      Number.isNaN(val) ||
       (r.entero && !Number.isInteger(val)) ||
       val < r.min ||
       val > r.max
@@ -192,14 +261,18 @@ export function validarSignos(s: Datos): Errores {
   return e;
 }
 
-export function validarConsulta(c: Datos): Errores {
+export function validarConsulta(c: ConsultationForm): Errores {
   const e: Errores = {};
 
   if (!c.tipo_consulta) e.tipo_consulta = "El tipo de consulta es obligatorio.";
   if (!c.medico_id)
     e.medico_id = "Debe seleccionar un médico u odontólogo obligatoriamente.";
 
-  const textos: [string, string, string][] = [
+  const textos: [
+    "motivo_consulta" | "enfermedad_actual" | "tratamiento",
+    string,
+    string,
+  ][] = [
     [
       "motivo_consulta",
       "El motivo de consulta es obligatorio.",
@@ -256,7 +329,7 @@ export function validarDiagnosticos(str: string): Errores {
 
 // Limpieza antes de guardar: solo los campos editables, sin espacios de más y con null en lo vacío
 
-export function limpiarPaciente(p: Datos) {
+export function limpiarPaciente(p: PatientForm) {
   return {
     nombres: sinEspaciosDobles(p.nombres),
     apellidos: sinEspaciosDobles(p.apellidos),
@@ -268,9 +341,9 @@ export function limpiarPaciente(p: Datos) {
   };
 }
 
-export function limpiarSignos(s: Datos) {
+export function limpiarSignos(s: VitalSignsForm) {
   const numero = (v: unknown) =>
-    vacio(v) || isNaN(Number(v)) ? null : Number(v);
+    vacio(v) || Number.isNaN(Number(v)) ? null : Number(v);
   return {
     peso: numero(s.peso),
     talla: numero(s.talla),
@@ -284,7 +357,7 @@ export function limpiarSignos(s: Datos) {
   };
 }
 
-export function limpiarConsulta(c: Datos) {
+export function limpiarConsulta(c: ConsultationForm) {
   return {
     tipo_consulta: String(c.tipo_consulta),
     medico_id: String(c.medico_id),

@@ -9,13 +9,11 @@ export async function getDashboardStatsAction() {
     { data: pac },
     { data: vol },
     { data: ven },
-    { data: brigs },
     { data: atencionesAnuales },
   ] = await Promise.all([
     supabase.from("dashboard_pacientes").select("*").maybeSingle(),
     supabase.from("dashboard_voluntarios").select("*").maybeSingle(),
     supabase.from("dashboard_ventas").select("*").maybeSingle(),
-    supabase.from("dashboard_brigadas").select("*").maybeSingle(),
     supabase
       .from("v_resumen_brigadas_anual")
       .select("*")

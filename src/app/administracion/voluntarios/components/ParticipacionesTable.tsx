@@ -8,19 +8,19 @@ import { actualizarParticipacion, registrarParticipacion } from "../actions";
 
 const logger = getLogger("voluntarios", "client");
 
-type ParticipacionRow = {
+export type ParticipacionRow = {
   id?: string; // Si no tiene ID, es que no se ha registrado participación aún (solo asignación)
   brigada_id: string;
-  perfil_id: string;
   brigada?: {
     id: string;
     nombre: string;
-    fecha_brigada: string;
-  };
+    fecha_brigada?: string;
+  } | null;
   hora_llegada?: string | null;
   hora_salida?: string | null;
-  asistencia?: boolean;
+  asistio?: boolean;
   observaciones?: string | null;
+  area_asignada?: string | null;
 };
 
 type ParticipacionesTableProps = {
@@ -46,7 +46,7 @@ export default function ParticipacionesTable({
     setEditingId(p.brigada_id);
     setHoraLlegada(p.hora_llegada || "");
     setHoraSalida(p.hora_salida || "");
-    setAsistencia(p.asistencia ?? false);
+    setAsistencia(p.asistio ?? false);
     setObservaciones(p.observaciones || "");
     setError(null);
   };
@@ -81,13 +81,15 @@ export default function ParticipacionesTable({
         if (res.error) throw new Error(res.error);
       }
       setEditingId(null);
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Participation save failed", {
         ...errorInfo(e),
         participacionId: p.id || null,
         brigadaId: p.brigada_id,
       });
-      setError(e.message || "Error al guardar participación.");
+      setError(
+        (e instanceof Error && e.message) || "Error al guardar participación."
+      );
     } finally {
       setLoading(false);
     }
@@ -141,7 +143,7 @@ export default function ParticipacionesTable({
                 const isEditing = editingId === p.brigada_id;
                 const brigadaNombre =
                   p.brigada?.nombre || `ID: ${p.brigada_id.substring(0, 8)}...`;
-                const asistenciaClass = p.asistencia
+                const asistenciaClass = p.asistio
                   ? styles.badgeSuccess
                   : p.id
                     ? styles.badgeDanger
@@ -157,7 +159,7 @@ export default function ParticipacionesTable({
                     </td>
                     <td>
                       {/* El área asignada viene de la tarjeta de asignaciones pero la mostraremos si la pasamos */}
-                      {(p as any).area_asignada || (
+                      {p.area_asignada || (
                         <span className={styles.muted}>Sin asignar</span>
                       )}
                     </td>
@@ -207,7 +209,7 @@ export default function ParticipacionesTable({
                         </label>
                       ) : (
                         <span className={`${styles.badge} ${asistenciaClass}`}>
-                          {p.asistencia ? "Sí" : p.id ? "No" : "Pendiente"}
+                          {p.asistio ? "Sí" : p.id ? "No" : "Pendiente"}
                         </span>
                       )}
                     </td>

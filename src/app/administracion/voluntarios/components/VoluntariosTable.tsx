@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import StatusBadge from "@/app/administracion/components/StatusBadge";
 import UserAvatar from "@/app/administracion/components/UserAvatar";
+import type { Tables } from "@/lib/database.types";
 import styles from "@/styles/pages/admin.module.css";
 import VolunteerFilters from "./VolunteerFilters";
 
@@ -17,8 +18,14 @@ export type VoluntarioRow = {
   cargo: string | null;
   telefono?: string | null;
   especialidades?: { id: string; nombre: string } | null;
-  asignaciones_voluntarios?: any[];
-  participaciones_voluntarios?: any[];
+  asignaciones_voluntarios?: Pick<
+    Tables<"asignaciones_voluntarios">,
+    "id" | "brigada_id"
+  >[];
+  participaciones_voluntarios?: Pick<
+    Tables<"participaciones_voluntarios">,
+    "id" | "brigada_id"
+  >[];
 };
 
 type VoluntariosTableProps = {

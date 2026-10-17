@@ -18,7 +18,12 @@ import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { generateCleanToken } from "@/lib/coding/codingUtils";
-import type { CategoriaInventario, TipoRecurso } from "@/lib/db/inventario";
+import type { Tables } from "@/lib/database.types";
+import type {
+  CategoriaInventario,
+  InsertMedicamento,
+  TipoRecurso,
+} from "@/lib/db/inventario";
 import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
 import {
@@ -34,7 +39,9 @@ import { MedicamentoForm } from "./components/MedicamentoForm";
 
 const logger = getLogger("inventario", "client");
 
-function generarCodigoRecurso(nombre: string, tipo: string): string {
+type StockItem = Tables<"stock_actual">;
+
+function generarCodigoRecurso(tipo?: string): string {
   const prefijo =
     tipo === "insumo_medico"
       ? "INS"
@@ -52,9 +59,7 @@ export function InventarioClient({
   initialLotes?: { id: string; nombre: string } | null;
 }) {
   const { can } = usePermissions();
-  const [medicamentos, setMedicamentos] = useState<Record<string, unknown>[]>(
-    []
-  );
+  const [medicamentos, setMedicamentos] = useState<StockItem[]>([]);
   const [categorias, setCategorias] = useState<CategoriaInventario[]>([]);
   // pestaña con la que se abre Categorías; null = cerrado
   const [categoriasTipo, setCategoriasTipo] = useState<TipoRecurso | null>(
@@ -67,11 +72,12 @@ export function InventarioClient({
   >("todos");
 
   const [isMedModalOpen, setIsMedModalOpen] = useState(false);
-  const [selectedMedForEdit, setSelectedMedForEdit] = useState<any>(null);
+  const [selectedMedForEdit, setSelectedMedForEdit] =
+    useState<StockItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // States for Delete Modal
-  const [medToDelete, setMedToDelete] = useState<any>(null);
+  const [medToDelete, setMedToDelete] = useState<StockItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchMedicamentos = useCallback(async () => {
@@ -108,9 +114,9 @@ export function InventarioClient({
     fetchCategorias();
   };
 
-  const handleOpenMedForm = (med: any = null) => {
+  const handleOpenMedForm = (med: StockItem | null = null) => {
     logger.debug("Resource form opened", {
-      medicamentoId: med?.medicamento_id ?? med?.id ?? null,
+      medicamentoId: med?.medicamento_id ?? null,
     });
     setSelectedMedForEdit(med);
     setIsMedModalOpen(true);
@@ -121,7 +127,10 @@ export function InventarioClient({
     setSelectedMedForEdit(null);
   };
 
-  const handleSubmitMed = async (data: any, cantidadInicial: number = 0) => {
+  const handleSubmitMed = async (
+    data: InsertMedicamento,
+    cantidadInicial: number = 0
+  ) => {
     try {
       setIsSubmitting(true);
 
@@ -132,14 +141,11 @@ export function InventarioClient({
         payload.codigo =
           data.codigo ||
           selectedMedForEdit.codigo ||
-          generarCodigoRecurso(payload.nombre, payload.tipo_recurso);
+          generarCodigoRecurso(payload.tipo_recurso);
       } else {
         // CREACIÓN: Generar únicamente cuando es un nuevo recurso y no se ingresó código manual
         if (!payload.codigo || payload.codigo.trim() === "") {
-          payload.codigo = generarCodigoRecurso(
-            payload.nombre,
-            payload.tipo_recurso
-          );
+          payload.codigo = generarCodigoRecurso(payload.tipo_recurso);
         }
       }
 
@@ -148,9 +154,7 @@ export function InventarioClient({
         payload.codigo = payload.codigo.substring(0, 20);
       }
 
-      const targetId = selectedMedForEdit
-        ? selectedMedForEdit.medicamento_id || selectedMedForEdit.id
-        : null;
+      const targetId = selectedMedForEdit?.medicamento_id ?? null;
 
       // Depuración temporal requerida por las instrucciones
       logger.debug("Resource save submitted", {
@@ -166,9 +170,12 @@ export function InventarioClient({
 
       handleCloseMedForm();
       fetchMedicamentos();
-    } catch (error: any) {
+    } catch (error) {
       logger.error("Resource save failed", errorInfo(error));
-      alert(error.message || "Error al guardar el recurso.");
+      alert(
+        (error instanceof Error && error.message) ||
+          "Error al guardar el recurso."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -176,24 +183,31 @@ export function InventarioClient({
 
   const handleDeleteConfirm = async () => {
     if (!medToDelete) return;
+    const targetId = medToDelete.medicamento_id;
+    if (!targetId) {
+      alert("Error al eliminar el recurso.");
+      return;
+    }
     try {
       setIsDeleting(true);
-      const targetId = medToDelete.medicamento_id || medToDelete.id;
       await deleteMedicamento(targetId);
       setMedToDelete(null);
       fetchMedicamentos();
-    } catch (error: any) {
+    } catch (error) {
       logger.error("Resource deletion failed", {
         ...errorInfo(error),
-        medicamentoId: medToDelete.medicamento_id || medToDelete.id,
+        medicamentoId: targetId,
       });
-      alert(error.message || "Error al eliminar el recurso.");
+      alert(
+        (error instanceof Error && error.message) ||
+          "Error al eliminar el recurso."
+      );
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const getTipoBadge = (tipo?: string) => {
+  const getTipoBadge = (tipo: string | null) => {
     switch (tipo) {
       case "insumo_medico":
         return (
@@ -341,8 +355,8 @@ export function InventarioClient({
                     </td>
                   </tr>
                 ) : (
-                  medicamentos.map((med: any) => (
-                    <tr key={med.medicamento_id || med.id}>
+                  medicamentos.map((med) => (
+                    <tr key={med.medicamento_id}>
                       <td>{getTipoBadge(med.tipo_recurso)}</td>
                       {/* la descripción va bajo el nombre para que las acciones quepan sin desplazar */}
                       <td>
@@ -380,12 +394,13 @@ export function InventarioClient({
                           <button
                             type="button"
                             className="btn-ghost btn-xs"
-                            onClick={() =>
+                            onClick={() => {
+                              if (!med.medicamento_id) return;
                               setSelectedMedLotes({
-                                id: med.medicamento_id || med.id,
-                                nombre: med.nombre,
-                              })
-                            }
+                                id: med.medicamento_id,
+                                nombre: med.nombre ?? "",
+                              });
+                            }}
                             aria-label={`Ver lotes de ${med.nombre}`}
                           >
                             <Layers aria-hidden="true" />

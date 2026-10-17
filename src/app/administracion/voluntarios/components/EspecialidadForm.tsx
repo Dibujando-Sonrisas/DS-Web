@@ -38,12 +38,12 @@ export default function EspecialidadForm({
     setError(null);
     try {
       await onSave(nombre, tipoConsulta || null);
-    } catch (err: any) {
+    } catch (err) {
       logger.error("Specialty save failed", {
         ...errorInfo(err),
         especialidadId: specialty?.id ?? null,
       });
-      setError(err.message || "Ocurrió un error.");
+      setError((err instanceof Error && err.message) || "Ocurrió un error.");
     } finally {
       setLoading(false);
     }

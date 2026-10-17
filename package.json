@@ -9,6 +9,7 @@
     "offline": "node scripts/offline.mjs",
     "offline:sincronizar": "node scripts/offline.mjs sincronizar",
     "offline:subir": "node scripts/offline.mjs subir",
+    "prepare": "git config core.hooksPath .githooks || exit 0",
     "lint": "biome check .",
     "format": "biome format --write ."
   },

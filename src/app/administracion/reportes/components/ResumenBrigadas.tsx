@@ -48,7 +48,7 @@ export default function ResumenBrigadas() {
           .order("anio", { ascending: false });
 
         if (!viewError && viewData) {
-          const formatted: BrigadaAnualData[] = viewData.map((row: any) => ({
+          const formatted: BrigadaAnualData[] = viewData.map((row) => ({
             anio: Number(row.anio || 0),
             total_brigadas: Number(row.total_brigadas || 0),
             comunidades_atendidas: Number(row.comunidades_atendidas || 0),
@@ -84,7 +84,7 @@ export default function ResumenBrigadas() {
           }
         > = {};
 
-        (brigadasData || []).forEach((b: any) => {
+        (brigadasData || []).forEach((b) => {
           if (!b.fecha_brigada) return;
           const yr = new Date(b.fecha_brigada).getFullYear();
           if (!map[yr]) {
@@ -100,13 +100,13 @@ export default function ResumenBrigadas() {
         });
 
         const brigadaYearMap: Record<string, number> = {};
-        (brigadasData || []).forEach((b: any) => {
+        (brigadasData || []).forEach((b) => {
           if (b.fecha_brigada) {
             brigadaYearMap[b.id] = new Date(b.fecha_brigada).getFullYear();
           }
         });
 
-        (patientsData || []).forEach((p: any) => {
+        (patientsData || []).forEach((p) => {
           const yr = brigadaYearMap[p.brigada_id];
           if (yr && map[yr]) {
             map[yr].pacientesCount += 1;

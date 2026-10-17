@@ -91,45 +91,23 @@ export default function PacientesBrigada() {
           .eq("brigada_id", brigadaSeleccionada);
         if (error) throw error;
 
-        interface ConsultaData {
-          motivo_consulta: string | null;
-          medico: { nombre_completo: string | null } | null;
-          medicamentos_consulta:
-            | {
-                medicamentos: { nombre: string } | null;
-              }[]
-            | null;
-        }
-
-        const formatted = (data || []).map(
-          (p: {
-            id: string;
-            nombres: string;
-            apellidos: string | null;
-            edad: number | null;
-            comunidad: string | null;
-            consultas: ConsultaData[] | null;
-          }) => {
-            const consulta = p.consultas && p.consultas[0];
-            const meds = consulta
-              ? ((consulta.medicamentos_consulta || [])
-                  .map(
-                    (mc: { medicamentos: { nombre: string } | null }) =>
-                      mc.medicamentos?.nombre
-                  )
-                  .filter(Boolean) as string[])
-              : [];
-            return {
-              id: p.id,
-              nombre: `${p.nombres} ${p.apellidos}`,
-              edad: p.edad || 0,
-              comunidad: p.comunidad || "N/A",
-              motivo: consulta?.motivo_consulta || "Solo registro/triage",
-              medico: consulta?.medico?.nombre_completo || "No asignado",
-              medicamentos: meds,
-            };
-          }
-        );
+        const formatted = (data || []).map((p) => {
+          const consulta = p.consultas?.[0];
+          const meds = consulta
+            ? (consulta.medicamentos_consulta || [])
+                .map((mc) => mc.medicamentos?.nombre)
+                .filter((nombre): nombre is string => Boolean(nombre))
+            : [];
+          return {
+            id: p.id,
+            nombre: `${p.nombres} ${p.apellidos ?? ""}`.trim(),
+            edad: p.edad || 0,
+            comunidad: p.comunidad || "N/A",
+            motivo: consulta?.motivo_consulta || "Solo registro/triage",
+            medico: consulta?.medico?.nombre_completo || "No asignado",
+            medicamentos: meds,
+          };
+        });
         setPacientes(formatted);
       } catch (err) {
         logger.error("Brigade patients load failed", {
@@ -156,21 +134,6 @@ export default function PacientesBrigada() {
   const nombreBrigada =
     brigadas.find((b) => b.id === brigadaSeleccionada)?.nombre || "";
   const totalPages = Math.ceil(pacientesFiltrados.length / itemsPerPage);
-
-  const [fechaActualCompleta, setFechaActualCompleta] = useState("");
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFechaActualCompleta(
-      new Date().toLocaleDateString("es-HN", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
-  }, []);
 
   const handlePrint = () => {
     const originalTitle = document.title;

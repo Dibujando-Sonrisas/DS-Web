@@ -172,7 +172,9 @@ export default function ReportesClient() {
     excepciones: "top-donantes",
   });
   const [dropdownAbierto, setDropdownAbierto] = useState<boolean>(false);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<Awaited<
+    ReturnType<typeof getDashboardStatsAction>
+  > | null>(null);
 
   useEffect(() => {
     getDashboardStatsAction()
@@ -182,11 +184,12 @@ export default function ReportesClient() {
       );
   }, []);
 
-  const categoriaActual = categorias.find((c) => c.id === categoriaActiva)!;
+  const categoriaActual =
+    categorias.find((c) => c.id === categoriaActiva) ?? categorias[0];
   const reporteActivoId = reporteSeleccionado[categoriaActiva];
-  const reporteActual = categoriaActual.reportes.find(
-    (r) => r.id === reporteActivoId
-  )!;
+  const reporteActual =
+    categoriaActual.reportes.find((r) => r.id === reporteActivoId) ??
+    categoriaActual.reportes[0];
 
   const toggleDropdown = () => setDropdownAbierto(!dropdownAbierto);
 
@@ -290,15 +293,16 @@ export default function ReportesClient() {
               <div className={admin.panelBody}>
                 <div className={styles.chart}>
                   <div className={styles.barChartGrid}>
-                    {stats?.atencionesAnuales?.map((anioData: any) => {
+                    {stats?.atencionesAnuales?.map((anioData) => {
                       const maxPacientes = Math.max(
                         ...(stats?.atencionesAnuales?.map(
-                          (d: any) => d.total_pacientes
+                          (d) => d.total_pacientes ?? 0
                         ) || [1000])
                       );
                       const heightPercent =
                         maxPacientes > 0
-                          ? (anioData.total_pacientes / maxPacientes) * 100
+                          ? ((anioData.total_pacientes ?? 0) / maxPacientes) *
+                            100
                           : 0;
                       return (
                         <div className={styles.barCol} key={anioData.anio}>

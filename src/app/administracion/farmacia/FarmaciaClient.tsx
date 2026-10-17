@@ -19,6 +19,8 @@ import AdminModal from "@/app/administracion/components/AdminModal";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import StatCard from "@/app/administracion/components/StatCard";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { Tables } from "@/lib/database.types";
+import type { FefoSuggestion } from "@/lib/db/farmacia";
 import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
 import pac from "@/styles/pages/admin-pacientes.module.css";
@@ -32,12 +34,29 @@ import {
 
 const logger = getLogger("farmacia", "client");
 
+type Dashboard = Awaited<ReturnType<typeof getDashboardFarmaciaAction>>;
+type Entrega = Awaited<ReturnType<typeof getEntregasFarmaciaAction>>[number];
+type Receta = Awaited<ReturnType<typeof getRecetasPendientesAction>>[number];
+
+const formatDate = (value: string | null) =>
+  value ? new Date(value).toLocaleDateString() : "-";
+
+const byBrigada = <T extends { brigada_id: string | null }>(
+  items: T[],
+  brigadaId: string
+) =>
+  brigadaId === "todas"
+    ? items
+    : items.filter((item) => item.brigada_id === brigadaId);
+
 export function FarmaciaClient({ userId }: { userId: string }) {
   const { can } = usePermissions();
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [entregas, setEntregas] = useState<any[]>([]);
-  const [pendientes, setPendientes] = useState<any[]>([]);
-  const [todasLasBrigadas, setTodasLasBrigadas] = useState<any[]>([]);
+  const [dashboard, setDashboard] = useState<Dashboard>(null);
+  const [entregas, setEntregas] = useState<Entrega[]>([]);
+  const [pendientes, setPendientes] = useState<Receta[]>([]);
+  const [todasLasBrigadas, setTodasLasBrigadas] = useState<
+    Tables<"brigadas">[]
+  >([]);
   const [filtroBrigada, setFiltroBrigada] = useState<string>("todas");
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"pendientes" | "historial">(
@@ -56,8 +75,8 @@ export function FarmaciaClient({ userId }: { userId: string }) {
   const entregadoPorId = userId;
 
   // Modal State
-  const [selectedConsulta, setSelectedConsulta] = useState<any>(null);
-  const [fefoSuggestions, setFefoSuggestions] = useState<any[]>([]);
+  const [selectedConsulta, setSelectedConsulta] = useState<Receta | null>(null);
+  const [fefoSuggestions, setFefoSuggestions] = useState<FefoSuggestion[]>([]);
   const [observaciones, setObservaciones] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,7 +107,7 @@ export function FarmaciaClient({ userId }: { userId: string }) {
     fetchData();
   }, [fetchData]);
 
-  const openEntregaModal = async (receta: any) => {
+  const openEntregaModal = async (receta: Receta) => {
     setSelectedConsulta(receta);
     setObservaciones("");
     setModalError("");
@@ -98,12 +117,14 @@ export function FarmaciaClient({ userId }: { userId: string }) {
     try {
       const suggestions = await getFefoSuggestionsAction(receta.id);
       setFefoSuggestions(suggestions);
-    } catch (e: any) {
+    } catch (e) {
       logger.error("FEFO suggestion failed", {
         ...errorInfo(e),
-        consultaId: receta?.id,
+        consultaId: receta.id,
       });
-      setModalError("Error al calcular FEFO: " + e.message);
+      setModalError(
+        `Error al calcular FEFO: ${e instanceof Error ? e.message : ""}`
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -116,6 +137,7 @@ export function FarmaciaClient({ userId }: { userId: string }) {
   };
 
   const handleConfirmarEntrega = async () => {
+    if (!selectedConsulta) return;
     setModalError("");
     setModalSuccess("");
 
@@ -141,34 +163,35 @@ export function FarmaciaClient({ userId }: { userId: string }) {
         setIsModalOpen(false);
         fetchData();
       }, 1500);
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Pharmacy delivery failed", {
         ...errorInfo(e),
-        consultaId: selectedConsulta?.id,
+        consultaId: selectedConsulta.id,
       });
-      setModalError("Error al procesar la entrega: " + e.message);
+      setModalError(
+        `Error al procesar la entrega: ${e instanceof Error ? e.message : ""}`
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   // lista de la pestaña activa, filtrada por brigada y paginada
-  const list = activeTab === "pendientes" ? pendientes : entregas;
-  const filtered =
-    filtroBrigada === "todas"
-      ? list
-      : list.filter((item) => item.brigada_id === filtroBrigada);
+  const pendientesFiltradas = byBrigada(pendientes, filtroBrigada);
+  const entregasFiltradas = byBrigada(entregas, filtroBrigada);
+  const filteredCount =
+    activeTab === "pendientes"
+      ? pendientesFiltradas.length
+      : entregasFiltradas.length;
   const curPage =
     activeTab === "pendientes" ? currentPagePendientes : currentPageHistorial;
   const setCurPage =
     activeTab === "pendientes"
       ? setCurrentPagePendientes
       : setCurrentPageHistorial;
-  const paginated = filtered.slice(
-    (curPage - 1) * itemsPerPage,
-    curPage * itemsPerPage
-  );
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginate = <T,>(items: T[]) =>
+    items.slice((curPage - 1) * itemsPerPage, curPage * itemsPerPage);
+  const totalPages = Math.ceil(filteredCount / itemsPerPage);
 
   return (
     <div className={styles.stack}>
@@ -204,9 +227,7 @@ export function FarmaciaClient({ userId }: { userId: string }) {
                   {selectedConsulta.pacientes?.apellidos}
                 </dd>
                 <dt>Fecha Receta:</dt>
-                <dd>
-                  {new Date(selectedConsulta.created_at).toLocaleDateString()}
-                </dd>
+                <dd>{formatDate(selectedConsulta.created_at)}</dd>
               </dl>
             </div>
 
@@ -450,24 +471,24 @@ export function FarmaciaClient({ userId }: { userId: string }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {pendientesFiltradas.length === 0 ? (
                     <tr>
                       <td colSpan={4} className={styles.emptyCell}>
                         No hay recetas pendientes en esta brigada.
                       </td>
                     </tr>
                   ) : (
-                    paginated.map((p) => (
+                    paginate(pendientesFiltradas).map((p) => (
                       <tr key={p.id}>
                         <td className={styles.nowrap}>
-                          {new Date(p.created_at).toLocaleDateString()}
+                          {formatDate(p.created_at)}
                         </td>
                         <td className={styles.cellMain}>
                           {p.pacientes?.nombres} {p.pacientes?.apellidos}
                         </td>
                         <td>
                           <ul className={styles.stackSm}>
-                            {p.medicamentos_consulta?.map((m: any) => (
+                            {p.medicamentos_consulta?.map((m) => (
                               <li key={m.medicamento_id}>
                                 <span
                                   className={`${styles.badge} ${styles.badgeInfo}`}
@@ -517,17 +538,17 @@ export function FarmaciaClient({ userId }: { userId: string }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {entregasFiltradas.length === 0 ? (
                     <tr>
                       <td colSpan={7} className={styles.emptyCell}>
                         No hay historial de entregas para esta brigada.
                       </td>
                     </tr>
                   ) : (
-                    paginated.map((e) => (
+                    paginate(entregasFiltradas).map((e) => (
                       <tr key={e.id}>
                         <td className={styles.nowrap}>
-                          {new Date(e.fecha_entrega).toLocaleDateString()}
+                          {formatDate(e.fecha_entrega)}
                         </td>
                         <td className={styles.cellMain}>{e.paciente}</td>
                         <td>{e.medicamento}</td>
@@ -536,7 +557,7 @@ export function FarmaciaClient({ userId }: { userId: string }) {
                         </td>
                         <td className={styles.cellCode}>{e.numero_lote}</td>
                         <td className={styles.nowrap}>
-                          {new Date(e.fecha_vencimiento).toLocaleDateString()}
+                          {formatDate(e.fecha_vencimiento)}
                         </td>
                         <td className={styles.muted}>{e.entregado_por}</td>
                       </tr>

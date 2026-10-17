@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { assertPermission } from "@/lib/auth/session";
 import { aceptarSolicitudVoluntario } from "@/lib/cuentas";
+import { Constants } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
@@ -128,32 +129,13 @@ export async function activarEspecialidad(id: string): Promise<ActionResponse> {
       .from("especialidades")
       .update({ activo: true })
       .eq("id", id);
-    if (error) {
-      if (
-        error.message.includes(
-          'column "activo" of relation "especialidades" does not exist'
-        )
-      ) {
-        const { error: fallback } = await supabase
-          .from("especialidades")
-          .update({ activa: true } as any)
-          .eq("id", id);
-        if (fallback)
-          return falloBD(
-            "Specialty activation failed",
-            fallback,
-            { especialidadId: id },
-            "No se pudo activar la especialidad."
-          );
-      } else {
-        return falloBD(
-          "Specialty activation failed",
-          error,
-          { especialidadId: id },
-          "No se pudo activar la especialidad."
-        );
-      }
-    }
+    if (error)
+      return falloBD(
+        "Specialty activation failed",
+        error,
+        { especialidadId: id },
+        "No se pudo activar la especialidad."
+      );
     logger.info("Specialty activated", { especialidadId: id });
 
     revalidatePath("/administracion/voluntarios/especialidades");
@@ -182,32 +164,13 @@ export async function desactivarEspecialidad(
       .update({ activo: false })
       .eq("id", id);
 
-    if (error) {
-      if (
-        error.message.includes(
-          'column "activo" of relation "especialidades" does not exist'
-        )
-      ) {
-        const { error: fallback } = await supabase
-          .from("especialidades")
-          .update({ activa: false } as any)
-          .eq("id", id);
-        if (fallback)
-          return falloBD(
-            "Specialty deactivation failed",
-            fallback,
-            { especialidadId: id },
-            "No se pudo desactivar la especialidad."
-          );
-      } else {
-        return falloBD(
-          "Specialty deactivation failed",
-          error,
-          { especialidadId: id },
-          "No se pudo desactivar la especialidad."
-        );
-      }
-    }
+    if (error)
+      return falloBD(
+        "Specialty deactivation failed",
+        error,
+        { especialidadId: id },
+        "No se pudo desactivar la especialidad."
+      );
     logger.info("Specialty deactivated", { especialidadId: id });
 
     revalidatePath("/administracion/voluntarios/especialidades");
@@ -286,6 +249,7 @@ export async function registrarParticipacion(data: {
         perfil_id: data.perfil_id,
         hora_llegada: data.hora_llegada,
         hora_salida: data.hora_salida,
+        asistio: data.asistencia,
         observaciones: data.observaciones,
       });
 
@@ -335,6 +299,7 @@ export async function actualizarParticipacion(
       .update({
         hora_llegada: data.hora_llegada,
         hora_salida: data.hora_salida,
+        asistio: data.asistencia,
         observaciones: data.observaciones,
       })
       .eq("id", id);
@@ -369,11 +334,21 @@ export async function actualizarAsignacion(
 ): Promise<ActionResponse> {
   try {
     await assertPermission(PERMISSIONS.BRIGADAS_UPDATE);
+    const areaAsignada = Constants.public.Enums.area_voluntariado.find(
+      (value) => value === area
+    );
+    if (!areaAsignada) {
+      logger.warning("Assignment update rejected", {
+        reason: "invalid area",
+        asignacionId: id,
+      });
+      return { error: "Selecciona un área válida." };
+    }
     const supabase = await createSupabaseServerClient();
 
     const { error } = await supabase
       .from("asignaciones_voluntarios")
-      .update({ area_asignada: area as any })
+      .update({ area_asignada: areaAsignada })
       .eq("id", id);
 
     if (error)

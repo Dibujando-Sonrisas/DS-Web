@@ -34,6 +34,8 @@ Instructions for any AI coding agent working in this repository. Read this file 
 
 Biome is the only formatter and linter (ESLint and Prettier are not used). Never pass `--unsafe` to it ([Section 10](#10-pitfalls-and-known-baseline)).
 
+**Pre-commit hook.** `npm install` runs the `prepare` script, which points git at `.githooks/`. Its `pre-commit` blocks the commit when `biome check --staged --error-on-warnings` reports any error or warning in the staged files, or when `tsc --noEmit` fails. Fix the reported problems; never bypass the hook with `--no-verify`.
+
 ## 3. Repository Map
 
 ### 3.1 Folder Structure
@@ -164,7 +166,7 @@ Which Supabase client to use:
 - Routes are Spanish kebab-case folders (`actividades-infantiles`, `sobre-nosotros`).
 - Use the `@/` alias (maps to `src/`) for imports across folders. Relative imports remain only in older public pages.
 - Modules that must never reach the browser (secrets, the admin client, e-mail) start with `import "server-only"`.
-- Use strict TypeScript and the generated `Database` types from `@/lib/database.types`. Avoid `any`; the existing `any` in `src/lib/db` is legacy.
+- Use strict TypeScript and the generated `Database` types from `@/lib/database.types` (`Tables<"x">`, `TablesInsert<"x">`, `Enums<"x">`, `Constants` for enum lists). No `any`, no `as unknown as` and no `@ts-ignore`: type Supabase clients as `SupabaseClient<Database>` and let query results be inferred.
 - Public pages export a `metadata` object for SEO.
 
 ### 5.3 Styling and UI
@@ -298,13 +300,13 @@ Update this file when a convention changes.
 
 - **Biome formats and lints; ESLint and Prettier are gone.** `biome.json` sets 2 spaces, 80 columns, double quotes, semicolons, ES5 trailing commas and LF, and excludes generated and vendored paths (for example `src/lib/database.types.ts`). The whole tree was formatted in October 2026. Change `biome.json` only when asked.
 - **Never use `--unsafe`.** Its fixes are not behaviour-preserving: it once rewrote `// @ts-ignore` into `// @ts-expect-error`, which broke `tsc` because `heic2any` ships its own types. Plain `--write` (safe fixes) is fine. Review the diff either way.
-- **Lint has no errors; keep it that way.** `npm run lint` reports 0 errors and about 400 warnings (October 2026), mostly `noExplicitAny` (in `src/lib/db`) and CSS `noImportantStyles` and `noDescendingSpecificity`. Do not add new warnings and do not fix the old ones as a side effect. Check your own files with `npx biome check <files>`.
+- **Lint is clean; keep it that way.** `npm run lint` reports 0 errors, 0 warnings and 0 infos (October 2026), and the pre-commit hook rejects any warning in staged files. Check your own files with `npx biome check --error-on-warnings <files>`.
 - **Suppressions need a reason.** Suppress only when the rule's fix would be wrong for the case, with `// biome-ignore lint/<group>/<rule>: <reason in Spanish>` placed before the node the rule reports (for some rules that is the JSX attribute, not the element). Recurring legitimate cases: a `useEffect` that resets pagination when a filter changes (the filter is the trigger), a modal backdrop that closes on click (Escape covers the keyboard), and the WAI-ARIA combobox in `Combobox.tsx`. For data loaded on mount, wrap the loader in `useCallback` and list it as a dependency instead of suppressing.
 - **Lost with ESLint:** the React Compiler hook rules (`react-hooks/set-state-in-effect`) and `@next/next/no-page-custom-font` have no Biome equivalent. The `eslint-disable-next-line` comments still in `src/` do nothing; Biome suppressions are `// biome-ignore lint/<group>/<rule>: <reason>`.
-- **Windows:** with `core.autocrlf=true` a checkout has CRLF files, while the repository stores LF and `biome.json` sets `lineEnding: "lf"`, so `biome check` can flag line endings only. `biome format --write <files>` fixes them and git sees no change.
+- **Windows:** `.gitattributes` (`* text=auto eol=lf`) makes every checkout use LF even with `core.autocrlf=true`, matching `lineEnding: "lf"` in `biome.json`. Files checked out before it existed may still have CRLF, which `biome check` (and the pre-commit hook) flags; `biome format --write <files>` fixes them and git sees no change.
 - **Verification** without tests: `npx tsc --noEmit`, `npx biome check <changed files>`, `npm run build` when you touched routing or configuration, and exercising the flow in `npm run dev`.
 - **Next.js 16 differences:** the file is `src/proxy.ts`, not `middleware.ts`; `params`, `searchParams`, `cookies()` and `headers()` are asynchronous in this codebase and must be awaited. Read `node_modules/next/dist/docs/` before using a Next.js API.
-- **Generated or local files:** do not edit `.next/`, `next-env.d.ts`, `tsconfig.tsbuildinfo` or `src/lib/database.types.ts`. The generated types are currently stale: the table `registros_offline` is missing.
+- **Generated or local files:** do not edit `.next/`, `next-env.d.ts`, `tsconfig.tsbuildinfo` or `src/lib/database.types.ts`. Regenerate the types with `npx supabase gen types typescript --linked > src/lib/database.types.ts` after a schema change.
 - **Unused assets and legacy objects:** `img/` is not referenced by the app (`public/` is the asset root). `src/lib/db/voluntarios.ts` has no callers. The tables `user_roles`, `atenciones_pacientes` and `voluntarios` are legacy. Do not delete any of them unless asked.
 - **Known issues** are listed in [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md) chapter 20 (for example, the dashboard low-stock indicator always showing zero). Do not fix them as a side effect of another task.
 - **Protect the managed block** at the top of this file. `next dev` re-adds it if it is missing, and it is detected by its `BEGIN` and `END` markers.

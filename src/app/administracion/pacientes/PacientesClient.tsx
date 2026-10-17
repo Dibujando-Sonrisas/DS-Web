@@ -23,6 +23,7 @@ import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import StatCard from "@/app/administracion/components/StatCard";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { Tables } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import { coincide } from "@/lib/texto";
 import styles from "@/styles/pages/admin.module.css";
@@ -60,12 +61,17 @@ const TAB_KEY = "pacientes:estado";
 
 const logger = getLogger("pacientes", "client");
 
+type Paciente = Awaited<ReturnType<typeof getPacientesAtendidos>>[number];
+type Dashboard = Awaited<ReturnType<typeof getPacientesDashboard>>;
+
 export function PacientesClient() {
   const { can } = usePermissions();
   const router = useRouter();
-  const [pacientes, setPacientes] = useState<any[]>([]);
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [todasLasBrigadas, setTodasLasBrigadas] = useState<any[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [dashboard, setDashboard] = useState<Dashboard>(null);
+  const [todasLasBrigadas, setTodasLasBrigadas] = useState<
+    Tables<"brigadas">[]
+  >([]);
   const [filtroBrigada, setFiltroBrigada] = useState<string>("todas");
   const [busqueda, setBusqueda] = useState("");
   const [activeTab, setActiveTab] = useState("todos");
@@ -91,7 +97,8 @@ export function PacientesClient() {
 
       try {
         const guardada = sessionStorage.getItem(TAB_KEY);
-        if (TABS.some((t) => t.id === guardada)) setActiveTab(guardada!);
+        if (guardada && TABS.some((t) => t.id === guardada))
+          setActiveTab(guardada);
       } catch (error) {
         /* sin sessionStorage (modo privado): se queda en "todos" */
         logger.warning("Session storage unavailable", errorInfo(error));
@@ -291,7 +298,8 @@ export function PacientesClient() {
                   </tr>
                 ) : (
                   paginated.map((p) => {
-                    const estado = ESTADOS[p.estado] ?? ESTADOS.finalizada;
+                    const estado =
+                      ESTADOS[p.estado ?? ""] ?? ESTADOS.finalizada;
                     return (
                       <tr key={p.id}>
                         <td className={styles.cellCode}>{p.codigo}</td>
@@ -310,7 +318,9 @@ export function PacientesClient() {
                         </td>
                         <td>{p.medico || "-"}</td>
                         <td className={styles.nowrap}>
-                          {new Date(p.created_at).toLocaleDateString()}
+                          {p.created_at
+                            ? new Date(p.created_at).toLocaleDateString()
+                            : "-"}
                         </td>
                         <td>
                           <span

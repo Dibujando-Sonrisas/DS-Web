@@ -231,21 +231,6 @@ export default function TopDonantes() {
   const totalAcumulado = donantes.reduce((sum, d) => sum + d.total, 0);
   const maxMonto = donantes[0]?.total || 1;
 
-  const [fechaActualCompleta, setFechaActualCompleta] = useState("");
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFechaActualCompleta(
-      new Date().toLocaleDateString("es-HN", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
-  }, []);
-
   const handlePrint = () => {
     const originalTitle = document.title;
     document.title = "Reporte - Top Donantes por Año";

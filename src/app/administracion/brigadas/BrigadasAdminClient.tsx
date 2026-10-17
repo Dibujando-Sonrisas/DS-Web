@@ -330,6 +330,8 @@ export default function BrigadasAdminClient({
     inscripciones_cerradas: "Inscripciones Cerradas",
     finalizada: "Finalizada (Solo Consulta)",
     cancelada: "Cancelada",
+    planificacion: "Planificación",
+    en_preparacion: "En preparación",
   };
 
   const ESTADO_CLASSES: Record<EstadoBrigada, string> = {
@@ -337,6 +339,8 @@ export default function BrigadasAdminClient({
     inscripciones_cerradas: styles.badgeNeutral,
     finalizada: styles.badgeNeutral,
     cancelada: styles.badgeDanger,
+    planificacion: styles.badgeNeutral,
+    en_preparacion: styles.badgeNeutral,
   };
 
   return (
@@ -527,7 +531,6 @@ export default function BrigadasAdminClient({
                 <GaleriaUploader
                   brigadaId={activeBrigada.id}
                   brigadaCodigo={activeBrigada.codigo}
-                  existingImages={activeImages}
                   onUploadSuccess={() => router.refresh()}
                   isReadOnly={isReadOnly}
                 />
@@ -554,9 +557,7 @@ export default function BrigadasAdminClient({
           }
           onClose={closeModal}
           onSubmit={
-            modalMode === "create"
-              ? handleCreateBrigada
-              : (handleEditBrigada as any)
+            modalMode === "create" ? handleCreateBrigada : handleEditBrigada
           }
           isSubmitting={isPending}
         />

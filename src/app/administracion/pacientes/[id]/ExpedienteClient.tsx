@@ -26,14 +26,19 @@ import EmptyState from "@/app/administracion/components/EmptyState";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import UserAvatar from "@/app/administracion/components/UserAvatar";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { PacienteDetalle, Profesional } from "@/lib/db/pacientes";
 import { errorInfo, getLogger } from "@/lib/logger";
 import {
   CAMPOS_CONSULTA,
   CAMPOS_PACIENTE,
   CAMPOS_SIGNOS,
-  type Datos,
+  type ConsultationForm,
   type Errores,
-  sinNulos,
+  type PatientForm,
+  toConsultationForm,
+  toPatientForm,
+  toVitalSignsForm,
+  type VitalSignsForm,
   validarConsulta,
   validarDiagnosticos,
   validarPaciente,
@@ -57,7 +62,35 @@ import {
 import { hay, SIGNOS } from "../components/FichaPaciente";
 import { ESTADOS } from "../estados";
 
-type Seccion = "paciente" | "signos" | "consulta" | "diagnosticos";
+// formulario de cada sección que se puede corregir
+type Formularios = {
+  paciente: PatientForm;
+  signos: VitalSignsForm;
+  consulta: ConsultationForm;
+  diagnosticos: string;
+};
+type Seccion = keyof Formularios;
+type Edicion = {
+  [S in Seccion]: { seccion: S; form: Formularios[S] };
+}[Seccion];
+type ConfigSecciones = {
+  [S in Seccion]: {
+    titulo: string;
+    orden: string[];
+    validar: (form: Formularios[S]) => Errores;
+    guardar: (form: Formularios[S]) => Promise<void>;
+  };
+};
+
+// valida y guarda la sección en edición con la configuración que le corresponde
+const validarEdicion = <S extends Seccion>(
+  secciones: ConfigSecciones,
+  { seccion, form }: { seccion: S; form: Formularios[S] }
+) => secciones[seccion].validar(form);
+const guardarEdicion = <S extends Seccion>(
+  secciones: ConfigSecciones,
+  { seccion, form }: { seccion: S; form: Formularios[S] }
+) => secciones[seccion].guardar(form);
 
 const logger = getLogger("pacientes", "client");
 
@@ -175,13 +208,13 @@ export function ExpedienteClient({
   medicos,
   odontologos,
 }: {
-  expediente: Datos;
+  expediente: PacienteDetalle;
   brigada: string | null;
   estado: string;
   tomadoPor: string | null;
   tomadoPorMi: boolean;
-  medicos: Datos[];
-  odontologos: Datos[];
+  medicos: Profesional[];
+  odontologos: Profesional[];
 }) {
   const router = useRouter();
   const { can } = usePermissions();
@@ -196,90 +229,70 @@ export function ExpedienteClient({
   const hecha = ULTIMA_HECHA[estado] ?? 3;
   const odontologica = consulta?.tipo_consulta === "Odontologica";
 
-  const [editando, setEditando] = useState<Seccion | null>(null);
-  const [form, setForm] = useState<Datos>({});
+  const [edicion, setEdicion] = useState<Edicion | null>(null);
   const [errors, setErrors] = useState<Errores>({});
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
   const { showToast } = useToast();
   const { registerRef, focusFirstError } = useFieldFocus();
 
-  // cada sección: con qué datos abre el formulario, cómo se valida y dónde se guarda
-  const secciones: Record<
-    Seccion,
-    {
-      titulo: string;
-      datos: () => Datos;
-      validar: () => Errores;
-      orden: string[];
-      guardar: () => Promise<void>;
-    }
-  > = {
+  // cada sección: cómo se valida su formulario y dónde se guarda
+  const secciones: ConfigSecciones = {
     paciente: {
       titulo: "Corregir datos del paciente",
-      datos: () => sinNulos(paciente),
-      validar: () => validarPaciente(form),
       orden: CAMPOS_PACIENTE,
-      guardar: () => actualizarPacienteAction(paciente.id, form),
+      validar: validarPaciente,
+      guardar: (form) => actualizarPacienteAction(paciente.id, form),
     },
     signos: {
       titulo: "Corregir signos vitales",
-      datos: () => sinNulos(signos),
-      validar: () => validarSignos(form),
       orden: CAMPOS_SIGNOS,
-      guardar: () => actualizarSignosAction(paciente.id, form),
+      validar: validarSignos,
+      guardar: (form) => actualizarSignosAction(paciente.id, form),
     },
     consulta: {
       titulo: "Corregir consulta",
-      datos: () => sinNulos(consulta),
-      validar: () => validarConsulta(form),
       orden: CAMPOS_CONSULTA,
-      guardar: () => actualizarConsultaAction(consulta.id, form),
+      validar: validarConsulta,
+      guardar: (form) => actualizarConsultaAction(consulta.id, form),
     },
     diagnosticos: {
       titulo: "Corregir diagnósticos",
-      datos: () => ({
-        diagnosticos: consulta.diagnosticos_consulta
-          .map((d: Datos) => d.diagnostico)
-          .join(", "),
-      }),
-      validar: () => validarDiagnosticos(form.diagnosticos),
       orden: ["diagnosticosStr"],
-      guardar: () =>
-        actualizarDiagnosticosAction(consulta.id, form.diagnosticos),
+      validar: validarDiagnosticos,
+      guardar: (form) => actualizarDiagnosticosAction(consulta.id, form),
     },
   };
 
-  const abrir = (s: Seccion) => {
-    setForm(secciones[s].datos());
+  const abrir = (e: Edicion) => {
+    setEdicion(e);
     setErrors({});
     setError("");
-    setEditando(s);
   };
+  const cerrar = () => setEdicion(null);
 
   const guardar = async (e: FormEvent) => {
     e.preventDefault();
-    if (!editando || guardando) return;
-    const seccion = secciones[editando];
+    if (!edicion || guardando) return;
 
-    const errs = seccion.validar();
+    const errs = validarEdicion(secciones, edicion);
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
-      focusFirstError(errs, seccion.orden);
+      focusFirstError(errs, secciones[edicion.seccion].orden);
       return;
     }
 
     setGuardando(true);
     setError("");
     try {
-      await seccion.guardar();
-      setEditando(null);
+      await guardarEdicion(secciones, edicion);
+      cerrar();
       showToast("Cambios guardados en el expediente.");
       router.refresh();
     } catch (err) {
       logger.error("Patient record correction failed", {
         ...errorInfo(err),
-        seccion: editando,
+        seccion: edicion.seccion,
         pacienteId: paciente.id,
       });
       setError(
@@ -329,7 +342,12 @@ export function ExpedienteClient({
               )}
               {puedeCorregir && (
                 <BotonCorregir
-                  onClick={() => abrir("paciente")}
+                  onClick={() =>
+                    abrir({
+                      seccion: "paciente",
+                      form: toPatientForm(paciente),
+                    })
+                  }
                   que="datos del paciente"
                 />
               )}
@@ -388,7 +406,11 @@ export function ExpedienteClient({
         icono={<Activity />}
         tono="tertiary"
         subtitulo="Tomados en la preclínica."
-        onCorregir={puedeCorregir && signos ? () => abrir("signos") : undefined}
+        onCorregir={
+          puedeCorregir && signos
+            ? () => abrir({ seccion: "signos", form: toVitalSignsForm(signos) })
+            : undefined
+        }
       >
         {signos ? (
           <div className={styles.stack}>
@@ -440,7 +462,13 @@ export function ExpedienteClient({
             : undefined
         }
         onCorregir={
-          puedeCorregir && consulta ? () => abrir("consulta") : undefined
+          puedeCorregir && consulta
+            ? () =>
+                abrir({
+                  seccion: "consulta",
+                  form: toConsultationForm(consulta),
+                })
+            : undefined
         }
       >
         {consulta ? (
@@ -475,13 +503,20 @@ export function ExpedienteClient({
                 </h3>
                 {puedeCorregir && (
                   <BotonCorregir
-                    onClick={() => abrir("diagnosticos")}
+                    onClick={() =>
+                      abrir({
+                        seccion: "diagnosticos",
+                        form: consulta.diagnosticos_consulta
+                          .map((d) => d.diagnostico)
+                          .join(", "),
+                      })
+                    }
                     que="diagnósticos"
                   />
                 )}
               </div>
               <ul className={pac.chips}>
-                {consulta.diagnosticos_consulta.map((d: Datos) => (
+                {consulta.diagnosticos_consulta.map((d) => (
                   <li key={d.id}>
                     <ClipboardList aria-hidden="true" />
                     {d.diagnostico}
@@ -530,7 +565,7 @@ export function ExpedienteClient({
                   </tr>
                 </thead>
                 <tbody>
-                  {consulta.medicamentos_consulta.map((m: Datos) => (
+                  {consulta.medicamentos_consulta.map((m) => (
                     <tr key={m.id}>
                       <td className={styles.cellMain}>
                         {m.medicamentos?.nombre ?? "-"}
@@ -546,37 +581,51 @@ export function ExpedienteClient({
         </Tarjeta>
       )}
 
-      {editando && (
+      {edicion && (
         <AdminModal
-          title={secciones[editando].titulo}
+          title={secciones[edicion.seccion].titulo}
           description={`Expediente ${paciente.codigo}`}
           size="lg"
           icon={<Pencil />}
           busy={guardando}
-          onClose={() => setEditando(null)}
+          onClose={cerrar}
         >
           <form className={styles.modalForm} onSubmit={guardar} noValidate>
             <div className={styles.modalBody}>
               <div className={styles.formSection}>
-                {editando === "paciente" && (
-                  <CamposPaciente value={form} setValue={setForm} {...campos} />
+                {edicion.seccion === "paciente" && (
+                  <CamposPaciente
+                    value={edicion.form}
+                    setValue={(form) =>
+                      setEdicion({ seccion: "paciente", form })
+                    }
+                    {...campos}
+                  />
                 )}
-                {editando === "signos" && (
-                  <CamposSignos value={form} setValue={setForm} {...campos} />
+                {edicion.seccion === "signos" && (
+                  <CamposSignos
+                    value={edicion.form}
+                    setValue={(form) => setEdicion({ seccion: "signos", form })}
+                    {...campos}
+                  />
                 )}
-                {editando === "consulta" && (
+                {edicion.seccion === "consulta" && (
                   <CamposConsulta
-                    value={form}
-                    setValue={setForm}
+                    value={edicion.form}
+                    setValue={(form) =>
+                      setEdicion({ seccion: "consulta", form })
+                    }
                     {...campos}
                     medicos={medicos}
                     odontologos={odontologos}
                   />
                 )}
-                {editando === "diagnosticos" && (
+                {edicion.seccion === "diagnosticos" && (
                   <CampoDiagnosticos
-                    value={form.diagnosticos}
-                    setValue={(v) => setForm({ diagnosticos: v })}
+                    value={edicion.form}
+                    setValue={(form) =>
+                      setEdicion({ seccion: "diagnosticos", form })
+                    }
                     {...campos}
                   />
                 )}
@@ -593,7 +642,7 @@ export function ExpedienteClient({
               <button
                 type="button"
                 className="btn-ghost btn-sm"
-                onClick={() => setEditando(null)}
+                onClick={cerrar}
                 disabled={guardando}
               >
                 Cancelar

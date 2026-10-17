@@ -16,6 +16,8 @@ const ESTADO_CLASSES: Record<EstadoBrigada, string> = {
   inscripciones_cerradas: styles.badgeNeutral,
   finalizada: styles.badgeNeutral,
   cancelada: styles.badgeDanger,
+  planificacion: styles.badgeNeutral,
+  en_preparacion: styles.badgeNeutral,
 };
 
 const ESTADO_LABELS: Record<EstadoBrigada, string> = {
@@ -23,6 +25,8 @@ const ESTADO_LABELS: Record<EstadoBrigada, string> = {
   inscripciones_cerradas: "Cerrada / Programada",
   finalizada: "Finalizada",
   cancelada: "Cancelada",
+  planificacion: "Planificación",
+  en_preparacion: "En preparación",
 };
 
 export default function BrigadaCard({

@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { assertPermission } from "@/lib/auth/session";
 import { generateCleanToken } from "@/lib/coding/codingUtils";
@@ -20,8 +21,10 @@ export type UpdateMedicamento =
   Database["public"]["Tables"]["medicamentos"]["Update"];
 export type TipoRecurso = "medicamento" | "insumo_medico" | "material_brigada";
 
-function sanitizeMedicamentoPayload(payload: any) {
-  const cleanPayload: Record<string, any> = {};
+function sanitizeMedicamentoPayload(
+  payload: InsertMedicamento | UpdateMedicamento
+) {
+  const cleanPayload: UpdateMedicamento = {};
 
   if (payload.nombre !== undefined) cleanPayload.nombre = payload.nombre;
   if (payload.codigo !== undefined) cleanPayload.codigo = payload.codigo;
@@ -43,7 +46,7 @@ function sanitizeMedicamentoPayload(payload: any) {
 
 export async function getMedicamentos(
   tipoRecurso?: TipoRecurso | "todos",
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   let query = client
     .from("stock_actual")
@@ -65,7 +68,7 @@ export async function getMedicamentos(
 
 export async function getLotesByMedicamento(
   medicamentoId: string,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   const { data, error } = await client
     .from("lotes_medicamentos")
@@ -82,7 +85,7 @@ export async function getLotesByMedicamento(
 
 export async function createLote(
   lote: InsertLoteMedicamento,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.INVENTARIO_CREATE);
   const { data, error } = await client
@@ -113,7 +116,7 @@ export async function createLote(
         tipo: "E",
         motivo: "Nuevo Lote de Inventario",
         observaciones: `Lote ${data.numero_lote}`,
-      } as any);
+      });
     if (errMov)
       logger.error("Inventory movement insert failed", {
         ...errorInfo(errMov),
@@ -127,7 +130,7 @@ export async function createLote(
 export async function updateLote(
   id: string,
   lote: UpdateLoteMedicamento,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.INVENTARIO_UPDATE);
   const { data, error } = await client
@@ -145,7 +148,10 @@ export async function updateLote(
   return data;
 }
 
-export async function deleteLote(id: string, client: any = supabase) {
+export async function deleteLote(
+  id: string,
+  client: SupabaseClient<Database> = supabase
+) {
   await assertPermission(PERMISSIONS.INVENTARIO_DELETE);
   const { error } = await client
     .from("lotes_medicamentos")
@@ -168,7 +174,7 @@ export type CategoriaInventario = Pick<
 };
 
 export async function getCategoriasInventario(
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ): Promise<CategoriaInventario[]> {
   const { data, error } = await client
     .from("categorias_inventario")
@@ -180,10 +186,7 @@ export async function getCategoriasInventario(
     return [];
   }
 
-  type Fila = Omit<CategoriaInventario, "recursos"> & {
-    medicamentos: { count: number }[];
-  };
-  return (data || []).map(({ medicamentos, ...c }: Fila) => ({
+  return (data || []).map(({ medicamentos, ...c }) => ({
     ...c,
     recursos: medicamentos[0]?.count ?? 0,
   }));
@@ -211,7 +214,7 @@ function nombreCategoria(nombre: string) {
 export async function createCategoria(
   nombre: string,
   tipoRecurso: TipoRecurso,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.INVENTARIO_CREATE);
   const { error } = await client.from("categorias_inventario").insert({
@@ -226,7 +229,7 @@ export async function createCategoria(
 export async function updateCategoria(
   id: string,
   nombre: string,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.INVENTARIO_UPDATE);
   const { error } = await client
@@ -237,7 +240,10 @@ export async function updateCategoria(
   logger.info("Inventory category updated", { categoriaId: id });
 }
 
-export async function deleteCategoria(id: string, client: any = supabase) {
+export async function deleteCategoria(
+  id: string,
+  client: SupabaseClient<Database> = supabase
+) {
   await assertPermission(PERMISSIONS.INVENTARIO_DELETE);
   const { error } = await client
     .from("categorias_inventario")
@@ -250,12 +256,17 @@ export async function deleteCategoria(id: string, client: any = supabase) {
 export async function createMedicamento(
   medicamento: InsertMedicamento,
   cantidadInicial: number = 0,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.INVENTARIO_CREATE);
 
-  const cleanData = sanitizeMedicamentoPayload(medicamento);
-  cleanData.stock_actual = cantidadInicial;
+  const cleanData: InsertMedicamento = {
+    ...sanitizeMedicamentoPayload(medicamento),
+    nombre: medicamento.nombre,
+    codigo: medicamento.codigo,
+    categoria_id: medicamento.categoria_id,
+    stock_actual: cantidadInicial,
+  };
 
   // Validación de duplicado (mismo nombre exacto)
   const { data: exist, error: errExist } = await client
@@ -274,7 +285,7 @@ export async function createMedicamento(
 
   const { data: newMed, error } = await client
     .from("medicamentos")
-    .insert([cleanData as any])
+    .insert([cleanData])
     .select()
     .single();
 
@@ -308,7 +319,7 @@ export async function createMedicamento(
 export async function updateMedicamento(
   id: string,
   medicamento: UpdateMedicamento,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.INVENTARIO_UPDATE);
 
@@ -316,7 +327,7 @@ export async function updateMedicamento(
 
   const { data, error } = await client
     .from("medicamentos")
-    .update(cleanData as any)
+    .update(cleanData)
     .eq("id", id)
     .select();
 
@@ -336,7 +347,10 @@ export async function updateMedicamento(
   return data[0];
 }
 
-export async function deleteMedicamento(id: string, client: any = supabase) {
+export async function deleteMedicamento(
+  id: string,
+  client: SupabaseClient<Database> = supabase
+) {
   await assertPermission(PERMISSIONS.INVENTARIO_DELETE);
   const { error } = await client.from("medicamentos").delete().eq("id", id);
 

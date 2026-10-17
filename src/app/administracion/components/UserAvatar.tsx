@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { type CSSProperties, useState } from "react";
 import styles from "@/styles/pages/admin.module.css";
 
@@ -50,9 +51,12 @@ export default function UserAvatar({
       style={{ "--size": `${size / 10}rem` } as CSSProperties}
     >
       {avatarUrl && !failed ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        // the photo may be a local blob preview or an arbitrary URL, so it is not optimized
+        <Image
           src={avatarUrl}
+          width={size}
+          height={size}
+          unoptimized
           alt={
             nombres
               ? `${nombres} ${apellidos || ""}`.trim()
