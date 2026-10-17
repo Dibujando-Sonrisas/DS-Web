@@ -135,40 +135,6 @@
 }
 
 /* ── FORMULARIO ── */
-/* sin menú del sitio, este enlace es la salida al inicio */
-.backLink {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 0.6rem;
-  margin-bottom: 2.4rem;
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: var(--gray);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.backLink:hover {
-  color: var(--primaryDark);
-}
-
-.backLink svg {
-  width: 1.6rem;
-  height: 1.6rem;
-  transition: transform 0.2s ease;
-}
-
-.backLink:hover svg {
-  transform: translateX(-0.3rem);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .backLink:hover svg {
-    transform: none;
-  }
-}
-
 .authBody {
   display: flex;
   flex-direction: column;
@@ -262,6 +228,40 @@
 .textLink:hover {
   color: var(--primaryDark);
   text-decoration: underline;
+}
+
+/* sin menú del sitio, este enlace es la salida al inicio */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.6rem;
+  margin-bottom: 2.4rem;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--gray);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.backLink:hover {
+  color: var(--primaryDark);
+}
+
+.backLink svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  transition: transform 0.2s ease;
+}
+
+.backLink:hover svg {
+  transform: translateX(-0.3rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backLink:hover svg {
+    transform: none;
+  }
 }
 
 /* ── SEPARADOR Y PIE ── */

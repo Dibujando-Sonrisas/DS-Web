@@ -4,7 +4,12 @@ import {
   type Permission,
   resolvePermissions,
 } from "@/lib/auth/permissions";
-import { type RolTono, requirePermission } from "@/lib/auth/session";
+import {
+  type RolResumen,
+  type RolTono,
+  requirePermission,
+  toRolTono,
+} from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "@/styles/pages/admin.module.css";
 import UsuariosAdminClient from "./UsuariosAdminClient";
@@ -26,12 +31,7 @@ export type ProfileWithSpecialty = {
     id: string;
     nombre: string;
   } | null;
-  rol: {
-    id: string;
-    nombre: string;
-    color: RolTono;
-    es_superadmin: boolean;
-  } | null;
+  rol: RolResumen | null;
 };
 
 export type SpecialtyRow = {
@@ -49,11 +49,6 @@ export type RolDetalle = {
   es_predeterminado: boolean;
   permisos: Permission[];
   usuarios: number;
-};
-
-type RolFila = Omit<RolDetalle, "permisos" | "usuarios"> & {
-  rol_permisos: { permiso: string }[];
-  perfiles: { count: number }[];
 };
 
 export default async function UsuariosPage({
@@ -89,11 +84,17 @@ export default async function UsuariosPage({
       .order("nombre", { ascending: true }),
   ]);
 
-  const rows = (profilesData ?? []) as unknown as ProfileWithSpecialty[];
+  const rows: ProfileWithSpecialty[] = (profilesData ?? []).map(
+    ({ rol, ...profile }) => ({
+      ...profile,
+      rol: rol ? { ...rol, color: toRolTono(rol.color) } : null,
+    })
+  );
   const specialties: SpecialtyRow[] = specialtiesData ?? [];
-  const roles: RolDetalle[] = ((rolesData ?? []) as unknown as RolFila[]).map(
+  const roles: RolDetalle[] = (rolesData ?? []).map(
     ({ rol_permisos, perfiles, ...rol }) => ({
       ...rol,
+      color: toRolTono(rol.color),
       permisos: resolvePermissions({
         es_superadmin: rol.es_superadmin,
         rol_permisos,

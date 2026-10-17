@@ -42,7 +42,11 @@ export default async function SolicitudesRecientesWidget() {
     });
   }
 
-  const list = (solicitudes as any[]) ?? [];
+  // the query filters by this brigade, so every row belongs to it
+  const list = (solicitudes ?? []).map((s) => ({
+    ...s,
+    brigada_id: activeBrigada.id,
+  }));
   const pendientesCount = list.filter((s) => s.estado === "pendiente").length;
 
   return (

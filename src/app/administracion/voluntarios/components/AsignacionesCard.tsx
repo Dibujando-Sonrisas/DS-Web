@@ -46,12 +46,14 @@ export default function AsignacionesCard({
       const res = await actualizarAsignacion(asigId, area, perfilId);
       if (res.error) throw new Error(res.error);
       setEditingId(null);
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Assignment update failed", {
         ...errorInfo(e),
         asignacionId: asigId,
       });
-      setError(e.message || "Error al actualizar asignación.");
+      setError(
+        (e instanceof Error && e.message) || "Error al actualizar asignación."
+      );
     } finally {
       setLoading(false);
     }

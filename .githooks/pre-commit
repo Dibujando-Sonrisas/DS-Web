@@ -1,0 +1,16 @@
+#!/bin/sh
+
+echo "pre-commit: Biome en los archivos en stage..."
+if ! npx biome check --staged --error-on-warnings --no-errors-on-unmatched; then
+  echo ""
+  echo "Commit bloqueado: corrige los errores y avisos de Biome."
+  echo "Los arreglos seguros se aplican con: npx biome check --write <archivos>"
+  exit 1
+fi
+
+echo "pre-commit: TypeScript (tsc --noEmit)..."
+if ! npx tsc --noEmit; then
+  echo ""
+  echo "Commit bloqueado: corrige los errores de TypeScript."
+  exit 1
+fi

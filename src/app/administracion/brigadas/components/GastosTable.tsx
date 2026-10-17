@@ -6,13 +6,14 @@ import { useState, useTransition } from "react";
 import { z } from "zod";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
+import { Constants, type Enums } from "@/lib/database.types";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
 
 export type GastoRow = {
   id: string;
   brigada_id: string;
-  categoria: "medicamentos" | "alimentacion" | "publicidad" | "otros";
+  categoria: Enums<"categoria_gasto">;
   descripcion: string;
   monto: number;
   fecha_gasto: string; // ISO String YYYY-MM-DD
@@ -32,7 +33,7 @@ type GastosTableProps = {
 
 // Esquema Zod 4 de Validación Estricta (Capítulo 15 - Análisis y Diseño de Datos)
 const gastoSchema = z.object({
-  categoria: z.enum(["medicamentos", "alimentacion", "publicidad", "otros"], {
+  categoria: z.enum(Constants.public.Enums.categoria_gasto, {
     message: "Prueba de valores válidos: Selecciona una categoría válida.",
   }),
   descripcion: z
@@ -68,11 +69,22 @@ const gastoSchema = z.object({
 
 type GastoFormData = z.infer<typeof gastoSchema>;
 
-const CATEGORIA_LABELS: Record<string, string> = {
+// the panel offers four categories; older rows may use the other database values
+const PANEL_CATEGORIES: readonly Enums<"categoria_gasto">[] = [
+  "medicamentos",
+  "alimentacion",
+  "publicidad",
+  "otros",
+];
+
+const CATEGORIA_LABELS: Record<Enums<"categoria_gasto">, string> = {
   medicamentos: "Medicamentos / Clínica",
   alimentacion: "Alimentación / Viáticos",
   publicidad: "Publicidad / Impresión",
   otros: "Otros / Varios",
+  combustible: "Combustible",
+  material_medico: "Material médico",
+  papeleria: "Papelería",
 };
 
 export default function GastosTable({
@@ -342,6 +354,12 @@ export default function GastosTable({
                     {CATEGORIA_LABELS.publicidad}
                   </option>
                   <option value="otros">{CATEGORIA_LABELS.otros}</option>
+                  {formData.categoria &&
+                    !PANEL_CATEGORIES.includes(formData.categoria) && (
+                      <option value={formData.categoria}>
+                        {CATEGORIA_LABELS[formData.categoria]}
+                      </option>
+                    )}
                 </select>
                 {formErrors.categoria && (
                   <span className="form-error">

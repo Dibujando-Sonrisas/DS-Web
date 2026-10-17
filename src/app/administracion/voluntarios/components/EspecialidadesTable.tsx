@@ -9,6 +9,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useState } from "react";
+import type { Tables } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
 import {
@@ -21,13 +22,10 @@ import EspecialidadForm from "./EspecialidadForm";
 
 const logger = getLogger("voluntarios", "client");
 
-export type Specialty = {
-  id: string;
-  nombre: string;
-  activo?: boolean;
-  activa?: boolean;
-  tipo_consulta?: string | null;
-};
+export type Specialty = Pick<
+  Tables<"especialidades">,
+  "id" | "nombre" | "activo" | "tipo_consulta"
+>;
 
 /** Valores de especialidades.tipo_consulta; sin valor = la especialidad no atiende consultas. */
 export const TIPO_CONSULTA_LABELS: Record<string, string> = {
@@ -48,7 +46,7 @@ export default function EspecialidadesTable({
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const isActiva = (sp: Specialty) => sp.activo ?? sp.activa ?? true;
+  const isActiva = (sp: Specialty) => sp.activo ?? true;
 
   const handleCreate = () => {
     setEditingSpecialty(null);
@@ -73,16 +71,14 @@ export default function EspecialidadesTable({
 
       // Update local state to reflect change immediately
       setSpecialties((prev) =>
-        prev.map((s) =>
-          s.id === sp.id ? { ...s, activo: !active, activa: !active } : s
-        )
+        prev.map((s) => (s.id === sp.id ? { ...s, activo: !active } : s))
       );
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Specialty status change failed", {
         ...errorInfo(e),
         especialidadId: sp.id,
       });
-      setError(e.message || "Ocurrió un error.");
+      setError((e instanceof Error && e.message) || "Ocurrió un error.");
     } finally {
       setLoadingId(null);
     }
@@ -116,8 +112,10 @@ export default function EspecialidadesTable({
         window.location.reload();
       }
       setShowModal(false);
-    } catch (e: any) {
-      setError(e.message || "Ocurrió un error al guardar.");
+    } catch (e) {
+      setError(
+        (e instanceof Error && e.message) || "Ocurrió un error al guardar."
+      );
       throw e; // Pass to form
     }
   };

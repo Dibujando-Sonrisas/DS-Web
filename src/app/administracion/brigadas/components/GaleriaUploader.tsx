@@ -7,6 +7,7 @@ import {
   LoaderCircle,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
@@ -18,7 +19,6 @@ const logger = getLogger("brigadas", "client");
 type GaleriaUploaderProps = {
   brigadaId: string;
   brigadaCodigo: string;
-  existingImages: { id: string; nombre_archivo: string; orden: number }[];
   onUploadSuccess: () => void;
   isReadOnly?: boolean;
 };
@@ -48,7 +48,6 @@ const isHeicFile = (file: File) => {
 export default function GaleriaUploader({
   brigadaId,
   brigadaCodigo,
-  existingImages,
   onUploadSuccess,
   isReadOnly = false,
 }: GaleriaUploaderProps) {
@@ -87,7 +86,7 @@ export default function GaleriaUploader({
 
     // 2. Renderizado en Canvas para aplanado y compresión JPG (máximo 1600px)
     return new Promise((resolve, reject) => {
-      const img = new Image();
+      const img = new window.Image();
       img.src = URL.createObjectURL(sourceBlob);
       img.onload = () => {
         URL.revokeObjectURL(img.src);
@@ -412,7 +411,13 @@ export default function GaleriaUploader({
                 key={img.id}
                 className={`${styles.photoItem} ${img.isCover ? brig.photoCover : ""}`}
               >
-                <img src={img.previewUrl} alt="Vista previa" />
+                <Image
+                  src={img.previewUrl}
+                  alt="Vista previa"
+                  fill
+                  sizes="240px"
+                  unoptimized
+                />
 
                 {/* Botón de quitar selección individual */}
                 <button

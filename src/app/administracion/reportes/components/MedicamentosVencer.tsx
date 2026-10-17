@@ -156,21 +156,6 @@ export default function MedicamentosVencer() {
     setTimeout(restoreTitle, 1000);
   };
 
-  const [fechaActualCompleta, setFechaActualCompleta] = useState("");
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFechaActualCompleta(
-      new Date().toLocaleDateString("es-HN", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
-  }, []);
-
   // Prepare sorted data for print view (chronologically by expiration date ascending)
   const printData = [...medicamentosFiltrados].sort((a, b) =>
     a.fechaVencimiento.localeCompare(b.fechaVencimiento)

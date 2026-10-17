@@ -54,11 +54,11 @@ export default function StockMinimo() {
           `);
         if (error) throw error;
 
-        const formatted: StockMinimoData[] = (data || []).map((m: any) => {
+        const formatted: StockMinimoData[] = (data || []).map((m) => {
           return {
-            medicamentoId: m.medicamento_id,
-            id: m.medicamento_id?.slice(0, 8).toUpperCase(),
-            nombre: m.nombre,
+            medicamentoId: m.medicamento_id ?? "",
+            id: m.medicamento_id?.slice(0, 8).toUpperCase() ?? "",
+            nombre: m.nombre ?? "",
             categoria:
               m.tipo_recurso === "insumo_medico"
                 ? "Insumos Médicos"
@@ -126,21 +126,6 @@ export default function StockMinimo() {
 
   const inventarioFiltrado = procesarDatos();
   const totalPages = Math.ceil(inventarioFiltrado.length / itemsPerPage);
-
-  const [fechaActualCompleta, setFechaActualCompleta] = useState("");
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFechaActualCompleta(
-      new Date().toLocaleDateString("es-HN", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
-  }, []);
 
   const handlePrint = () => {
     const originalTitle = document.title;

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
+import { Constants } from "@/lib/database.types";
 import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
@@ -97,15 +98,9 @@ const brigadaSchema = z
       )
       .optional()
       .or(z.literal("")),
-    estado: z.enum(
-      [
-        "inscripciones_abiertas",
-        "inscripciones_cerradas",
-        "finalizada",
-        "cancelada",
-      ],
-      { message: "Prueba de valores válidos: Selecciona un estado válido." }
-    ),
+    estado: z.enum(Constants.public.Enums.estado_brigada, {
+      message: "Prueba de valores válidos: Selecciona un estado válido.",
+    }),
     presupuesto_estimado: z.preprocess(
       (val) =>
         val === "" || val === null || val === undefined ? 0 : Number(val),
@@ -202,6 +197,8 @@ const ESTADO_LABELS: Record<EstadoBrigada, string> = {
   inscripciones_cerradas: "Inscripciones Cerradas",
   finalizada: "Finalizada (Solo Lectura)",
   cancelada: "Cancelada",
+  planificacion: "Planificación",
+  en_preparacion: "En preparación",
 };
 
 export default function BrigadaForm({
@@ -216,7 +213,7 @@ export default function BrigadaForm({
   const formatDatetimeLocal = (isoString?: string | null) => {
     if (!isoString) return "";
     const date = new Date(isoString);
-    if (isNaN(date.getTime())) return "";
+    if (Number.isNaN(date.getTime())) return "";
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, "0");
     const dd = String(date.getDate()).padStart(2, "0");
@@ -439,6 +436,12 @@ export default function BrigadaForm({
                       {ESTADO_LABELS.finalizada}
                     </option>
                     <option value="cancelada">{ESTADO_LABELS.cancelada}</option>
+                    {(formData.estado === "planificacion" ||
+                      formData.estado === "en_preparacion") && (
+                      <option value={formData.estado}>
+                        {ESTADO_LABELS[formData.estado]}
+                      </option>
+                    )}
                   </select>
                   {fieldError("estado")}
                 </label>

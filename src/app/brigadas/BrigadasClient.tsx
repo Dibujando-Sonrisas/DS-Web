@@ -8,6 +8,7 @@ import {
   MapPin,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { errorInfo, getLogger } from "@/lib/logger";
 import type { Brigada } from "../../lib/db/brigadas";
@@ -222,7 +223,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                     type="button"
                     key={b.id}
                     data-carousel-item="true"
-                    className={`${styles.brigadaBtn}${activeId === b.id ? " " + styles.active : ""}`}
+                    className={`${styles.brigadaBtn}${activeId === b.id ? ` ${styles.active}` : ""}`}
                     aria-pressed={activeId === b.id}
                     onClick={() => handleBrigadaClick(b.id)}
                   >
@@ -328,11 +329,9 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
                               setLightbox({ urls: bPhotos, index: i })
                             }
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <Image
                               src={url}
                               alt={`Foto ${i + 1} de ${b.nombre}`}
-                              loading="lazy"
                               width={400}
                               height={400}
                             />
@@ -380,7 +379,7 @@ export default function BrigadasClient({ brigadas }: { brigadas: Brigada[] }) {
             </button>
           )}
 
-          <img
+          <Image
             src={lightbox.urls[lightbox.index]}
             alt={`Foto ${lightbox.index + 1}`}
             width={900}

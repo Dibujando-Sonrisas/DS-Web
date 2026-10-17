@@ -1,5 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { assertPermission } from "@/lib/auth/session";
+import type { Database, TablesInsert } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import { generateCleanToken } from "../coding/codingUtils";
 import { supabase } from "../supabase";
@@ -7,7 +9,9 @@ import { supabase } from "../supabase";
 const logger = getLogger("db", "ventas");
 
 // Categorías
-export async function getCategoriasProductos(client: any = supabase) {
+export async function getCategoriasProductos(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("categorias_productos")
     .select("*")
@@ -20,8 +24,8 @@ export async function getCategoriasProductos(client: any = supabase) {
 }
 
 export async function createCategoriaProducto(
-  categoria: any,
-  client: any = supabase
+  categoria: TablesInsert<"categorias_productos">,
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.VENTAS_CREATE);
   const { data, error } = await client
@@ -39,7 +43,7 @@ export async function createCategoriaProducto(
 
 export async function deleteCategoriaProducto(
   id: string,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.VENTAS_DELETE);
   const { error } = await client
@@ -57,7 +61,9 @@ export async function deleteCategoriaProducto(
 }
 
 // Productos
-export async function getProductos(client: any = supabase) {
+export async function getProductos(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("productos")
     .select(`
@@ -72,7 +78,10 @@ export async function getProductos(client: any = supabase) {
   return data;
 }
 
-export async function createProducto(producto: any, client: any = supabase) {
+export async function createProducto(
+  producto: TablesInsert<"productos">,
+  client: SupabaseClient<Database> = supabase
+) {
   await assertPermission(PERMISSIONS.VENTAS_CREATE);
   const { data, error } = await client
     .from("productos")
@@ -90,7 +99,7 @@ export async function createProducto(producto: any, client: any = supabase) {
 export async function updateStockProducto(
   id: string,
   nuevoStock: number,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.VENTAS_UPDATE);
   if (nuevoStock < 0) throw new Error("El stock no puede ser negativo");
@@ -111,7 +120,10 @@ export async function updateStockProducto(
   return data;
 }
 
-export async function deleteProducto(id: string, client: any = supabase) {
+export async function deleteProducto(
+  id: string,
+  client: SupabaseClient<Database> = supabase
+) {
   await assertPermission(PERMISSIONS.VENTAS_DELETE);
   const { error } = await client.from("productos").delete().eq("id", id);
   if (error) {
@@ -125,7 +137,9 @@ export async function deleteProducto(id: string, client: any = supabase) {
 }
 
 // Ventas Dashboard e Historial
-export async function getDashboardVentas(client: any = supabase) {
+export async function getDashboardVentas(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("dashboard_ventas")
     .select("*")
@@ -137,7 +151,9 @@ export async function getDashboardVentas(client: any = supabase) {
   return data;
 }
 
-export async function getHistorialVentas(client: any = supabase) {
+export async function getHistorialVentas(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("v_ventas")
     .select("*")
@@ -149,7 +165,9 @@ export async function getHistorialVentas(client: any = supabase) {
   return data;
 }
 
-export async function getBajoStock(client: any = supabase) {
+export async function getBajoStock(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("productos")
     .select("id, codigo, nombre, stock")
@@ -175,7 +193,7 @@ export async function registrarVenta(
       precio_unitario: number;
     }>;
   },
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.VENTAS_CREATE);
 

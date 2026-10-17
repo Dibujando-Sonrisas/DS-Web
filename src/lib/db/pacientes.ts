@@ -32,7 +32,9 @@ export type MedicamentoConsulta =
 export type InsertMedicamentoConsulta =
   Database["public"]["Tables"]["medicamentos_consulta"]["Insert"];
 
-export async function getPacientesDashboard(client: any = supabase) {
+export async function getPacientesDashboard(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("dashboard_pacientes")
     .select("*")
@@ -45,7 +47,9 @@ export async function getPacientesDashboard(client: any = supabase) {
   return data;
 }
 
-export async function getPacientesAtendidos(client: any = supabase) {
+export async function getPacientesAtendidos(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("v_pacientes_atendidos")
     .select("*")
@@ -58,7 +62,10 @@ export async function getPacientesAtendidos(client: any = supabase) {
   return data;
 }
 
-export async function getPacienteDetalle(id: string, client: any = supabase) {
+export async function getPacienteDetalle(
+  id: string,
+  client: SupabaseClient<Database> = supabase
+) {
   const { data: paciente, error: errorPaciente } = await client
     .from("pacientes")
     .select("*")
@@ -109,10 +116,15 @@ export async function getProfesionalesConsulta(
   return { medicos: porTipo("Medica"), odontologos: porTipo("Odontologica") };
 }
 
+export type PacienteDetalle = Awaited<ReturnType<typeof getPacienteDetalle>>;
+export type Profesional = Awaited<
+  ReturnType<typeof getProfesionalesConsulta>
+>["medicos"][number];
+
 /** Etapa 1 (ingresado): crea el paciente con su código correlativo por brigada. */
 export async function registrarPaciente(
   paciente: InsertPaciente,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_CREATE);
   if (paciente.brigada_id) {
@@ -159,7 +171,7 @@ export async function registrarPaciente(
 export async function registrarPreclinica(
   pacienteId: string,
   signos: Partial<InsertSignosVitales>,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   // ponytail: chequeo en la app, dos envíos simultáneos podrían duplicar; índice único si pasa
@@ -184,25 +196,31 @@ export async function registrarPreclinica(
   logger.info("Pre-clinic registered", { pacienteId });
 }
 
+async function currentUserId(client: SupabaseClient<Database>) {
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (!user) throw new Error("An authenticated user is required.");
+  return user.id;
+}
+
 /**
  * Etapa 3 (consulta): quien abre la consulta toma al paciente para que nadie más lo atienda.
  * Devuelve el nombre de quien ya lo tiene, o null si quedó tomado por el usuario actual.
  */
 export async function tomarConsulta(
   pacienteId: string,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ): Promise<string | null> {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const userId = await currentUserId(client);
 
   // una sola sentencia: si dos lo abren a la vez, solo uno lo toma
   const { data, error } = await client
     .from("pacientes")
-    .update({ consulta_tomada_por: user.id })
+    .update({ consulta_tomada_por: userId })
     .eq("id", pacienteId)
-    .or(`consulta_tomada_por.is.null,consulta_tomada_por.eq.${user.id}`)
+    .or(`consulta_tomada_por.is.null,consulta_tomada_por.eq.${userId}`)
     .select("id");
 
   if (error) {
@@ -228,17 +246,15 @@ export async function tomarConsulta(
 /** Devuelve al paciente a la espera de consulta; solo quien lo tomó puede liberarlo. */
 export async function liberarConsulta(
   pacienteId: string,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const userId = await currentUserId(client);
   const { error } = await client
     .from("pacientes")
     .update({ consulta_tomada_por: null })
     .eq("id", pacienteId)
-    .eq("consulta_tomada_por", user.id);
+    .eq("consulta_tomada_por", userId);
 
   if (error) {
     logger.error("Consultation release failed", {
@@ -256,12 +272,10 @@ export async function registrarConsulta(
   consulta: Partial<InsertConsulta>,
   diagnosticos: string[],
   medicamentos: Partial<InsertMedicamentoConsulta>[],
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
+  const userId = await currentUserId(client);
   const { data: paciente, error: errPac } = await client
     .from("pacientes")
     .select("brigada_id, consulta_tomada_por, consultas(id)")
@@ -274,7 +288,7 @@ export async function registrarConsulta(
   }
   if (paciente.consultas.length > 0)
     throw new Error("La consulta de este paciente ya fue registrada.");
-  if (paciente.consulta_tomada_por !== user.id)
+  if (paciente.consulta_tomada_por !== userId)
     throw new Error("La consulta de este paciente la tiene otro usuario.");
 
   const { data: newConsulta, error: errCons } = await client
@@ -364,7 +378,7 @@ function assertActualizado(
 export async function actualizarPaciente(
   pacienteId: string,
   datos: UpdatePaciente,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertActualizado(
@@ -381,7 +395,7 @@ export async function actualizarPaciente(
 export async function actualizarSignos(
   pacienteId: string,
   datos: Partial<InsertSignosVitales>,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertActualizado(
@@ -398,7 +412,7 @@ export async function actualizarSignos(
 export async function actualizarConsulta(
   consultaId: string,
   datos: Partial<InsertConsulta>,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertActualizado(
@@ -416,7 +430,7 @@ export async function actualizarConsulta(
 export async function actualizarDiagnosticos(
   consultaId: string,
   diagnosticos: string[],
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   const { data: nuevos, error: errIns } = await client
@@ -437,7 +451,7 @@ export async function actualizarDiagnosticos(
     .from("diagnosticos_consulta")
     .delete()
     .eq("consulta_id", consultaId)
-    .not("id", "in", `(${nuevos.map((d: { id: string }) => d.id).join(",")})`);
+    .not("id", "in", `(${nuevos.map((d) => d.id).join(",")})`);
   if (errDel) {
     logger.error("Diagnoses cleanup failed", {
       ...errorInfo(errDel),
@@ -448,7 +462,10 @@ export async function actualizarDiagnosticos(
   logger.info("Diagnoses updated", { consultaId, count: nuevos.length });
 }
 
-export async function deletePaciente(id: string, client: any = supabase) {
+export async function deletePaciente(
+  id: string,
+  client: SupabaseClient<Database> = supabase
+) {
   await assertPermission(PERMISSIONS.PACIENTES_DELETE);
   const { error } = await client.from("pacientes").delete().eq("id", id);
 

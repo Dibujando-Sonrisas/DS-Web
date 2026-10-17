@@ -2,11 +2,17 @@
 
 import { CircleAlert } from "lucide-react";
 import { type Dispatch, type SetStateAction, useRef } from "react";
-import type { Datos, Errores } from "@/lib/validation/expediente";
+import type { Profesional } from "@/lib/db/pacientes";
+import type {
+  ConsultationForm,
+  Errores,
+  PatientForm,
+  VitalSignsForm,
+} from "@/lib/validation/expediente";
 
 // Campos de cada etapa del expediente: los usan el asistente de nuevo expediente y la edición del expediente.
 
-type CamposProps<T = Datos> = {
+type CamposProps<T> = {
   value: T;
   setValue: (value: T) => void;
   errors: Errores;
@@ -49,16 +55,18 @@ export function useFieldFocus() {
 }
 
 /** Datos personales (la brigada se elige aparte: solo al ingresar al paciente). */
-export function CamposPaciente({
+export function CamposPaciente<T extends PatientForm>({
   value,
   setValue,
   errors,
   setErrors,
   registerRef,
-}: CamposProps) {
+}: CamposProps<T>) {
   // menor de 18 años: el responsable pasa a ser obligatorio
   const esMenor =
-    value.edad !== "" && !isNaN(Number(value.edad)) && Number(value.edad) < 18;
+    value.edad !== "" &&
+    !Number.isNaN(Number(value.edad)) &&
+    Number(value.edad) < 18;
 
   return (
     <>
@@ -248,7 +256,7 @@ export function CamposSignos({
   errors,
   setErrors,
   registerRef,
-}: CamposProps) {
+}: CamposProps<VitalSignsForm>) {
   return (
     <>
       <p className="form-hint">
@@ -460,7 +468,10 @@ export function CamposConsulta({
   registerRef,
   medicos,
   odontologos,
-}: CamposProps & { medicos: Datos[]; odontologos: Datos[] }) {
+}: CamposProps<ConsultationForm> & {
+  medicos: Profesional[];
+  odontologos: Profesional[];
+}) {
   // la consulta médica la atiende un médico; la odontológica, un odontólogo
   const esMedica = value.tipo_consulta === "Medica";
   const profesionales = esMedica ? medicos : odontologos;

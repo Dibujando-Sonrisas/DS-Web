@@ -1,11 +1,15 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { assertPermission } from "@/lib/auth/session";
+import type { Database } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import { supabase } from "../supabase";
 
 const logger = getLogger("db", "actividades");
 
-export async function getDashboardActividades(client: any = supabase) {
+export async function getDashboardActividades(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("dashboard_actividades")
     .select("*")
@@ -18,11 +22,14 @@ export async function getDashboardActividades(client: any = supabase) {
   return data;
 }
 
-export async function getActividades(client: any = supabase) {
+export async function getActividades(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("actividades_infantiles")
     .select(`
       id,
+      brigada_id,
       nombre,
       descripcion,
       cantidad_regalos,
@@ -38,10 +45,10 @@ export async function getActividades(client: any = supabase) {
     return [];
   }
 
-  return data.map((act: any) => {
+  return data.map((act) => {
     const totalNinos =
       act.participantes_actividad?.reduce(
-        (sum: number, p: any) => sum + p.cantidad_ninos,
+        (sum, p) => sum + p.cantidad_ninos,
         0
       ) || 0;
     return {
@@ -59,7 +66,7 @@ export async function createActividad(
     cantidad_regalos: number;
     responsable_id: string;
   },
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.ACTIVIDADES_CREATE);
   const { data, error } = await client
@@ -85,7 +92,7 @@ export async function createActividad(
 export async function addParticipantesActividad(
   actividadId: string,
   cantidadNinos: number,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.ACTIVIDADES_UPDATE);
   if (cantidadNinos <= 0) {

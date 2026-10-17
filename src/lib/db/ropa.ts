@@ -1,12 +1,22 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { assertPermission } from "@/lib/auth/session";
+import type { Database, TablesInsert } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import { generateCleanToken } from "../coding/codingUtils";
 import { supabase } from "../supabase";
 
 const logger = getLogger("db", "ropa");
 
-export async function getDashboardRopa(client: any = supabase) {
+// tipo_donacion only picks the code prefix; donaciones_ropa has no such column
+export type DonacionRopaInput = Omit<
+  TablesInsert<"donaciones_ropa">,
+  "codigo"
+> & { tipo_donacion?: string };
+
+export async function getDashboardRopa(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("dashboard_ropa")
     .select("*")
@@ -19,7 +29,9 @@ export async function getDashboardRopa(client: any = supabase) {
   return data;
 }
 
-export async function getResumenRopa(client: any = supabase) {
+export async function getResumenRopa(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("v_resumen_ropa")
     .select("*")
@@ -32,7 +44,9 @@ export async function getResumenRopa(client: any = supabase) {
   return data;
 }
 
-export async function getDonacionesRopa(client: any = supabase) {
+export async function getDonacionesRopa(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("donaciones_ropa")
     .select("*")
@@ -46,14 +60,14 @@ export async function getDonacionesRopa(client: any = supabase) {
 }
 
 export async function createDonacionRopa(
-  donacion: any,
-  client: any = supabase
+  { tipo_donacion, ...donacion }: DonacionRopaInput,
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.DONACIONES_CREATE);
   const anio = new Date().getFullYear();
   let pfx = "ROP";
-  if (donacion.tipo_donacion === "Dinero") pfx = "DIN";
-  if (donacion.tipo_donacion === "Juguetes") pfx = "JUG";
+  if (tipo_donacion === "Dinero") pfx = "DIN";
+  if (tipo_donacion === "Juguetes") pfx = "JUG";
 
   const codigo = `DON-${pfx}-${anio}-${generateCleanToken(5)}`;
   const { data, error } = await client
@@ -69,16 +83,19 @@ export async function createDonacionRopa(
   logger.info("Donation created", {
     donacionId: data.id,
     codigo,
-    tipo: donacion.tipo_donacion,
+    tipo: tipo_donacion,
   });
   return data;
 }
 
-export async function getEntregasRopa(client: any = supabase) {
+export async function getEntregasRopa(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("entregas_ropa")
     .select(`
       id,
+      brigada_id,
       cantidad_prendas,
       fecha_entrega,
       observaciones,
@@ -97,7 +114,7 @@ export async function getEntregasRopa(client: any = supabase) {
 
 export async function getPacientesBrigadaParaRopa(
   brigadaId: string,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   const { data: pacientes, error: errPacientes } = await client
     .from("pacientes")
@@ -132,15 +149,18 @@ export async function getPacientesBrigadaParaRopa(
   }
 
   return pacientes
-    .map((p: any) => ({
+    .map((p) => ({
       ...p,
       prendasRecibidas: consumos[p.id] || 0,
       prendasDisponibles: 2 - (consumos[p.id] || 0),
     }))
-    .filter((p: any) => p.prendasDisponibles > 0);
+    .filter((p) => p.prendasDisponibles > 0);
 }
 
-export async function createEntregaRopa(entrega: any, client: any = supabase) {
+export async function createEntregaRopa(
+  entrega: TablesInsert<"entregas_ropa">,
+  client: SupabaseClient<Database> = supabase
+) {
   await assertPermission(PERMISSIONS.DONACIONES_CREATE);
   if (entrega.cantidad_prendas <= 0 || entrega.cantidad_prendas > 2) {
     throw new Error("La cantidad debe ser 1 o 2.");
