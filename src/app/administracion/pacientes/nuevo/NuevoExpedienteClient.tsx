@@ -262,7 +262,7 @@ export function NuevoExpedienteClient({
     return nuevo.id;
   };
 
-  // Etapa 2: guarda los signos vitales (vacíos también: marcan la preclínica como hecha)
+  // Etapa 2: guarda los signos vitales; marca la preclínica como hecha
   const guardarPreclinica = async (id: string) => {
     await registrarPreclinica(id, signos);
     setSavedStep(2);
