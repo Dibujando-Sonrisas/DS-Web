@@ -57,5 +57,5 @@ export function sanitizeNumberInput(
 ): number {
   if (val === "" || val === null || val === undefined) return fallback;
   const num = Number(val);
-  return isNaN(num) ? fallback : num;
+  return Number.isNaN(num) ? fallback : num;
 }

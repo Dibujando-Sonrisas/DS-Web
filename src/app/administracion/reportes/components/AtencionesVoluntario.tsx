@@ -38,7 +38,7 @@ function parseHours(llegada?: string, salida?: string) {
   if (!llegada || !salida) return 5; // Default 5 hours per participation
   const [h1, m1] = llegada.split(":").map(Number);
   const [h2, m2] = salida.split(":").map(Number);
-  if (isNaN(h1) || isNaN(h2)) return 5;
+  if (Number.isNaN(h1) || Number.isNaN(h2)) return 5;
   const mins = h2 * 60 + m2 - (h1 * 60 + m1);
   return Math.max(0, Math.round((mins / 60) * 10) / 10);
 }
@@ -91,24 +91,7 @@ export default function AtencionesVoluntario() {
           }
         );
 
-        interface Participation {
-          asistio: boolean | null;
-          hora_llegada: string | null;
-          hora_salida: string | null;
-          brigadas: {
-            nombre: string | null;
-            fecha_brigada: string | null;
-          } | null;
-        }
-
-        interface PerfilRow {
-          id: string;
-          nombre_completo: string | null;
-          especialidades: { nombre: string } | null;
-          participaciones_voluntarios: Participation[] | null;
-        }
-
-        const { data: perfilesData, error } = (await supabase
+        const { data: perfilesData, error } = await supabase
           .from("perfiles")
           .select(`
             id,
@@ -125,14 +108,11 @@ export default function AtencionesVoluntario() {
                 fecha_brigada
               )
             )
-          `)) as unknown as {
-          data: PerfilRow[] | null;
-          error: { message: string } | null;
-        };
-        if (error) throw new Error(error.message);
+          `);
+        if (error) throw error;
 
         const formatted: AtencionVoluntarioData[] = (perfilesData || [])
-          .map((p: PerfilRow) => {
+          .map((p) => {
             const specName = p.especialidades?.nombre || "Voluntario General";
 
             // Determine patients/prescriptions attended strictly from DB counts
@@ -154,12 +134,12 @@ export default function AtencionesVoluntario() {
             if (attended === 0) return null;
 
             const participations = (p.participaciones_voluntarios || []).filter(
-              (part: Participation) => part.asistio
+              (part) => part.asistio
             );
 
             // Calculate total hours strictly from actual registered hours
             const hours = participations.reduce(
-              (acc: number, part: Participation) =>
+              (acc, part) =>
                 acc +
                 parseHours(
                   part.hora_llegada || undefined,
@@ -171,13 +151,11 @@ export default function AtencionesVoluntario() {
             // Find latest brigada strictly from actual participations
             let latestBrigadaName = "Ninguna";
             if (participations.length > 0) {
-              const sortedParts = [...participations].sort(
-                (a: Participation, b: Participation) => {
-                  const dateA = a.brigadas?.fecha_brigada || "";
-                  const dateB = b.brigadas?.fecha_brigada || "";
-                  return dateB.localeCompare(dateA);
-                }
-              );
+              const sortedParts = [...participations].sort((a, b) => {
+                const dateA = a.brigadas?.fecha_brigada || "";
+                const dateB = b.brigadas?.fecha_brigada || "";
+                return dateB.localeCompare(dateA);
+              });
               latestBrigadaName = sortedParts[0].brigadas?.nombre || "N/A";
             }
 
@@ -254,7 +232,7 @@ export default function AtencionesVoluntario() {
 
           if (error) throw error;
 
-          const formatted: AtencionDetail[] = (data || []).map((d: any) => {
+          const formatted: AtencionDetail[] = (data || []).map((d) => {
             const paciente = d.consulta?.paciente;
             const brigada = d.consulta?.brigada;
             const pNombre = paciente
@@ -301,7 +279,7 @@ export default function AtencionesVoluntario() {
 
           if (error) throw error;
 
-          const formatted: AtencionDetail[] = (data || []).map((c: any) => {
+          const formatted: AtencionDetail[] = (data || []).map((c) => {
             const paciente = c.paciente;
             const brigada = c.brigada;
             const pNombre = paciente
@@ -340,20 +318,6 @@ export default function AtencionesVoluntario() {
 
   const selectedVol = voluntarios.find((v) => v.id === voluntarioSeleccionado);
   const totalPages = Math.ceil(atenciones.length / itemsPerPage);
-
-  const [fechaActualCompleta, setFechaActualCompleta] = useState("");
-
-  useEffect(() => {
-    setFechaActualCompleta(
-      new Date().toLocaleDateString("es-HN", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
-  }, []);
 
   const handlePrint = () => {
     const originalTitle = document.title;

@@ -43,7 +43,7 @@ export default function ResumenInsumos() {
           .order("fecha", { ascending: false });
 
         if (!viewError && viewData) {
-          const formatted: BrigadeReportData[] = viewData.map((row: any) => ({
+          const formatted: BrigadeReportData[] = viewData.map((row) => ({
             brigada_id: row.brigada_id || "",
             brigada_nombre: row.brigada_nombre || "Sin Nombre",
             fecha: row.fecha || "",
@@ -86,7 +86,7 @@ export default function ResumenInsumos() {
         ]);
 
         const medMap: Record<string, number> = {};
-        (farmaciaData || []).forEach((f: any) => {
+        (farmaciaData || []).forEach((f) => {
           const bId = f.consultas?.brigada_id;
           if (bId) {
             medMap[bId] = (medMap[bId] || 0) + Number(f.cantidad || 0);
@@ -94,7 +94,7 @@ export default function ResumenInsumos() {
         });
 
         const ropaMap: Record<string, number> = {};
-        (ropaData || []).forEach((r: any) => {
+        (ropaData || []).forEach((r) => {
           if (r.brigada_id) {
             ropaMap[r.brigada_id] =
               (ropaMap[r.brigada_id] || 0) + Number(r.cantidad_prendas || 0);
@@ -102,14 +102,14 @@ export default function ResumenInsumos() {
         });
 
         const jugMap: Record<string, number> = {};
-        (juguetesData || []).forEach((j: any) => {
+        (juguetesData || []).forEach((j) => {
           if (j.brigada_id) {
             jugMap[j.brigada_id] =
               (jugMap[j.brigada_id] || 0) + Number(j.cantidad_regalos || 0);
           }
         });
 
-        const list: BrigadeReportData[] = (brigadas || []).map((b: any) => {
+        const list: BrigadeReportData[] = (brigadas || []).map((b) => {
           const tMed = medMap[b.id] || 0;
           const tRopa = ropaMap[b.id] || 0;
           const tJug = jugMap[b.id] || 0;

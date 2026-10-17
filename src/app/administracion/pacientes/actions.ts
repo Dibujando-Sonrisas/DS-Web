@@ -23,11 +23,14 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import {
   assertValido,
-  type Datos,
+  type ConsultationForm,
   limpiarConsulta,
   limpiarPaciente,
   limpiarSignos,
   listaDiagnosticos,
+  type PatientForm,
+  type PatientIntakeForm,
+  type VitalSignsForm,
   validarConsulta,
   validarDiagnosticos,
   validarPaciente,
@@ -68,7 +71,7 @@ export async function getProfesionalesConsultaAction() {
   return await getProfesionalesConsultaDB(supabase);
 }
 
-export async function registrarPacienteAction(paciente: Datos) {
+export async function registrarPacienteAction(paciente: PatientIntakeForm) {
   await assertPermission(PERMISSIONS.PACIENTES_CREATE);
   if (!paciente.brigada_id)
     throw new Error("Debe seleccionar una brigada activa obligatoriamente.");
@@ -89,7 +92,7 @@ export async function registrarPacienteAction(paciente: Datos) {
 
 export async function registrarPreclinicaAction(
   pacienteId: string,
-  signos: Datos
+  signos: VitalSignsForm
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertValido(validarSignos(signos));
@@ -115,7 +118,7 @@ export async function liberarConsultaAction(pacienteId: string) {
 
 export async function registrarConsultaAction(
   pacienteId: string,
-  consulta: Datos,
+  consulta: ConsultationForm,
   diagnosticos: string,
   medicamentos: Partial<InsertMedicamentoConsulta>[]
 ) {
@@ -139,7 +142,7 @@ export async function registrarConsultaAction(
 
 export async function actualizarPacienteAction(
   pacienteId: string,
-  datos: Datos
+  datos: PatientForm
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertValido(validarPaciente(datos));
@@ -148,7 +151,10 @@ export async function actualizarPacienteAction(
   revalidatePath("/administracion/pacientes");
 }
 
-export async function actualizarSignosAction(pacienteId: string, datos: Datos) {
+export async function actualizarSignosAction(
+  pacienteId: string,
+  datos: VitalSignsForm
+) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertValido(validarSignos(datos));
   const supabase = await getAuthedSupabase();
@@ -157,7 +163,7 @@ export async function actualizarSignosAction(pacienteId: string, datos: Datos) {
 
 export async function actualizarConsultaAction(
   consultaId: string,
-  datos: Datos
+  datos: ConsultationForm
 ) {
   await assertPermission(PERMISSIONS.PACIENTES_UPDATE);
   assertValido(validarConsulta(datos));

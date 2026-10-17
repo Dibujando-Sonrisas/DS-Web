@@ -47,8 +47,9 @@ export async function loginAction(
   logger.info("User signed in", { userId: data.user.id });
 
   const next = (formData.get("next") as string)?.trim();
-  const safeNext =
-    next && next.startsWith("/administracion") ? next : "/administracion";
+  const safeNext = next?.startsWith("/administracion")
+    ? next
+    : "/administracion";
   redirect(safeNext);
 }
 

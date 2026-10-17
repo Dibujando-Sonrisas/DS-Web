@@ -2,6 +2,7 @@ import { CircleAlert, LoaderCircle, Tags } from "lucide-react";
 import type React from "react";
 import { useRef, useState } from "react";
 import Combobox from "@/app/components/Combobox";
+import type { Tables } from "@/lib/database.types";
 import type {
   CategoriaInventario,
   InsertMedicamento,
@@ -10,7 +11,7 @@ import type {
 import styles from "@/styles/pages/admin.module.css";
 
 interface MedicamentoFormProps {
-  initialData?: any;
+  initialData?: Tables<"stock_actual"> | null;
   categorias?: CategoriaInventario[];
   onSubmit: (
     data: InsertMedicamento,
@@ -30,7 +31,7 @@ export function MedicamentoForm({
   onManageCategorias,
   isLoading,
 }: MedicamentoFormProps) {
-  const isEditing = Boolean(initialData?.id || initialData?.medicamento_id);
+  const isEditing = Boolean(initialData?.medicamento_id);
   const categoriaRef = useRef<HTMLInputElement>(null);
   const [categoriaError, setCategoriaError] = useState(false);
 
@@ -46,7 +47,7 @@ export function MedicamentoForm({
         : 10,
     categoria_id: initialData?.categoria_id || "",
     codigo: initialData?.codigo || "",
-  } as any);
+  });
 
   // solo las categorías del tipo elegido; si cambia el tipo, la elegida deja de verse y hay que escoger otra
   const tipo = (formData.tipo_recurso || "medicamento") as TipoRecurso;

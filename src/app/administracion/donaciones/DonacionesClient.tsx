@@ -17,6 +17,7 @@ import { useToast } from "@/app/administracion/components/AdminToast";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import StatCard from "@/app/administracion/components/StatCard";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { Tables } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
 import {
@@ -31,19 +32,35 @@ import {
 
 const logger = getLogger("donaciones", "client");
 
+type Resumen = Awaited<ReturnType<typeof getResumenRopa>>;
+type Dashboard = Awaited<ReturnType<typeof getDashboardRopa>>;
+type Donacion = Awaited<ReturnType<typeof getDonacionesRopa>>[number];
+type EntregaRopa = Awaited<ReturnType<typeof getEntregasRopa>>[number];
+type PacienteElegible = Awaited<
+  ReturnType<typeof getPacientesBrigadaParaRopa>
+>[number];
+type Brigada = Tables<"brigadas">;
+
+// the table has no type column: createDonacionRopa encodes it in the code prefix
+function tipoDonacion(codigo: string) {
+  if (codigo.startsWith("DON-DIN-")) return "Dinero";
+  if (codigo.startsWith("DON-JUG-")) return "Juguetes";
+  return "Ropa";
+}
+
 export function DonacionesClient({ userId }: { userId: string }) {
   const { can } = usePermissions();
-  const [resumen, setResumen] = useState<any>(null);
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [donaciones, setDonaciones] = useState<any[]>([]);
-  const [entregas, setEntregas] = useState<any[]>([]);
+  const [resumen, setResumen] = useState<Resumen>(null);
+  const [dashboard, setDashboard] = useState<Dashboard>(null);
+  const [donaciones, setDonaciones] = useState<Donacion[]>([]);
+  const [entregas, setEntregas] = useState<EntregaRopa[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"donaciones" | "entregas">(
     "donaciones"
   );
   const [filtroBrigada, setFiltroBrigada] = useState<string>("todas");
-  const [brigadasActivas, setBrigadasActivas] = useState<any[]>([]);
-  const [todasLasBrigadas, setTodasLasBrigadas] = useState<any[]>([]);
+  const [brigadasActivas, setBrigadasActivas] = useState<Brigada[]>([]);
+  const [todasLasBrigadas, setTodasLasBrigadas] = useState<Brigada[]>([]);
   const [currentPageDonaciones, setCurrentPageDonaciones] = useState(1);
   const [currentPageEntregas, setCurrentPageEntregas] = useState(1);
   const itemsPerPage = 20;
@@ -68,7 +85,9 @@ export function DonacionesClient({ userId }: { userId: string }) {
 
   // Entrega Modal
   const [isEntregaModalOpen, setIsEntregaModalOpen] = useState(false);
-  const [pacientesElegibles, setPacientesElegibles] = useState<any[]>([]);
+  const [pacientesElegibles, setPacientesElegibles] = useState<
+    PacienteElegible[]
+  >([]);
   const [entregaForm, setEntregaForm] = useState({
     brigada_id: "",
     paciente_id: "",
@@ -122,9 +141,12 @@ export function DonacionesClient({ userId }: { userId: string }) {
       setIsDonacionModalOpen(false);
       showToast("Donación registrada correctamente", "success");
       fetchData();
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Donation registration failed", errorInfo(e));
-      showToast(e.message, "error");
+      showToast(
+        e instanceof Error ? e.message : "No se pudo crear la donación.",
+        "error"
+      );
     }
   };
 
@@ -162,12 +184,12 @@ export function DonacionesClient({ userId }: { userId: string }) {
     try {
       const pacs = await getPacientesBrigadaParaRopa(brigadaId);
       setPacientesElegibles(pacs);
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Eligible patients load failed", {
         ...errorInfo(e),
         brigadaId,
       });
-      alert("Error cargando pacientes: " + e.message);
+      alert(`Error cargando pacientes: ${e instanceof Error ? e.message : ""}`);
     } finally {
       setIsFetchingPacientes(false);
     }
@@ -198,12 +220,17 @@ export function DonacionesClient({ userId }: { userId: string }) {
       setIsEntregaModalOpen(false);
       showToast("Entrega de ropa registrada", "success");
       fetchData();
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Clothing delivery failed", {
         ...errorInfo(e),
         brigadaId: entregaForm.brigada_id,
       });
-      showToast(e.message, "error");
+      showToast(
+        e instanceof Error
+          ? e.message
+          : "No se pudo registrar la entrega de ropa.",
+        "error"
+      );
     }
   };
 
@@ -375,7 +402,7 @@ export function DonacionesClient({ userId }: { userId: string }) {
                             <span
                               className={`${styles.badge} ${styles.badgeInfo}`}
                             >
-                              {d.tipo_donacion || "Ropa"}
+                              {tipoDonacion(d.codigo)}
                             </span>
                           </td>
                           <td>{d.nombre_donante || "-"}</td>
@@ -416,7 +443,9 @@ export function DonacionesClient({ userId }: { userId: string }) {
                       .map((e) => (
                         <tr key={e.id}>
                           <td className={styles.nowrap}>
-                            {new Date(e.fecha_entrega).toLocaleDateString()}
+                            {e.fecha_entrega
+                              ? new Date(e.fecha_entrega).toLocaleDateString()
+                              : "-"}
                           </td>
                           <td>{e.brigadas?.nombre}</td>
                           <td className={styles.cellMain}>

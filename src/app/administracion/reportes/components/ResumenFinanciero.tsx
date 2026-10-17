@@ -70,7 +70,7 @@ export default function ResumenFinanciero() {
           .order("mes", { ascending: false });
 
         if (!viewError && viewData) {
-          const formatted: FinancialPeriodData[] = viewData.map((row: any) => ({
+          const formatted: FinancialPeriodData[] = viewData.map((row) => ({
             anio: Number(row.anio || 0),
             mes: Number(row.mes || 0),
             total_ventas: Number(row.total_ventas || 0),
@@ -99,7 +99,7 @@ export default function ResumenFinanciero() {
 
         const map: Record<string, FinancialPeriodData> = {};
 
-        (salesData || []).forEach((s: any) => {
+        (salesData || []).forEach((s) => {
           if (!s.fecha) return;
           const d = new Date(s.fecha);
           const a = d.getFullYear();
@@ -120,7 +120,7 @@ export default function ResumenFinanciero() {
           map[key].cantidad_ventas += 1;
         });
 
-        (donationsData || []).forEach((d: any) => {
+        (donationsData || []).forEach((d) => {
           if (!d.fecha_donacion) return;
           const dt = new Date(d.fecha_donacion);
           const a = dt.getFullYear();

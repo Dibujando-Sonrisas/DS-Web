@@ -44,13 +44,13 @@ export default async function VoluntariosPage() {
         </Link>
       </PageHeader>
 
-      <VolunteerStatsCards voluntarios={voluntarios as any[]} />
+      <VolunteerStatsCards voluntarios={voluntarios} />
 
       <SolicitudesGenerales
         solicitudes={(solicitudes ?? []) as InscripcionRow[]}
       />
 
-      <VoluntariosTable voluntarios={voluntarios as any[]} />
+      <VoluntariosTable voluntarios={voluntarios} />
     </div>
   );
 }

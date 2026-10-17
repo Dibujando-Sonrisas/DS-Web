@@ -57,10 +57,6 @@
   color: var(--primaryDark);
 }
 
-.navItem[aria-current="page"] svg {
-  color: var(--primaryColor);
-}
-
 /* escritorio: columna lateral fija junto a la sección */
 @media (min-width: 1024px) {
   .layout {
@@ -346,6 +342,10 @@
   font-size: 1.25rem;
   color: var(--gray);
   font-variant-numeric: tabular-nums;
+}
+
+.navItem[aria-current="page"] svg {
+  color: var(--primaryColor);
 }
 
 /* en móvil: estado y duración debajo del título */

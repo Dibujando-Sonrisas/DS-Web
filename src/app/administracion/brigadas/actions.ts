@@ -1,10 +1,11 @@
 "use server";
 
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { assertPermission } from "@/lib/auth/session";
 import { aceptarSolicitudVoluntario } from "@/lib/cuentas";
+import { Constants, type Enums } from "@/lib/database.types";
 import type { EstadoBrigada } from "@/lib/db/brigadas";
 import { errorInfo, getLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
@@ -54,7 +55,7 @@ export async function generarCodigoBrigada(
     let currentYear = new Date().getFullYear();
     if (fechaStr) {
       const parsed = new Date(fechaStr);
-      if (!isNaN(parsed.getTime())) {
+      if (!Number.isNaN(parsed.getTime())) {
         currentYear = parsed.getFullYear();
       }
     }
@@ -68,7 +69,7 @@ export async function generarCodigoBrigada(
         const matches = b.codigo.match(/\d+/g);
         if (matches && matches.length > 0) {
           const lastNum = parseInt(matches[matches.length - 1], 10);
-          if (!isNaN(lastNum) && lastNum > maxNum) {
+          if (!Number.isNaN(lastNum) && lastNum > maxNum) {
             maxNum = lastNum;
           }
         }
@@ -357,7 +358,7 @@ export async function registrarGasto(
   data: {
     id?: string;
     brigada_id: string;
-    categoria: "medicamentos" | "alimentacion" | "publicidad" | "otros";
+    categoria: Enums<"categoria_gasto">;
     descripcion: string;
     monto: number;
     fecha_gasto: string; // ISO Date String
@@ -571,6 +572,18 @@ export async function asignarVoluntario(
         return { error: "No se pudo quitar la asignación." };
       }
     } else {
+      const area = Constants.public.Enums.area_voluntariado.find(
+        (value) => value === areaAsignada
+      );
+      if (!area) {
+        logger.warning("Volunteer assignment rejected", {
+          reason: "invalid area",
+          brigadaId,
+          perfilId,
+        });
+        return { error: "Selecciona un área válida." };
+      }
+
       // Upsert asignación
       const { data: existingAssignment } = await supabase
         .from("asignaciones_voluntarios")
@@ -582,7 +595,7 @@ export async function asignarVoluntario(
       if (existingAssignment) {
         const { error } = await supabase
           .from("asignaciones_voluntarios")
-          .update({ area_asignada: areaAsignada as any })
+          .update({ area_asignada: area })
           .eq("id", existingAssignment.id);
         if (error) {
           logger.error("Volunteer assignment update failed", {
@@ -597,7 +610,7 @@ export async function asignarVoluntario(
           .insert({
             brigada_id: brigadaId,
             perfil_id: perfilId,
-            area_asignada: areaAsignada as any,
+            area_asignada: area,
           });
         if (error) {
           logger.error("Volunteer assignment insert failed", {

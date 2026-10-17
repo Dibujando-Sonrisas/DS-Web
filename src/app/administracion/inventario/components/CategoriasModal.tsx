@@ -32,17 +32,27 @@ import {
   updateCategoriaAction as updateCategoria,
 } from "../actions";
 
+const TIPO_LABELS: Record<TipoRecurso, string> = {
+  medicamento: "Fármacos",
+  insumo_medico: "Insumos",
+  material_brigada: "Material Brigada",
+};
+
 // mismas pestañas que el filtro de la tabla de inventario
 const TIPOS = [
-  { id: "medicamento", label: "Fármacos", icon: <Pill aria-hidden="true" /> },
+  {
+    id: "medicamento",
+    label: TIPO_LABELS.medicamento,
+    icon: <Pill aria-hidden="true" />,
+  },
   {
     id: "insumo_medico",
-    label: "Insumos",
+    label: TIPO_LABELS.insumo_medico,
     icon: <Syringe aria-hidden="true" />,
   },
   {
     id: "material_brigada",
-    label: "Material Brigada",
+    label: TIPO_LABELS.material_brigada,
     icon: <Tent aria-hidden="true" />,
   },
 ] as const;
@@ -74,7 +84,7 @@ export function CategoriasModal({
   } | null>(null);
   const [borrando, setBorrando] = useState<CategoriaInventario | null>(null);
 
-  const tipoActual = TIPOS.find((t) => t.id === tipo)!;
+  const tipoLabel = TIPO_LABELS[tipo];
   const lista = categorias.filter((c) => c.tipo_recurso === tipo);
 
   // ejecuta la acción; con éxito recarga la lista y avisa
@@ -97,7 +107,7 @@ export function CategoriasModal({
     if (!nombre) return;
     guardar(
       () => createCategoria(nombre, tipo),
-      `Categoría «${nombre}» agregada a ${tipoActual.label}.`,
+      `Categoría «${nombre}» agregada a ${tipoLabel}.`,
       () => setNueva("")
     );
   };
@@ -172,12 +182,12 @@ export function CategoriasModal({
           {can(PERMISSIONS.INVENTARIO_CREATE) && (
             <form className={styles.inlineAdd} onSubmit={agregar}>
               <label className="sr-only" htmlFor="categoria-nueva">
-                Nueva categoría de {tipoActual.label}
+                Nueva categoría de {tipoLabel}
               </label>
               <input
                 id="categoria-nueva"
                 className="form-input form-input-sm"
-                placeholder={`Nueva categoría de ${tipoActual.label.toLowerCase()}`}
+                placeholder={`Nueva categoría de ${tipoLabel.toLowerCase()}`}
                 maxLength={100}
                 autoComplete="off"
                 value={nueva}
@@ -201,7 +211,7 @@ export function CategoriasModal({
           {lista.length === 0 ? (
             <EmptyState
               icon={<Tags />}
-              title={`Aún no hay categorías de ${tipoActual.label.toLowerCase()}`}
+              title={`Aún no hay categorías de ${tipoLabel.toLowerCase()}`}
               dashed
             >
               Las que agregues aparecerán al crear un recurso de este tipo.
@@ -332,7 +342,7 @@ export function CategoriasModal({
           onConfirm={eliminar}
         >
           La categoría <strong>{borrando.nombre}</strong> dejará de aparecer en{" "}
-          {tipoActual.label}.
+          {tipoLabel}.
         </ConfirmDialog>
       )}
     </>

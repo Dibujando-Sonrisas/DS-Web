@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { assertPermission } from "@/lib/auth/session";
+import type { TablesInsert } from "@/lib/database.types";
 import {
   createCategoriaProducto as createCategoriaProductoDB,
   createProducto as createProductoDB,
@@ -56,7 +57,9 @@ export async function getBajoStockAction() {
   return await getBajoStockDB(supabase);
 }
 
-export async function crearCategoriaProductoAction(categoria: any) {
+export async function crearCategoriaProductoAction(
+  categoria: TablesInsert<"categorias_productos">
+) {
   await assertPermission(PERMISSIONS.VENTAS_CREATE);
   const supabase = await getAuthedSupabase();
   const result = await createCategoriaProductoDB(categoria, supabase);
@@ -64,7 +67,7 @@ export async function crearCategoriaProductoAction(categoria: any) {
   return result;
 }
 
-export async function crearProductoAction(producto: any) {
+export async function crearProductoAction(producto: TablesInsert<"productos">) {
   await assertPermission(PERMISSIONS.VENTAS_CREATE);
   const supabase = await getAuthedSupabase();
   const result = await createProductoDB(producto, supabase);

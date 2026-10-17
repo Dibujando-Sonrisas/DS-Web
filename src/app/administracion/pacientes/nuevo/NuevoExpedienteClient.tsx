@@ -21,13 +21,19 @@ import { getBrigadasAction as getBrigadas } from "@/app/administracion/brigadas/
 import { useToast } from "@/app/administracion/components/AdminToast";
 import { getMedicamentosAction as getMedicamentos } from "@/app/administracion/inventario/actions";
 import Combobox from "@/app/components/Combobox";
+import type { Tables } from "@/lib/database.types";
+import type { Profesional } from "@/lib/db/pacientes";
 import { errorInfo, getLogger } from "@/lib/logger";
 import {
   CAMPOS_CONSULTA,
   CAMPOS_PACIENTE,
   CAMPOS_SIGNOS,
+  type ConsultationForm,
   type Errores,
-  sinNulos,
+  type PatientIntakeForm,
+  toPatientForm,
+  toVitalSignsForm,
+  type VitalSignsForm,
   validarConsulta,
   validarDiagnosticos,
   validarPaciente,
@@ -66,6 +72,15 @@ const STEPS = [
 
 const logger = getLogger("pacientes", "client");
 
+type Brigade = Tables<"brigadas">;
+type StockItem = Tables<"stock_actual">;
+type PrescriptionItem = {
+  medicamento_id: string;
+  nombre: string;
+  cantidad: number;
+  indicaciones: string;
+};
+
 export function NuevoExpedienteClient({
   pacienteId: pacienteInicial,
 }: {
@@ -86,10 +101,10 @@ export function NuevoExpedienteClient({
   const [loadError, setLoadError] = useState(false);
 
   // Data sources
-  const [brigadas, setBrigadas] = useState<any[]>([]);
-  const [medicos, setMedicos] = useState<any[]>([]);
-  const [odontologos, setOdontologos] = useState<any[]>([]);
-  const [medicamentosList, setMedicamentosList] = useState<any[]>([]);
+  const [brigadas, setBrigadas] = useState<Brigade[]>([]);
+  const [medicos, setMedicos] = useState<Profesional[]>([]);
+  const [odontologos, setOdontologos] = useState<Profesional[]>([]);
+  const [medicamentosList, setMedicamentosList] = useState<StockItem[]>([]);
 
   // Form State
   const [isLoading, setIsLoading] = useState(true);
@@ -102,12 +117,14 @@ export function NuevoExpedienteClient({
   const { registerRef, focusFirstError } = useFieldFocus();
 
   // 1. Paciente
-  const [paciente, setPaciente] = useState<any>({
+  const [paciente, setPaciente] = useState<
+    PatientIntakeForm & { codigo: string }
+  >({
     brigada_id: "",
+    codigo: "",
     nombres: "",
     apellidos: "",
     sexo: "Masculino",
-    fecha_nacimiento: "",
     edad: "",
     telefono: "",
     comunidad: "",
@@ -115,7 +132,7 @@ export function NuevoExpedienteClient({
   });
 
   // 2. Signos
-  const [signos, setSignos] = useState<any>({
+  const [signos, setSignos] = useState<VitalSignsForm>({
     peso: "",
     talla: "",
     temperatura: "",
@@ -128,21 +145,20 @@ export function NuevoExpedienteClient({
   });
 
   // 3. Consulta
-  const [consulta, setConsulta] = useState<any>({
+  const [consulta, setConsulta] = useState<ConsultationForm>({
     tipo_consulta: "Medica",
     medico_id: "",
     motivo_consulta: "",
     enfermedad_actual: "",
     tratamiento: "",
     requiere_postclinica: false,
-    observaciones: "",
   });
 
   // 4. Diagnosticos
   const [diagnosticosStr, setDiagnosticosStr] = useState("");
 
   // 5. Medicamentos
-  const [medsRecetados, setMedsRecetados] = useState<any[]>([]);
+  const [medsRecetados, setMedsRecetados] = useState<PrescriptionItem[]>([]);
   const [newMedId, setNewMedId] = useState("");
   const [newMedCantidad, setNewMedCantidad] = useState("1");
   const [newMedIndicaciones, setNewMedIndicaciones] = useState("");
@@ -167,19 +183,18 @@ export function NuevoExpedienteClient({
           : 0;
         // abrir la consulta toma al paciente; si ya lo tiene otro usuario, se avisa quién
         const ocupado =
-          etapa === 2 ? await tomarConsulta(pacienteInicial!) : null;
+          etapa === 2 && pacienteInicial
+            ? await tomarConsulta(pacienteInicial)
+            : null;
         if (mounted) {
           // expediente ya ingresado: se cargan sus etapas y se abre la que sigue
           if (det) {
-            setPaciente((prev: Record<string, unknown>) => ({
-              ...prev,
-              ...sinNulos(det.paciente),
-            }));
-            if (det.signos)
-              setSignos((prev: Record<string, unknown>) => ({
-                ...prev,
-                ...sinNulos(det.signos),
-              }));
+            setPaciente({
+              ...toPatientForm(det.paciente),
+              brigada_id: det.paciente.brigada_id,
+              codigo: det.paciente.codigo,
+            });
+            if (det.signos) setSignos(toVitalSignsForm(det.signos));
             setSavedStep(etapa);
             setActiveTab(etapa + 1);
             setTomada(etapa === 2 && !ocupado);
@@ -188,11 +203,11 @@ export function NuevoExpedienteClient({
 
           const activeBrigadas =
             bRes.data?.filter(
-              (b: any) => b.estado !== "finalizada" && b.estado !== "cancelada"
+              (b) => b.estado !== "finalizada" && b.estado !== "cancelada"
             ) || [];
           setBrigadas(activeBrigadas);
           const prescribibles = (mRes || []).filter(
-            (m: any) => m.tipo_recurso !== "material_brigada"
+            (m: StockItem) => m.tipo_recurso !== "material_brigada"
           );
           setMedicamentosList(prescribibles);
 
@@ -252,10 +267,7 @@ export function NuevoExpedienteClient({
   const guardarPaciente = async (): Promise<string> => {
     const nuevo = await registrarPaciente(paciente);
     setPacienteId(nuevo.id);
-    setPaciente((prev: Record<string, unknown>) => ({
-      ...prev,
-      codigo: nuevo.codigo,
-    }));
+    setPaciente((prev) => ({ ...prev, codigo: nuevo.codigo }));
     setSavedStep(1);
     // si se recarga la página, continúa este expediente en lugar de ingresar al paciente otra vez
     window.history.replaceState(null, "", `?paciente=${nuevo.id}`);
@@ -276,7 +288,8 @@ export function NuevoExpedienteClient({
     setIsSubmitting(true);
     try {
       if (step === 1) return await guardarPaciente();
-      await guardarPreclinica(id!);
+      if (!id) throw new Error("Patient id missing for preclinic stage");
+      await guardarPreclinica(id);
       return id;
     } catch (e) {
       logger.error("Patient record stage save failed", {
@@ -329,9 +342,10 @@ export function NuevoExpedienteClient({
 
   // Salir sin terminar la consulta: el paciente vuelve a esperar y otro usuario puede tomarlo
   const liberar = async () => {
+    if (!pacienteId) return;
     setIsSubmitting(true);
     try {
-      await liberarConsulta(pacienteId!);
+      await liberarConsulta(pacienteId);
       salir("Paciente liberado: vuelve a quedar en espera de consulta.");
     } catch (e) {
       logger.error("Consultation release failed", {
@@ -373,7 +387,7 @@ export function NuevoExpedienteClient({
       }
     }
 
-    if (targetTab >= 3 && !tomada && !(await tomar(id!))) return;
+    if (targetTab >= 3 && !tomada && (!id || !(await tomar(id)))) return;
 
     setErrors({});
     setActiveTab(targetTab);
@@ -400,7 +414,7 @@ export function NuevoExpedienteClient({
     const numCant = Number(newMedCantidad);
     if (
       !newMedCantidad ||
-      isNaN(numCant) ||
+      Number.isNaN(numCant) ||
       !Number.isInteger(numCant) ||
       numCant <= 0
     ) {
@@ -423,12 +437,10 @@ export function NuevoExpedienteClient({
       return;
     }
 
-    const m = medicamentosList.find(
-      (x) => x.medicamento_id === newMedId || x.id === newMedId
-    );
+    const m = medicamentosList.find((x) => x.medicamento_id === newMedId);
     if (!m) return;
 
-    const targetId = m.medicamento_id || m.id;
+    const targetId = newMedId;
     const isDuplicate = medsRecetados.some(
       (x) => x.medicamento_id === targetId
     );
@@ -446,7 +458,7 @@ export function NuevoExpedienteClient({
       ...prev,
       {
         medicamento_id: targetId,
-        nombre: m.nombre,
+        nombre: m.nombre ?? "",
         cantidad: numCant,
         indicaciones: indicClean,
       },
@@ -719,8 +731,8 @@ export function NuevoExpedienteClient({
                         placeholder="Buscar medicamento..."
                         emptyText="Ningún medicamento coincide con la búsqueda."
                         options={medicamentosList.map((m) => ({
-                          value: m.medicamento_id || m.id,
-                          label: m.nombre,
+                          value: m.medicamento_id ?? "",
+                          label: m.nombre ?? "",
                           detail: `Stock: ${m.stock_total || 0}`,
                         }))}
                         value={newMedId}

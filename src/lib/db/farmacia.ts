@@ -1,11 +1,32 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { assertPermission } from "@/lib/auth/session";
+import type { Database, TablesInsert } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import { supabase } from "../supabase";
 
 const logger = getLogger("db", "farmacia");
 
-export async function getDashboardFarmacia(client: any = supabase) {
+export type FefoSuggestion = {
+  medicamento_id: string;
+  medicamento_nombre: string;
+  lote_id: string;
+  lote_numero: string;
+  cantidad_requerida: number;
+  cantidad_sugerida: number;
+  stock_disponible: number;
+  error?: string;
+  warning?: string;
+};
+
+export type EntregaFarmaciaItem = Pick<
+  FefoSuggestion,
+  "medicamento_id" | "medicamento_nombre" | "lote_id" | "cantidad_sugerida"
+>;
+
+export async function getDashboardFarmacia(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("dashboard_farmacia")
     .select("*")
@@ -18,7 +39,9 @@ export async function getDashboardFarmacia(client: any = supabase) {
   return data;
 }
 
-export async function getEntregasFarmacia(client: any = supabase) {
+export async function getEntregasFarmacia(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("v_entregas_farmacia")
     .select("*")
@@ -31,7 +54,9 @@ export async function getEntregasFarmacia(client: any = supabase) {
   return data;
 }
 
-export async function getRecetasPendientes(client: any = supabase) {
+export async function getRecetasPendientes(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data: consultas, error: errorConsultas } = await client
     .from("consultas")
     .select(`
@@ -58,9 +83,9 @@ export async function getRecetasPendientes(client: any = supabase) {
     return [];
   }
 
-  const entregadasSet = new Set(entregas.map((e: any) => e.consulta_id));
+  const entregadasSet = new Set(entregas.map((e) => e.consulta_id));
 
-  const pendientes = consultas.filter((c: any) => {
+  const pendientes = consultas.filter((c) => {
     return (
       c.medicamentos_consulta &&
       c.medicamentos_consulta.length > 0 &&
@@ -73,7 +98,7 @@ export async function getRecetasPendientes(client: any = supabase) {
 
 export async function getFefoSuggestions(
   consultaId: string,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   const { data: medsReq, error: errMeds } = await client
     .from("medicamentos_consulta")
@@ -103,12 +128,11 @@ export async function getFefoSuggestions(
   for (const req of medsReq) {
     const medId = req.medicamento_id;
     const qty = Number(req.cantidad) || 0;
-    const medNombre =
-      (req.medicamentos as any)?.nombre || "Medicamento Desconocido";
+    const medNombre = req.medicamentos?.nombre || "Medicamento Desconocido";
     const indic = req.indicaciones || "";
 
-    if (mapMeds.has(medId)) {
-      const prev = mapMeds.get(medId)!;
+    const prev = mapMeds.get(medId);
+    if (prev) {
       prev.cantidad += qty;
       if (indic) prev.indicaciones += ` / ${indic}`;
     } else {
@@ -121,7 +145,7 @@ export async function getFefoSuggestions(
     }
   }
 
-  const suggestions: any[] = [];
+  const suggestions: FefoSuggestion[] = [];
 
   for (const [medId, item] of mapMeds.entries()) {
     const requiredQty = item.cantidad;
@@ -135,7 +159,7 @@ export async function getFefoSuggestions(
       .order("fecha_vencimiento", { ascending: true });
 
     const totalStock = (lotes || []).reduce(
-      (acc: number, l: any) => acc + Number(l.cantidad_actual),
+      (acc, l) => acc + Number(l.cantidad_actual),
       0
     );
     const primerLote = lotes && lotes.length > 0 ? lotes[0] : null;
@@ -160,11 +184,11 @@ export async function getFefoSuggestions(
 }
 
 export async function registrarEntregaManual(
-  entregas: any[],
+  entregas: EntregaFarmaciaItem[],
   observaciones: string,
   consultaId: string,
   entregadoPor: string,
-  client: any = supabase
+  client: SupabaseClient<Database> = supabase
 ) {
   await assertPermission(PERMISSIONS.FARMACIA_PROCESS);
 
@@ -178,7 +202,7 @@ export async function registrarEntregaManual(
     throw new Error("Esta receta ya fue procesada y entregada anteriormente.");
   }
 
-  const inserts: any[] = [];
+  const inserts: TablesInsert<"entregas_farmacia">[] = [];
 
   for (const item of entregas) {
     const cantidadEntregadaReal = Number(item.cantidad_sugerida);
@@ -199,7 +223,7 @@ export async function registrarEntregaManual(
     }
 
     const totalDisponible = lotes.reduce(
-      (sum: number, l: any) => sum + Number(l.cantidad_actual),
+      (sum, l) => sum + Number(l.cantidad_actual),
       0
     );
     if (totalDisponible < cantidadEntregadaReal) {

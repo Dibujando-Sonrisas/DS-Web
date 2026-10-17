@@ -62,7 +62,7 @@
 .carouselBtn:disabled {
   opacity: 0.25;
   cursor: not-allowed;
-  transform: translateY(-50%) !important;
+  transform: translateY(-50%);
 }
 
 .carouselBtnPrev {

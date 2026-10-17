@@ -12,9 +12,12 @@ import {
   Wind,
 } from "lucide-react";
 import UserAvatar from "@/app/administracion/components/UserAvatar";
-import type { Datos } from "@/lib/validation/expediente";
+import type { PatientForm, VitalSignsForm } from "@/lib/validation/expediente";
 import styles from "@/styles/pages/admin.module.css";
 import pac from "@/styles/pages/admin-pacientes.module.css";
+
+// signos del formulario (texto) o de la fila de la base (números)
+export type VitalSigns = Record<keyof VitalSignsForm, string | number | null>;
 
 export const hay = (v: unknown) => v !== null && v !== undefined && v !== "";
 
@@ -32,7 +35,7 @@ export const SIGNOS: {
   label: string;
   unidad?: string;
   Icon: LucideIcon;
-  valor: (s: Datos) => unknown;
+  valor: (s: VitalSigns) => unknown;
 }[] = [
   { label: "Peso", unidad: "kg", Icon: Scale, valor: (s) => s.peso },
   { label: "Talla", unidad: "cm", Icon: Ruler, valor: (s) => s.talla },
@@ -85,9 +88,9 @@ export function FichaPaciente({
   brigada,
   estado,
 }: {
-  paciente: Datos;
+  paciente: PatientForm & { codigo: string };
   /** null mientras la preclínica no se ha guardado */
-  signos: Datos | null;
+  signos: VitalSigns | null;
   brigada?: string;
   estado: { label: string; badge: string };
 }) {

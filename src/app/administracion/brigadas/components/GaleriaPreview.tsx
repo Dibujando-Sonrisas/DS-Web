@@ -1,9 +1,11 @@
 "use client";
 
 import { Camera, ChevronLeft, ChevronRight, Star, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useState, useTransition } from "react";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import EmptyState from "@/app/administracion/components/EmptyState";
+import type { Tables } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import { supabase } from "@/lib/supabase";
 import styles from "@/styles/pages/admin.module.css";
@@ -16,14 +18,7 @@ import {
 
 const logger = getLogger("brigadas", "client");
 
-export type BrigadaImagenRow = {
-  id: string;
-  brigada_id: string;
-  nombre_archivo: string;
-  portada: boolean;
-  orden: number;
-  created_at: string;
-};
+export type BrigadaImagenRow = Tables<"brigada_imagenes">;
 
 type GaleriaPreviewProps = {
   brigadaId: string;
@@ -158,7 +153,12 @@ export default function GaleriaPreview({
                 >
                   {/* Elemento de Imagen */}
                   <div className={brig.photoMedia}>
-                    <img src={url} alt={img.nombre_archivo} loading="lazy" />
+                    <Image
+                      src={url}
+                      alt={img.nombre_archivo}
+                      fill
+                      sizes="(max-width: 600px) 100vw, 440px"
+                    />
                     {img.portada && (
                       <span
                         className={`${styles.badge} ${styles.badgeBrand} ${brig.coverBadge}`}

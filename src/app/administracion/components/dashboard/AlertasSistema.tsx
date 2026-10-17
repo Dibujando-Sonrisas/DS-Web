@@ -31,7 +31,7 @@ export default async function AlertasSistema() {
         </EmptyState>
       ) : (
         <ul className={dash.alertList}>
-          {alertas.map((alerta: any, i: number) => (
+          {alertas.map((alerta, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: lista de solo lectura renderizada en el servidor; no se reordena ni se edita
             <li key={i} className={dash.alertItem}>
               <TriangleAlert aria-hidden="true" />

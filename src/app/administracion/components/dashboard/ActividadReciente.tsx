@@ -25,8 +25,7 @@ export default async function ActividadReciente() {
         />
       ) : (
         <ul className={`${dash.feed} tone-rotate`}>
-          {actividad.map((act: any, i: number) => {
-            const date = new Date(act.created_at);
+          {actividad.map((act, i) => {
             return (
               // biome-ignore lint/suspicious/noArrayIndexKey: lista de solo lectura renderizada en el servidor; no se reordena ni se edita
               <li key={i} className={dash.feedItem}>
@@ -34,14 +33,16 @@ export default async function ActividadReciente() {
                 <div>
                   <p className={dash.feedTitle}>{act.tipo}</p>
                   <p className={dash.feedText}>{act.descripcion}</p>
-                  <time className={dash.feedTime} dateTime={act.created_at}>
-                    {date.toLocaleDateString("es-HN", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </time>
+                  {act.created_at && (
+                    <time className={dash.feedTime} dateTime={act.created_at}>
+                      {new Date(act.created_at).toLocaleDateString("es-HN", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </time>
+                  )}
                 </div>
               </li>
             );

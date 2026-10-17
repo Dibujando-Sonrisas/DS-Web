@@ -10,12 +10,12 @@ let adminClient: ReturnType<typeof createClient<Database>> | undefined;
  */
 export function createSupabaseAdminClient() {
   if (adminClient) return adminClient;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set.");
   const key = process.env.SUPABASE_SECRET_KEY;
   if (!key) throw new Error("SUPABASE_SECRET_KEY is not set.");
-  adminClient = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    key,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
+  adminClient = createClient<Database>(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
   return adminClient;
 }

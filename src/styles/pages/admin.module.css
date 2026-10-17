@@ -583,10 +583,6 @@ a.offlineCard:hover .offlineFlecha {
   color: var(--primaryStrong);
 }
 
-.dropdownItem:hover svg {
-  color: currentColor;
-}
-
 .dropdownDanger,
 .dropdownDanger:hover,
 .dropdownDanger svg {
@@ -1156,11 +1152,6 @@ a.notifItem:hover {
   background: var(--info-bg);
 }
 
-/* la insignia informativa comparte fondo con la fila seleccionada */
-.table tbody tr.rowSelected .badgeInfo {
-  background: #fff;
-}
-
 .rowClickable {
   cursor: pointer;
 }
@@ -1262,6 +1253,11 @@ a.notifItem:hover {
 .badgeInfo {
   background: var(--info-bg);
   color: var(--info-ink);
+}
+
+/* la insignia informativa comparte fondo con la fila seleccionada */
+.table tbody tr.rowSelected .badgeInfo {
+  background: #fff;
 }
 
 .badgeNeutral {
@@ -1554,11 +1550,6 @@ button.step {
 .modalHeader :global(.icon-circle) {
   width: 4.4rem;
   height: 4.4rem;
-}
-
-.modalHeader :global(.icon-circle) svg {
-  width: 2.2rem;
-  height: 2.2rem;
 }
 
 .modalHeading {
@@ -2130,6 +2121,15 @@ button.step {
 
 .photoRemove:hover {
   background: var(--tertiaryDark);
+}
+
+.dropdownItem:hover svg {
+  color: currentColor;
+}
+
+.modalHeader :global(.icon-circle) svg {
+  width: 2.2rem;
+  height: 2.2rem;
 }
 
 /* ── RESPONSIVO ── */

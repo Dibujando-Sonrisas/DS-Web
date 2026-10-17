@@ -40,7 +40,7 @@ export default async function EspecialidadesPage() {
         </Link>
       </PageHeader>
 
-      <EspecialidadesTable initialSpecialties={(especialidades as any) || []} />
+      <EspecialidadesTable initialSpecialties={especialidades ?? []} />
     </div>
   );
 }

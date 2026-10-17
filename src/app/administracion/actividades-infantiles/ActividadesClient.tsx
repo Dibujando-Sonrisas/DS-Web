@@ -14,6 +14,7 @@ import AdminModal from "@/app/administracion/components/AdminModal";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import StatCard from "@/app/administracion/components/StatCard";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { Tables } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
 import {
@@ -25,12 +26,18 @@ import {
 
 const logger = getLogger("actividades-infantiles", "client");
 
+type Dashboard = Awaited<ReturnType<typeof getDashboardActividades>>;
+type Actividad = Awaited<ReturnType<typeof getActividades>>[number];
+type Brigada = Tables<"brigadas">;
+
+const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "");
+
 export function ActividadesClient({ userId }: { userId: string }) {
   const { can } = usePermissions();
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [actividades, setActividades] = useState<any[]>([]);
-  const [brigadas, setBrigadas] = useState<any[]>([]);
-  const [todasLasBrigadas, setTodasLasBrigadas] = useState<any[]>([]);
+  const [dashboard, setDashboard] = useState<Dashboard>(null);
+  const [actividades, setActividades] = useState<Actividad[]>([]);
+  const [brigadas, setBrigadas] = useState<Brigada[]>([]);
+  const [todasLasBrigadas, setTodasLasBrigadas] = useState<Brigada[]>([]);
   const [filtroBrigada, setFiltroBrigada] = useState<string>("todas");
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -71,7 +78,7 @@ export function ActividadesClient({ userId }: { userId: string }) {
       setTodasLasBrigadas(brigs.data || []);
       setBrigadas(
         brigs.data?.filter(
-          (b: any) => b.estado !== "finalizada" && b.estado !== "cancelada"
+          (b) => b.estado !== "finalizada" && b.estado !== "cancelada"
         ) || []
       );
     } catch (error) {
@@ -92,9 +99,9 @@ export function ActividadesClient({ userId }: { userId: string }) {
       await createActividad({ ...actividadForm, responsable_id: userId });
       setIsActividadModalOpen(false);
       fetchData();
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Activity creation failed", errorInfo(e));
-      alert(e.message);
+      alert(errorMessage(e));
     }
   };
 
@@ -113,12 +120,12 @@ export function ActividadesClient({ userId }: { userId: string }) {
       );
       setIsParticipantesModalOpen(false);
       fetchData();
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Participants registration failed", {
         ...errorInfo(e),
         actividadId: participantesForm.actividad_id,
       });
-      alert(e.message);
+      alert(errorMessage(e));
     }
   };
 
@@ -241,7 +248,9 @@ export function ActividadesClient({ userId }: { userId: string }) {
                   paginated.map((act) => (
                     <tr key={act.id}>
                       <td className={styles.nowrap}>
-                        {new Date(act.created_at).toLocaleDateString()}
+                        {act.created_at
+                          ? new Date(act.created_at).toLocaleDateString()
+                          : "-"}
                       </td>
                       <td>
                         <span className={styles.cellMain}>{act.nombre}</span>

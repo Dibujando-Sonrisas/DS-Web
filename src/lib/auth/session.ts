@@ -21,6 +21,15 @@ export const ROL_TONOS = [
 ] as const;
 export type RolTono = (typeof ROL_TONOS)[number];
 
+export function isRolTono(value: string): value is RolTono {
+  return ROL_TONOS.some((tono) => tono === value);
+}
+
+// roles.color has a CHECK constraint limited to ROL_TONOS, so the fallback never applies.
+export function toRolTono(value: string): RolTono {
+  return isRolTono(value) ? value : "neutral";
+}
+
 export type RolResumen = {
   id: string;
   nombre: string;
@@ -54,11 +63,6 @@ export type AuthContext = {
 const PERFIL_SELECT =
   "*, rol:rol_id(id, nombre, color, es_superadmin, rol_permisos(permiso)), especialidades:especialidad_id(nombre)";
 
-type PerfilConRol = Perfil & {
-  rol: (RolResumen & { rol_permisos: { permiso: string }[] }) | null;
-  especialidades: { nombre: string } | null;
-};
-
 export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
   const supabase = await createSupabaseServerClient();
   const {
@@ -81,7 +85,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
     return null;
   }
 
-  let row = data as unknown as PerfilConRol | null;
+  let row = data;
 
   if (!row) {
     const now = new Date().toISOString();
@@ -108,7 +112,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
       return null;
     }
     logger.info("Profile auto-created", { userId: user.id });
-    row = nuevo as unknown as PerfilConRol;
+    row = nuevo;
   }
 
   if (!row.activo || !row.rol) {
@@ -127,7 +131,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
     role: {
       id: rol.id,
       nombre: rol.nombre,
-      color: rol.color,
+      color: toRolTono(rol.color),
       es_superadmin: rol.es_superadmin,
     },
     permissions: resolvePermissions(rol),

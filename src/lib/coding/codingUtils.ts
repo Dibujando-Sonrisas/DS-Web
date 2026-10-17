@@ -12,9 +12,6 @@ import { errorInfo, getLogger } from "@/lib/logger";
 
 const logger = getLogger("coding");
 
-// Alfabeto Base32 Crockford limpio sin caracteres ambiguos (Excluye I, L, O, U)
-const CLEAN_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-
 /**
  * Genera un código de negocio conciso, único y estable.
  * @param prefix Prefijo mnemónico del recurso (ej. 'MED', 'PAC', 'VTA', 'DON')
@@ -57,7 +54,7 @@ export function formatSortableDate(
   if (!dateInput) return "";
   try {
     const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-    if (isNaN(d.getTime())) return "";
+    if (Number.isNaN(d.getTime())) return "";
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");

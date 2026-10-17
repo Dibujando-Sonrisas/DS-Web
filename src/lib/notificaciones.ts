@@ -36,10 +36,10 @@ export async function enviarNotificacion({
     const { error } = await supabase.rpc("notificar", {
       p_tipo: tipo,
       p_titulo: titulo,
-      p_detalle: detalle,
-      p_enlace: enlace,
+      p_detalle: detalle ?? undefined,
+      p_enlace: enlace ?? undefined,
       p_permiso: permiso,
-      p_actor_id: actorId,
+      p_actor_id: actorId ?? undefined,
       p_para_todos: paraTodos,
     });
 

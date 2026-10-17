@@ -22,6 +22,7 @@ import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import StatCard from "@/app/administracion/components/StatCard";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import type { Tables } from "@/lib/database.types";
 import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
 import ventas from "@/styles/pages/admin-ventas.module.css";
@@ -41,6 +42,14 @@ import {
 
 const logger = getLogger("ventas", "client");
 
+type Dashboard = Awaited<ReturnType<typeof getDashboardVentas>>;
+type Venta = Awaited<ReturnType<typeof getHistorialVentas>>[number];
+type ProductoBajoStock = Awaited<ReturnType<typeof getBajoStock>>[number];
+type Categoria = Awaited<ReturnType<typeof getCategoriasProductos>>[number];
+type Producto = Awaited<ReturnType<typeof getProductos>>[number];
+
+const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "");
+
 export function VentasClient({ userId }: { userId: string }) {
   const { can } = usePermissions();
   const [activeTab, setActiveTab] = useState<
@@ -49,12 +58,12 @@ export function VentasClient({ userId }: { userId: string }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Data
-  const [dashboard, setDashboard] = useState<any>(null);
-  const [historial, setHistorial] = useState<any[]>([]);
-  const [bajoStock, setBajoStock] = useState<any[]>([]);
-  const [categorias, setCategorias] = useState<any[]>([]);
-  const [productos, setProductos] = useState<any[]>([]);
-  const [brigadas, setBrigadas] = useState<any[]>([]);
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [historial, setHistorial] = useState<Venta[]>([]);
+  const [bajoStock, setBajoStock] = useState<ProductoBajoStock[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [brigadas, setBrigadas] = useState<Tables<"brigadas">[]>([]);
 
   // Modals state
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
@@ -78,8 +87,12 @@ export function VentasClient({ userId }: { userId: string }) {
   const [stockForm, setStockForm] = useState({ id: "", nombre: "", stock: 0 });
 
   // Delete target states
-  const [deleteCatTarget, setDeleteCatTarget] = useState<any>(null);
-  const [deleteProdTarget, setDeleteProdTarget] = useState<any>(null);
+  const [deleteCatTarget, setDeleteCatTarget] = useState<Categoria | null>(
+    null
+  );
+  const [deleteProdTarget, setDeleteProdTarget] = useState<Producto | null>(
+    null
+  );
 
   // Venta state (Cart)
   const [ventaBrigadaId, setVentaBrigadaId] = useState("");
@@ -130,9 +143,9 @@ export function VentasClient({ userId }: { userId: string }) {
       await createCategoriaProducto(catForm);
       setIsCatModalOpen(false);
       fetchData();
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Product category creation failed", errorInfo(e));
-      alert(e.message);
+      alert(errorMessage(e));
     }
   };
 
@@ -142,9 +155,9 @@ export function VentasClient({ userId }: { userId: string }) {
       await createProducto(prodForm);
       setIsProdModalOpen(false);
       fetchData();
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Product creation failed", errorInfo(e));
-      alert(e.message);
+      alert(errorMessage(e));
     }
   };
 
@@ -154,12 +167,12 @@ export function VentasClient({ userId }: { userId: string }) {
       await updateStockProducto(stockForm.id, stockForm.stock);
       setIsStockModalOpen(false);
       fetchData();
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Product stock update failed", {
         ...errorInfo(e),
         productoId: stockForm.id,
       });
-      alert(e.message);
+      alert(errorMessage(e));
     }
   };
 
@@ -234,12 +247,12 @@ export function VentasClient({ userId }: { userId: string }) {
       setVentaObservaciones("");
       fetchData();
       setActiveTab("dashboard");
-    } catch (e: any) {
+    } catch (e) {
       logger.error("Sale registration failed", {
         ...errorInfo(e),
         items: cart.length,
       });
-      alert(e.message);
+      alert(errorMessage(e));
     } finally {
       setIsSubmittingVenta(false);
     }
@@ -719,7 +732,7 @@ export function VentasClient({ userId }: { userId: string }) {
                       historial.map((v) => (
                         <tr key={v.id}>
                           <td className={styles.nowrap}>
-                            {new Date(v.fecha).toLocaleString()}
+                            {v.fecha ? new Date(v.fecha).toLocaleString() : "-"}
                           </td>
                           <td className={styles.cellCode}>{v.codigo}</td>
                           <td>{v.vendedor}</td>
@@ -1039,12 +1052,12 @@ export function VentasClient({ userId }: { userId: string }) {
               await deleteCategoriaProducto(deleteCatTarget.id);
               setDeleteCatTarget(null);
               fetchData();
-            } catch (e: any) {
+            } catch (e) {
               logger.error("Product category deletion failed", {
                 ...errorInfo(e),
                 categoriaId: deleteCatTarget.id,
               });
-              alert("Error al eliminar: " + e.message);
+              alert(`Error al eliminar: ${errorMessage(e)}`);
             }
           }}
         >
@@ -1065,12 +1078,12 @@ export function VentasClient({ userId }: { userId: string }) {
               await deleteProducto(deleteProdTarget.id);
               setDeleteProdTarget(null);
               fetchData();
-            } catch (e: any) {
+            } catch (e) {
               logger.error("Product deletion failed", {
                 ...errorInfo(e),
                 productoId: deleteProdTarget.id,
               });
-              alert("Error al eliminar: " + e.message);
+              alert(`Error al eliminar: ${errorMessage(e)}`);
             }
           }}
         >
