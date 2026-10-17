@@ -1,34 +1,62 @@
-import { supabase } from "../supabase";
-import { assertPermission } from "@/lib/auth/session";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { assertPermission } from "@/lib/auth/session";
+import type { Database, TablesInsert } from "@/lib/database.types";
+import { errorInfo, getLogger } from "@/lib/logger";
+import { supabase } from "../supabase";
 
-export async function getDashboardFarmacia(client: any = supabase) {
+const logger = getLogger("db", "farmacia");
+
+export type FefoSuggestion = {
+  medicamento_id: string;
+  medicamento_nombre: string;
+  lote_id: string;
+  lote_numero: string;
+  cantidad_requerida: number;
+  cantidad_sugerida: number;
+  stock_disponible: number;
+  error?: string;
+  warning?: string;
+};
+
+export type EntregaFarmaciaItem = Pick<
+  FefoSuggestion,
+  "medicamento_id" | "medicamento_nombre" | "lote_id" | "cantidad_sugerida"
+>;
+
+export async function getDashboardFarmacia(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("dashboard_farmacia")
     .select("*")
     .single();
 
   if (error) {
-    console.error("Error dashboard farmacia:", error);
+    logger.error("Pharmacy dashboard load failed", errorInfo(error));
     return null;
   }
   return data;
 }
 
-export async function getEntregasFarmacia(client: any = supabase) {
+export async function getEntregasFarmacia(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data, error } = await client
     .from("v_entregas_farmacia")
     .select("*")
     .order("fecha_entrega", { ascending: false });
 
   if (error) {
-    console.error("Error entregas farmacia:", error);
+    logger.error("Pharmacy deliveries load failed", errorInfo(error));
     return [];
   }
   return data;
 }
 
-export async function getRecetasPendientes(client: any = supabase) {
+export async function getRecetasPendientes(
+  client: SupabaseClient<Database> = supabase
+) {
   const { data: consultas, error: errorConsultas } = await client
     .from("consultas")
     .select(`
@@ -39,7 +67,7 @@ export async function getRecetasPendientes(client: any = supabase) {
     .order("created_at", { ascending: false });
 
   if (errorConsultas) {
-    console.error("Error fetching consultas:", errorConsultas);
+    logger.error("Prescriptions load failed", errorInfo(errorConsultas));
     return [];
   }
 
@@ -48,40 +76,63 @@ export async function getRecetasPendientes(client: any = supabase) {
     .select("consulta_id");
 
   if (errorEntregas) {
-    console.error("Error fetching entregas:", errorEntregas);
+    logger.error(
+      "Delivered prescriptions load failed",
+      errorInfo(errorEntregas)
+    );
     return [];
   }
 
-  const entregadasSet = new Set(entregas.map((e: any) => e.consulta_id));
+  const entregadasSet = new Set(entregas.map((e) => e.consulta_id));
 
-  const pendientes = consultas.filter((c: any) => {
-    return c.medicamentos_consulta && c.medicamentos_consulta.length > 0 && !entregadasSet.has(c.id);
+  const pendientes = consultas.filter((c) => {
+    return (
+      c.medicamentos_consulta &&
+      c.medicamentos_consulta.length > 0 &&
+      !entregadasSet.has(c.id)
+    );
   });
 
   return pendientes;
 }
 
-export async function getFefoSuggestions(consultaId: string, client: any = supabase) {
+export async function getFefoSuggestions(
+  consultaId: string,
+  client: SupabaseClient<Database> = supabase
+) {
   const { data: medsReq, error: errMeds } = await client
     .from("medicamentos_consulta")
     .select("medicamento_id, cantidad, indicaciones, medicamentos(nombre)")
     .eq("consulta_id", consultaId);
 
+  if (errMeds)
+    logger.error("Prescription items load failed", {
+      ...errorInfo(errMeds),
+      consultaId,
+    });
   if (errMeds || !medsReq || medsReq.length === 0) {
     throw new Error("No se encontraron medicamentos para esta receta.");
   }
 
   // Agrupar y consolidar las solicitudes por medicamento_id
-  const mapMeds = new Map<string, { medicamento_id: string; cantidad: number; indicaciones: string; medicamento_nombre: string }>();
+  const mapMeds = new Map<
+    string,
+    {
+      medicamento_id: string;
+      cantidad: number;
+      indicaciones: string;
+      medicamento_nombre: string;
+    }
+  >();
 
   for (const req of medsReq) {
     const medId = req.medicamento_id;
     const qty = Number(req.cantidad) || 0;
-    const medNombre = (req.medicamentos as any)?.nombre || "Medicamento Desconocido";
+    const medNombre = req.medicamentos?.nombre || "Medicamento Desconocido";
     const indic = req.indicaciones || "";
 
-    if (mapMeds.has(medId)) {
-      const prev = mapMeds.get(medId)!;
+    const prev = mapMeds.get(medId);
+    if (prev) {
       prev.cantidad += qty;
       if (indic) prev.indicaciones += ` / ${indic}`;
     } else {
@@ -89,12 +140,12 @@ export async function getFefoSuggestions(consultaId: string, client: any = supab
         medicamento_id: medId,
         cantidad: qty,
         indicaciones: indic,
-        medicamento_nombre: medNombre
+        medicamento_nombre: medNombre,
       });
     }
   }
 
-  const suggestions: any[] = [];
+  const suggestions: FefoSuggestion[] = [];
 
   for (const [medId, item] of mapMeds.entries()) {
     const requiredQty = item.cantidad;
@@ -107,7 +158,10 @@ export async function getFefoSuggestions(consultaId: string, client: any = supab
       .gt("cantidad_actual", 0)
       .order("fecha_vencimiento", { ascending: true });
 
-    const totalStock = (lotes || []).reduce((acc: number, l: any) => acc + Number(l.cantidad_actual), 0);
+    const totalStock = (lotes || []).reduce(
+      (acc, l) => acc + Number(l.cantidad_actual),
+      0
+    );
     const primerLote = lotes && lotes.length > 0 ? lotes[0] : null;
 
     suggestions.push({
@@ -119,14 +173,23 @@ export async function getFefoSuggestions(consultaId: string, client: any = supab
       cantidad_sugerida: Math.min(requiredQty, totalStock),
       stock_disponible: totalStock,
       error: totalStock === 0 ? "Agotado en inventario" : undefined,
-      warning: totalStock > 0 && totalStock < requiredQty ? "Stock insuficiente para entrega completa" : undefined
+      warning:
+        totalStock > 0 && totalStock < requiredQty
+          ? "Stock insuficiente para entrega completa"
+          : undefined,
     });
   }
 
   return suggestions;
 }
 
-export async function registrarEntregaManual(entregas: any[], observaciones: string, consultaId: string, entregadoPor: string, client: any = supabase) {
+export async function registrarEntregaManual(
+  entregas: EntregaFarmaciaItem[],
+  observaciones: string,
+  consultaId: string,
+  entregadoPor: string,
+  client: SupabaseClient<Database> = supabase
+) {
   await assertPermission(PERMISSIONS.FARMACIA_PROCESS);
 
   // 1. Verificación idempotente: Evitar entregas duplicadas para la misma receta
@@ -139,7 +202,7 @@ export async function registrarEntregaManual(entregas: any[], observaciones: str
     throw new Error("Esta receta ya fue procesada y entregada anteriormente.");
   }
 
-  const inserts: any[] = [];
+  const inserts: TablesInsert<"entregas_farmacia">[] = [];
 
   for (const item of entregas) {
     const cantidadEntregadaReal = Number(item.cantidad_sugerida);
@@ -154,12 +217,19 @@ export async function registrarEntregaManual(entregas: any[], observaciones: str
       .order("fecha_vencimiento", { ascending: true });
 
     if (!lotes || lotes.length === 0) {
-      throw new Error(`El medicamento ${item.medicamento_nombre} no cuenta con stock suficiente en lotes.`);
+      throw new Error(
+        `El medicamento ${item.medicamento_nombre} no cuenta con stock suficiente en lotes.`
+      );
     }
 
-    const totalDisponible = lotes.reduce((sum: number, l: any) => sum + Number(l.cantidad_actual), 0);
+    const totalDisponible = lotes.reduce(
+      (sum, l) => sum + Number(l.cantidad_actual),
+      0
+    );
     if (totalDisponible < cantidadEntregadaReal) {
-      throw new Error(`El medicamento ${item.medicamento_nombre} solo cuenta con ${totalDisponible} unidades disponibles en inventario.`);
+      throw new Error(
+        `El medicamento ${item.medicamento_nombre} solo cuenta con ${totalDisponible} unidades disponibles en inventario.`
+      );
     }
 
     const lotePrincipalId = item.lote_id || lotes[0].id;
@@ -183,8 +253,16 @@ export async function registrarEntregaManual(entregas: any[], observaciones: str
   const { error } = await client.from("entregas_farmacia").insert(inserts);
 
   if (error) {
-    throw new Error(`Error al registrar la entrega: ${error.message}`);
+    logger.error("Pharmacy delivery failed", {
+      ...errorInfo(error),
+      consultaId,
+    });
+    throw new Error("No se pudo registrar la entrega.");
   }
 
+  logger.info("Pharmacy delivery registered", {
+    consultaId,
+    count: inserts.length,
+  });
   return { success: true, count: inserts.length };
 }

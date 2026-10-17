@@ -1,40 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type {
+  Database,
+  Enums,
+  Tables,
+  TablesInsert,
+  TablesUpdate,
+} from "@/lib/database.types";
 import { supabase } from "../supabase";
 
-export type EstadoBrigada =
-  | "inscripciones_abiertas"
-  | "inscripciones_cerradas"
-  | "finalizada"
-  | "cancelada";
-
-export interface Brigada {
-  id: string;
-  codigo: string;
-  nombre: string;
-  descripcion?: string | null;
-  lugar: string;
-  municipio: string;
-  departamento: string;
-  fecha_brigada: string;
-  fecha_inicio_inscripcion: string;
-  fecha_fin_inscripcion: string;
-  estado: EstadoBrigada;
-  capacidad_voluntarios?: number | null;
-  imagen_banner?: string | null;
-  latitud?: number | null;
-  longitud?: number | null;
-  created_by?: string | null;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export type BrigadaInsert = Omit<Brigada, "id" | "created_at" | "updated_at"> & {
-  id?: string;
-};
-export type BrigadaUpdate = Partial<Omit<Brigada, "id" | "created_at" | "updated_at">>;
+export type EstadoBrigada = Enums<"estado_brigada">;
+export type Brigada = Tables<"brigadas">;
+export type BrigadaInsert = TablesInsert<"brigadas">;
+export type BrigadaUpdate = TablesUpdate<"brigadas">;
 
 export async function getBrigadas(
-  client: SupabaseClient = supabase
+  client: SupabaseClient<Database> = supabase
 ): Promise<{ data: Brigada[] | null; error: string | null }> {
   const { data, error } = await client
     .from("brigadas")
@@ -46,7 +26,7 @@ export async function getBrigadas(
 }
 
 export async function insertBrigada(
-  client: SupabaseClient,
+  client: SupabaseClient<Database>,
   data: BrigadaInsert
 ): Promise<{ data: Brigada | null; error: string | null }> {
   const { data: inserted, error } = await client
@@ -59,7 +39,7 @@ export async function insertBrigada(
 }
 
 export async function updateBrigada(
-  client: SupabaseClient,
+  client: SupabaseClient<Database>,
   id: string,
   data: BrigadaUpdate
 ): Promise<{ data: Brigada | null; error: string | null }> {
@@ -74,7 +54,7 @@ export async function updateBrigada(
 }
 
 export async function deleteBrigada(
-  client: SupabaseClient,
+  client: SupabaseClient<Database>,
   id: string
 ): Promise<{ error: string | null }> {
   const { error } = await client.from("brigadas").delete().eq("id", id);

@@ -43,7 +43,10 @@ export default function VolunteerFilters({
       </div>
 
       <div className={styles.filter}>
-        <label className={styles.filterLabel} htmlFor="voluntarios-especialidad">
+        <label
+          className={styles.filterLabel}
+          htmlFor="voluntarios-especialidad"
+        >
           Especialidad
         </label>
         <select
@@ -54,7 +57,9 @@ export default function VolunteerFilters({
         >
           <option value="all">Todas las especialidades</option>
           {specialties.map((sp) => (
-            <option key={sp.id} value={sp.id}>{sp.nombre}</option>
+            <option key={sp.id} value={sp.id}>
+              {sp.nombre}
+            </option>
           ))}
         </select>
       </div>

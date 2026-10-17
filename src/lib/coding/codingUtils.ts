@@ -1,6 +1,6 @@
 /**
  * Utilidades de Codificación de Datos y Generación de Claves (Capítulo 11 - Kendall & Kendall)
- * 
+ *
  * Reglas de Codificación:
  * 1. Códigos Mnemónicos y Subconjuntos de Dígitos Significativos.
  * 2. Eliminación estricta de caracteres confusos/ambiguos (O vs 0, I vs 1, Z vs 2).
@@ -8,8 +8,9 @@
  * 4. Algoritmos de autovalidación para documentos de identidad (DNI de Honduras).
  */
 
-// Alfabeto Base32 Crockford limpio sin caracteres ambiguos (Excluye I, L, O, U)
-const CLEAN_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+import { errorInfo, getLogger } from "@/lib/logger";
+
+const logger = getLogger("coding");
 
 /**
  * Genera un código de negocio conciso, único y estable.
@@ -17,8 +18,15 @@ const CLEAN_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
  * @param sequence Número o secuencial numérico a formatear
  * @param length Longitud deseada de la secuencia de relleno
  */
-export function generateCleanCode(prefix: string, sequence: number | string, length: number = 4): string {
-  const cleanPrefix = prefix.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
+export function generateCleanCode(
+  prefix: string,
+  sequence: number | string,
+  length: number = 4
+): string {
+  const cleanPrefix = prefix
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9-]/g, "");
   const seqStr = String(sequence).padStart(length, "0");
   return `${cleanPrefix}-${seqStr}`;
 }
@@ -40,16 +48,19 @@ export function generateCleanToken(length: number = 8): string {
 /**
  * Formatea una fecha o cadena ISO a formato ordenable estandarizado AAAA-MM-DD.
  */
-export function formatSortableDate(dateInput: string | Date | null | undefined): string {
+export function formatSortableDate(
+  dateInput: string | Date | null | undefined
+): string {
   if (!dateInput) return "";
   try {
     const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-    if (isNaN(d.getTime())) return "";
+    if (Number.isNaN(d.getTime())) return "";
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
-  } catch {
+  } catch (error) {
+    logger.debug("Date formatting failed", errorInfo(error));
     return "";
   }
 }
@@ -86,7 +97,10 @@ export const DEPARTAMENTOS_HONDURAS_CODES: Record<string, string> = {
  * - AAAA: Año de inscripción o nacimiento (rango sensato 1900 a año actual)
  * - NNNNN: Correlativo numérico de 5 dígitos
  */
-export function validateHondurasDNI(dni: string): { isValid: boolean; message?: string } {
+export function validateHondurasDNI(dni: string): {
+  isValid: boolean;
+  message?: string;
+} {
   if (!dni) {
     return { isValid: true }; // Si es opcional
   }
@@ -105,7 +119,8 @@ export function validateHondurasDNI(dni: string): { isValid: boolean; message?: 
   if (!/^\d{13}$/.test(cleanDNI)) {
     return {
       isValid: false,
-      message: "Prueba de composición: El DNI solo debe contener caracteres numéricos.",
+      message:
+        "Prueba de composición: El DNI solo debe contener caracteres numéricos.",
     };
   }
 

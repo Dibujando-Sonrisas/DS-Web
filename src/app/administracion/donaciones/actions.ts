@@ -1,18 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { assertPermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { assertPermission } from "@/lib/auth/session";
+import type { TablesInsert } from "@/lib/database.types";
 import {
+  createDonacionRopa as createDonacionRopaDB,
+  createEntregaRopa as createEntregaRopaDB,
+  type DonacionRopaInput,
   getDashboardRopa as getDashboardRopaDB,
-  getResumenRopa as getResumenRopaDB,
   getDonacionesRopa as getDonacionesRopaDB,
   getEntregasRopa as getEntregasRopaDB,
   getPacientesBrigadaParaRopa as getPacientesBrigadaParaRopaDB,
-  createDonacionRopa as createDonacionRopaDB,
-  createEntregaRopa as createEntregaRopaDB,
+  getResumenRopa as getResumenRopaDB,
 } from "@/lib/db/ropa";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 async function getAuthedSupabase() {
   const supabase = await createSupabaseServerClient();
@@ -52,7 +54,7 @@ export async function getPacientesBrigadaParaRopaAction(brigadaId: string) {
   return await getPacientesBrigadaParaRopaDB(brigadaId, supabase);
 }
 
-export async function registrarDonacionRopaAction(donacion: any) {
+export async function registrarDonacionRopaAction(donacion: DonacionRopaInput) {
   await assertPermission(PERMISSIONS.DONACIONES_CREATE);
   const supabase = await getAuthedSupabase();
   const result = await createDonacionRopaDB(donacion, supabase);
@@ -60,7 +62,9 @@ export async function registrarDonacionRopaAction(donacion: any) {
   return result;
 }
 
-export async function registrarEntregaRopaAction(entrega: any) {
+export async function registrarEntregaRopaAction(
+  entrega: TablesInsert<"entregas_ropa">
+) {
   await assertPermission(PERMISSIONS.DONACIONES_CREATE);
   const supabase = await getAuthedSupabase();
   const result = await createEntregaRopaDB(entrega, supabase);

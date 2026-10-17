@@ -1,12 +1,16 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { assertPermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { randomUUID } from "crypto";
-import type { EstadoBrigada } from "@/lib/db/brigadas";
+import { assertPermission } from "@/lib/auth/session";
 import { aceptarSolicitudVoluntario } from "@/lib/cuentas";
+import { Constants, type Enums } from "@/lib/database.types";
+import type { EstadoBrigada } from "@/lib/db/brigadas";
+import { errorInfo, getLogger } from "@/lib/logger";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
+
+const logger = getLogger("brigadas");
 
 // Helper helper to get authenticated supabase client
 async function getAuthedSupabase() {
@@ -36,23 +40,26 @@ export async function getBrigadasAction() {
     .select("*")
     .order("fecha_brigada", { ascending: false });
 
+  if (error) logger.error("Brigades fetch failed", errorInfo(error));
   return { data: data ?? null, error: error?.message ?? null };
 }
 
 // Helper para autogenerar código consecutivo de brigada (Capítulo 15 - Regla de comparación y composición)
-export async function generarCodigoBrigada(fechaStr?: string): Promise<{ codigo: string; error: string | null }> {
+export async function generarCodigoBrigada(
+  fechaStr?: string
+): Promise<{ codigo: string; error: string | null }> {
   try {
     const supabase = await getAuthedSupabase();
-    
+
     // 1. Extraer el año base
     let currentYear = new Date().getFullYear();
     if (fechaStr) {
       const parsed = new Date(fechaStr);
-      if (!isNaN(parsed.getTime())) {
+      if (!Number.isNaN(parsed.getTime())) {
         currentYear = parsed.getFullYear();
       }
     }
-    
+
     // 2. Correlativo global continuo (se mantiene la secuencia sin importar el año)
     const { data: brigadas } = await supabase.from("brigadas").select("codigo");
 
@@ -62,7 +69,7 @@ export async function generarCodigoBrigada(fechaStr?: string): Promise<{ codigo:
         const matches = b.codigo.match(/\d+/g);
         if (matches && matches.length > 0) {
           const lastNum = parseInt(matches[matches.length - 1], 10);
-          if (!isNaN(lastNum) && lastNum > maxNum) {
+          if (!Number.isNaN(lastNum) && lastNum > maxNum) {
             maxNum = lastNum;
           }
         }
@@ -72,6 +79,7 @@ export async function generarCodigoBrigada(fechaStr?: string): Promise<{ codigo:
     const codigo = `BRIG-${currentYear}-${String(nextNum).padStart(3, "0")}`;
     return { codigo, error: null };
   } catch (e) {
+    logger.warning("Brigade code generation failed", errorInfo(e));
     return {
       codigo: `BRIG-${new Date().getFullYear()}-001`,
       error: e instanceof Error ? e.message : "Error al autogenerar código.",
@@ -109,7 +117,11 @@ export async function crearBrigada(data: {
       .maybeSingle();
 
     if (existingName) {
-      throw new Error(`Ya existe una brigada registrada con el nombre "${data.nombre.trim()}".`);
+      // se devuelve sin pasar por el catch para no llevar el nombre al log
+      logger.warning("Brigade creation rejected", { reason: "duplicate name" });
+      return {
+        error: `Ya existe una brigada registrada con el nombre "${data.nombre.trim()}".`,
+      };
     }
 
     // Autogenerar código si no fue provisto
@@ -141,26 +153,48 @@ export async function crearBrigada(data: {
     });
 
     if (bError) {
-      if (bError.message.includes("duplicate") || bError.message.includes("unique")) {
-        throw new Error(`Ya existe una brigada con el código "${finalCodigo}".`);
+      if (
+        bError.message.includes("duplicate") ||
+        bError.message.includes("unique")
+      ) {
+        throw new Error(
+          `Ya existe una brigada con el código "${finalCodigo}".`
+        );
       }
-      throw new Error(`Error al crear la brigada: ${bError.message}`);
+      logger.error("Brigade insert failed", errorInfo(bError));
+      return { error: "No se pudo crear la brigada." };
     }
 
     // 2. Insert budget record
-    const { error: pError } = await supabase.from("presupuestos_brigada").insert({
-      brigada_id: id,
-      presupuesto_estimado: data.presupuesto_estimado || 0,
-    });
+    const { error: pError } = await supabase
+      .from("presupuestos_brigada")
+      .insert({
+        brigada_id: id,
+        presupuesto_estimado: data.presupuesto_estimado || 0,
+      });
 
     if (pError) {
-      console.error("Warning: Created brigade but failed to initialize budget:", pError.message);
+      logger.warning("Brigade budget initialization failed", {
+        ...errorInfo(pError),
+        brigadaId: id,
+      });
     }
 
     revalidateBrigadas();
+    logger.info("Brigade created", {
+      brigadaId: id,
+      codigo: finalCodigo,
+      estado: data.estado,
+    });
     return { success: true, id, codigo: finalCodigo };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error desconocido al crear la brigada." };
+    logger.warning("Brigade creation failed", errorInfo(e));
+    return {
+      error:
+        e instanceof Error
+          ? e.message
+          : "Error desconocido al crear la brigada.",
+    };
   }
 }
 
@@ -201,7 +235,14 @@ export async function editarBrigada(
       .maybeSingle();
 
     if (existingName) {
-      throw new Error(`Ya existe otra brigada registrada con el nombre "${data.nombre.trim()}".`);
+      // se devuelve sin pasar por el catch para no llevar el nombre al log
+      logger.warning("Brigade update rejected", {
+        reason: "duplicate name",
+        brigadaId: id,
+      });
+      return {
+        error: `Ya existe otra brigada registrada con el nombre "${data.nombre.trim()}".`,
+      };
     }
 
     // 1. Update brigade details (no modificar código)
@@ -225,7 +266,11 @@ export async function editarBrigada(
       .eq("id", id);
 
     if (bError) {
-      throw new Error(`Error al actualizar la brigada: ${bError.message}`);
+      logger.error("Brigade update failed", {
+        ...errorInfo(bError),
+        brigadaId: id,
+      });
+      return { error: "No se pudo actualizar la brigada." };
     }
 
     // 2. Upsert estimated budget
@@ -243,20 +288,38 @@ export async function editarBrigada(
         })
         .eq("id", existingBudget.id);
 
-      if (pError) throw new Error(`Error al actualizar el presupuesto: ${pError.message}`);
+      if (pError) {
+        logger.error("Brigade budget update failed", {
+          ...errorInfo(pError),
+          brigadaId: id,
+        });
+        return { error: "No se pudo actualizar el presupuesto." };
+      }
     } else {
-      const { error: pError } = await supabase.from("presupuestos_brigada").insert({
-        brigada_id: id,
-        presupuesto_estimado: data.presupuesto_estimado || 0,
-      });
+      const { error: pError } = await supabase
+        .from("presupuestos_brigada")
+        .insert({
+          brigada_id: id,
+          presupuesto_estimado: data.presupuesto_estimado || 0,
+        });
 
-      if (pError) throw new Error(`Error al inicializar el presupuesto: ${pError.message}`);
+      if (pError) {
+        logger.error("Brigade budget initialization failed", {
+          ...errorInfo(pError),
+          brigadaId: id,
+        });
+        return { error: "No se pudo inicializar el presupuesto." };
+      }
     }
 
     revalidateBrigadas();
+    logger.info("Brigade updated", { brigadaId: id, estado: data.estado });
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al editar la brigada." };
+    logger.warning("Brigade edit failed", { ...errorInfo(e), brigadaId: id });
+    return {
+      error: e instanceof Error ? e.message : "Error al editar la brigada.",
+    };
   }
 }
 
@@ -269,13 +332,24 @@ export async function eliminarBrigada(id: string) {
     const { error } = await supabase.from("brigadas").delete().eq("id", id);
 
     if (error) {
-      throw new Error(`Error al eliminar la brigada: ${error.message}`);
+      logger.error("Brigade delete failed", {
+        ...errorInfo(error),
+        brigadaId: id,
+      });
+      return { error: "No se pudo eliminar la brigada." };
     }
 
     revalidateBrigadas();
+    logger.info("Brigade deleted", { brigadaId: id });
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al eliminar la brigada." };
+    logger.warning("Brigade deletion failed", {
+      ...errorInfo(e),
+      brigadaId: id,
+    });
+    return {
+      error: e instanceof Error ? e.message : "Error al eliminar la brigada.",
+    };
   }
 }
 
@@ -284,7 +358,7 @@ export async function registrarGasto(
   data: {
     id?: string;
     brigada_id: string;
-    categoria: "medicamentos" | "alimentacion" | "publicidad" | "otros";
+    categoria: Enums<"categoria_gasto">;
     descripcion: string;
     monto: number;
     fecha_gasto: string; // ISO Date String
@@ -297,8 +371,18 @@ export async function registrarGasto(
 
     if (isDelete) {
       if (!data.id) throw new Error("ID de gasto requerido para eliminar.");
-      const { error } = await supabase.from("gastos_brigada").delete().eq("id", data.id);
-      if (error) throw new Error(`Error al eliminar el gasto: ${error.message}`);
+      const { error } = await supabase
+        .from("gastos_brigada")
+        .delete()
+        .eq("id", data.id);
+      if (error) {
+        logger.error("Brigade expense delete failed", {
+          ...errorInfo(error),
+          gastoId: data.id,
+        });
+        return { error: "No se pudo eliminar el gasto." };
+      }
+      logger.info("Brigade expense deleted", { gastoId: data.id });
     } else if (data.id) {
       const { error } = await supabase
         .from("gastos_brigada")
@@ -309,7 +393,14 @@ export async function registrarGasto(
           fecha_gasto: data.fecha_gasto,
         })
         .eq("id", data.id);
-      if (error) throw new Error(`Error al actualizar el gasto: ${error.message}`);
+      if (error) {
+        logger.error("Brigade expense update failed", {
+          ...errorInfo(error),
+          gastoId: data.id,
+        });
+        return { error: "No se pudo actualizar el gasto." };
+      }
+      logger.info("Brigade expense updated", { gastoId: data.id });
     } else {
       const { error } = await supabase.from("gastos_brigada").insert({
         brigada_id: data.brigada_id,
@@ -318,18 +409,37 @@ export async function registrarGasto(
         monto: data.monto,
         fecha_gasto: data.fecha_gasto,
       });
-      if (error) throw new Error(`Error al registrar el gasto: ${error.message}`);
+      if (error) {
+        logger.error("Brigade expense insert failed", {
+          ...errorInfo(error),
+          brigadaId: data.brigada_id,
+        });
+        return { error: "No se pudo registrar el gasto." };
+      }
+      logger.info("Brigade expense created", {
+        brigadaId: data.brigada_id,
+        categoria: data.categoria,
+      });
     }
 
     revalidateBrigadas();
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al registrar el gasto." };
+    logger.warning("Brigade expense change failed", {
+      ...errorInfo(e),
+      brigadaId: data.brigada_id,
+    });
+    return {
+      error: e instanceof Error ? e.message : "Error al registrar el gasto.",
+    };
   }
 }
 
 // 5. Actualizar Presupuesto Estimado
-export async function actualizarPresupuesto(brigadaId: string, nuevoMonto: number) {
+export async function actualizarPresupuesto(
+  brigadaId: string,
+  nuevoMonto: number
+) {
   try {
     await assertPermission(PERMISSIONS.BRIGADAS_UPDATE);
     const supabase = await getAuthedSupabase();
@@ -345,19 +455,39 @@ export async function actualizarPresupuesto(brigadaId: string, nuevoMonto: numbe
         .from("presupuestos_brigada")
         .update({ presupuesto_estimado: nuevoMonto })
         .eq("id", existingBudget.id);
-      if (error) throw new Error(`Error al actualizar el presupuesto: ${error.message}`);
+      if (error) {
+        logger.error("Brigade budget update failed", {
+          ...errorInfo(error),
+          brigadaId,
+        });
+        return { error: "No se pudo actualizar el presupuesto." };
+      }
     } else {
       const { error } = await supabase.from("presupuestos_brigada").insert({
         brigada_id: brigadaId,
         presupuesto_estimado: nuevoMonto,
       });
-      if (error) throw new Error(`Error al insertar el presupuesto: ${error.message}`);
+      if (error) {
+        logger.error("Brigade budget insert failed", {
+          ...errorInfo(error),
+          brigadaId,
+        });
+        return { error: "No se pudo registrar el presupuesto." };
+      }
     }
 
     revalidateBrigadas();
+    logger.info("Brigade budget updated", { brigadaId });
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al actualizar el presupuesto." };
+    logger.warning("Brigade budget change failed", {
+      ...errorInfo(e),
+      brigadaId,
+    });
+    return {
+      error:
+        e instanceof Error ? e.message : "Error al actualizar el presupuesto.",
+    };
   }
 }
 
@@ -370,7 +500,14 @@ export async function aceptarInscripcion(inscripcionId: string) {
     revalidateBrigadas();
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al aceptar la inscripción." };
+    logger.warning("Registration acceptance failed", {
+      ...errorInfo(e),
+      inscripcionId,
+    });
+    return {
+      error:
+        e instanceof Error ? e.message : "Error al aceptar la inscripción.",
+    };
   }
 }
 
@@ -385,12 +522,26 @@ export async function rechazarInscripcion(inscripcionId: string) {
       .update({ estado: "rechazado" })
       .eq("id", inscripcionId);
 
-    if (error) throw new Error(`Error al rechazar la inscripción: ${error.message}`);
+    if (error) {
+      logger.error("Registration rejection update failed", {
+        ...errorInfo(error),
+        inscripcionId,
+      });
+      return { error: "No se pudo rechazar la inscripción." };
+    }
 
     revalidateBrigadas();
+    logger.info("Registration rejected", { inscripcionId });
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al rechazar la inscripción." };
+    logger.warning("Registration rejection failed", {
+      ...errorInfo(e),
+      inscripcionId,
+    });
+    return {
+      error:
+        e instanceof Error ? e.message : "Error al rechazar la inscripción.",
+    };
   }
 }
 
@@ -412,8 +563,27 @@ export async function asignarVoluntario(
         .eq("brigada_id", brigadaId)
         .eq("perfil_id", perfilId);
 
-      if (error) throw new Error(`Error al quitar la asignación: ${error.message}`);
+      if (error) {
+        logger.error("Volunteer assignment delete failed", {
+          ...errorInfo(error),
+          brigadaId,
+          perfilId,
+        });
+        return { error: "No se pudo quitar la asignación." };
+      }
     } else {
+      const area = Constants.public.Enums.area_voluntariado.find(
+        (value) => value === areaAsignada
+      );
+      if (!area) {
+        logger.warning("Volunteer assignment rejected", {
+          reason: "invalid area",
+          brigadaId,
+          perfilId,
+        });
+        return { error: "Selecciona un área válida." };
+      }
+
       // Upsert asignación
       const { data: existingAssignment } = await supabase
         .from("asignaciones_voluntarios")
@@ -425,23 +595,50 @@ export async function asignarVoluntario(
       if (existingAssignment) {
         const { error } = await supabase
           .from("asignaciones_voluntarios")
-          .update({ area_asignada: areaAsignada as any })
+          .update({ area_asignada: area })
           .eq("id", existingAssignment.id);
-        if (error) throw new Error(`Error al actualizar la asignación: ${error.message}`);
+        if (error) {
+          logger.error("Volunteer assignment update failed", {
+            ...errorInfo(error),
+            asignacionId: existingAssignment.id,
+          });
+          return { error: "No se pudo actualizar la asignación." };
+        }
       } else {
-        const { error } = await supabase.from("asignaciones_voluntarios").insert({
-          brigada_id: brigadaId,
-          perfil_id: perfilId,
-          area_asignada: areaAsignada as any,
-        });
-        if (error) throw new Error(`Error al crear la asignación: ${error.message}`);
+        const { error } = await supabase
+          .from("asignaciones_voluntarios")
+          .insert({
+            brigada_id: brigadaId,
+            perfil_id: perfilId,
+            area_asignada: area,
+          });
+        if (error) {
+          logger.error("Volunteer assignment insert failed", {
+            ...errorInfo(error),
+            brigadaId,
+            perfilId,
+          });
+          return { error: "No se pudo crear la asignación." };
+        }
       }
     }
 
     revalidateBrigadas();
+    logger.info("Volunteer assignment saved", {
+      brigadaId,
+      perfilId,
+      areaAsignada,
+    });
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al asignar el voluntario." };
+    logger.warning("Volunteer assignment failed", {
+      ...errorInfo(e),
+      brigadaId,
+      perfilId,
+    });
+    return {
+      error: e instanceof Error ? e.message : "Error al asignar el voluntario.",
+    };
   }
 }
 
@@ -461,7 +658,9 @@ export async function subirImagenBrigadaStorageAction(formData: FormData) {
     }
 
     // 1. Generar ruta y nombre en el bucket
-    const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9-]/g, "_");
+    const baseName = file.name
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9-]/g, "_");
     const fileName = `${Date.now()}-${baseName}.jpg`;
     const storagePath = `${brigadaCodigo}/${fileName}`;
 
@@ -474,7 +673,12 @@ export async function subirImagenBrigadaStorageAction(formData: FormData) {
       });
 
     if (uploadError) {
-      throw new Error(`Error en Storage: ${uploadError.message}`);
+      logger.error("Gallery storage upload failed", {
+        ...errorInfo(uploadError),
+        brigadaId,
+        size: file.size,
+      });
+      return { error: "No se pudo subir la imagen." };
     }
 
     // 3. Obtener orden máximo para la nueva imagen
@@ -483,9 +687,10 @@ export async function subirImagenBrigadaStorageAction(formData: FormData) {
       .select("orden")
       .eq("brigada_id", brigadaId);
 
-    const maxOrden = currentImages && currentImages.length > 0
-      ? Math.max(...currentImages.map((img) => img.orden || 0))
-      : 0;
+    const maxOrden =
+      currentImages && currentImages.length > 0
+        ? Math.max(...currentImages.map((img) => img.orden || 0))
+        : 0;
 
     // 4. Si se seleccionó como portada, desmarcar portadas anteriores
     if (isCover) {
@@ -505,18 +710,34 @@ export async function subirImagenBrigadaStorageAction(formData: FormData) {
     });
 
     if (dbError) {
-      throw new Error(`Error en base de datos: ${dbError.message}`);
+      logger.error("Gallery image insert failed", {
+        ...errorInfo(dbError),
+        brigadaId,
+      });
+      return { error: "No se pudo registrar la imagen." };
     }
 
     revalidateBrigadas();
+    logger.info("Gallery image uploaded", {
+      brigadaId,
+      portada: isCover,
+      size: file.size,
+    });
     return { success: true, fileName };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al subir la imagen." };
+    logger.warning("Gallery upload failed", errorInfo(e));
+    return {
+      error: e instanceof Error ? e.message : "Error al subir la imagen.",
+    };
   }
 }
 
 // 9b. Subir Imagen (compatibilidad con metadatos)
-export async function subirImagenBrigada(brigadaId: string, nombreArchivo: string, portada = false) {
+export async function subirImagenBrigada(
+  brigadaId: string,
+  nombreArchivo: string,
+  portada = false
+) {
   try {
     await assertPermission(PERMISSIONS.BRIGADAS_UPDATE);
     const supabase = await getAuthedSupabase();
@@ -526,9 +747,10 @@ export async function subirImagenBrigada(brigadaId: string, nombreArchivo: strin
       .select("orden")
       .eq("brigada_id", brigadaId);
 
-    const maxOrden = currentImages && currentImages.length > 0
-      ? Math.max(...currentImages.map((img) => img.orden || 0))
-      : 0;
+    const maxOrden =
+      currentImages && currentImages.length > 0
+        ? Math.max(...currentImages.map((img) => img.orden || 0))
+        : 0;
 
     if (portada) {
       await supabase
@@ -545,17 +767,34 @@ export async function subirImagenBrigada(brigadaId: string, nombreArchivo: strin
       orden: maxOrden + 1,
     });
 
-    if (error) throw new Error(`Error al guardar los metadatos de la imagen: ${error.message}`);
+    if (error) {
+      logger.error("Gallery metadata insert failed", {
+        ...errorInfo(error),
+        brigadaId,
+      });
+      return { error: "No se pudieron guardar los metadatos de la imagen." };
+    }
 
     revalidateBrigadas();
+    logger.info("Gallery image registered", { brigadaId, portada });
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al guardar imagen en DB." };
+    logger.warning("Gallery image registration failed", {
+      ...errorInfo(e),
+      brigadaId,
+    });
+    return {
+      error: e instanceof Error ? e.message : "Error al guardar imagen en DB.",
+    };
   }
 }
 
 // 10. Eliminar Imagen de Storage y Base de Datos (Server Action autenticada)
-export async function eliminarImagenBrigada(imageId: string, brigadaCodigo?: string, nombreArchivo?: string) {
+export async function eliminarImagenBrigada(
+  imageId: string,
+  brigadaCodigo?: string,
+  nombreArchivo?: string
+) {
   try {
     await assertPermission(PERMISSIONS.BRIGADAS_UPDATE);
     const supabase = await getAuthedSupabase();
@@ -568,19 +807,38 @@ export async function eliminarImagenBrigada(imageId: string, brigadaCodigo?: str
         .remove([storagePath]);
 
       if (storageError) {
-        console.warn("Advertencia al borrar de Storage:", storageError.message);
+        logger.warning("Gallery file removal failed", {
+          ...errorInfo(storageError),
+          imageId,
+        });
       }
     }
 
     // Eliminar registro referencial de la BD
-    const { error: dbError } = await supabase.from("brigada_imagenes").delete().eq("id", imageId);
+    const { error: dbError } = await supabase
+      .from("brigada_imagenes")
+      .delete()
+      .eq("id", imageId);
 
-    if (dbError) throw new Error(`Error al eliminar en BD: ${dbError.message}`);
+    if (dbError) {
+      logger.error("Gallery image delete failed", {
+        ...errorInfo(dbError),
+        imageId,
+      });
+      return { error: "No se pudo eliminar la imagen." };
+    }
 
     revalidateBrigadas();
+    logger.info("Gallery image deleted", { imageId });
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al eliminar la imagen." };
+    logger.warning("Gallery image deletion failed", {
+      ...errorInfo(e),
+      imageId,
+    });
+    return {
+      error: e instanceof Error ? e.message : "Error al eliminar la imagen.",
+    };
   }
 }
 
@@ -596,7 +854,13 @@ export async function cambiarPortada(brigadaId: string, imageId: string) {
       .update({ portada: false })
       .eq("brigada_id", brigadaId);
 
-    if (resetError) throw new Error(`Error al remover portadas: ${resetError.message}`);
+    if (resetError) {
+      logger.error("Gallery cover reset failed", {
+        ...errorInfo(resetError),
+        brigadaId,
+      });
+      return { error: "No se pudieron quitar las portadas anteriores." };
+    }
 
     // 2. Activar la seleccionada
     const { error: setPortadaError } = await supabase
@@ -604,12 +868,28 @@ export async function cambiarPortada(brigadaId: string, imageId: string) {
       .update({ portada: true })
       .eq("id", imageId);
 
-    if (setPortadaError) throw new Error(`Error al establecer portada: ${setPortadaError.message}`);
+    if (setPortadaError) {
+      logger.error("Gallery cover update failed", {
+        ...errorInfo(setPortadaError),
+        imageId,
+      });
+      return { error: "No se pudo establecer la portada." };
+    }
 
     revalidateBrigadas();
+    logger.info("Gallery cover changed", { brigadaId, imageId });
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al cambiar la portada de la brigada." };
+    logger.warning("Gallery cover change failed", {
+      ...errorInfo(e),
+      brigadaId,
+    });
+    return {
+      error:
+        e instanceof Error
+          ? e.message
+          : "Error al cambiar la portada de la brigada.",
+    };
   }
 }
 
@@ -626,12 +906,22 @@ export async function reordenarGaleria(imageIds: string[]) {
         .update({ orden: i + 1 })
         .eq("id", imageIds[i]);
 
-      if (error) throw new Error(`Error al reordenar imagen ${imageIds[i]}: ${error.message}`);
+      if (error) {
+        logger.error("Gallery order update failed", {
+          ...errorInfo(error),
+          imageId: imageIds[i],
+        });
+        return { error: "No se pudo reordenar la galería." };
+      }
     }
 
     revalidateBrigadas();
+    logger.info("Gallery reordered", { count: imageIds.length });
     return { success: true };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al reordenar la galería." };
+    logger.warning("Gallery reorder failed", errorInfo(e));
+    return {
+      error: e instanceof Error ? e.message : "Error al reordenar la galería.",
+    };
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import { Check, TriangleAlert, X } from "lucide-react";
+import { useState, useTransition } from "react";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
@@ -107,7 +107,8 @@ export default function InscripcionesTable({
   return (
     <section className={styles.stackSm}>
       <h3 className={styles.subTitle}>
-        Solicitudes de Voluntariado <span className={styles.count}>{inscripciones.length}</span>
+        Solicitudes de Voluntariado{" "}
+        <span className={styles.count}>{inscripciones.length}</span>
       </h3>
 
       <div className={`${styles.tableWrap} ${brig.bleed}`}>
@@ -134,11 +135,15 @@ export default function InscripcionesTable({
               inscripciones.map((ins) => {
                 // Find profile matching names (since emails are only in auth.users)
                 const matchingProfile = profiles.find((p) => {
-                  const fullName = (p.nombre_completo || "").trim().toLowerCase();
+                  const fullName = (p.nombre_completo || "")
+                    .trim()
+                    .toLowerCase();
                   return fullName === ins.nombre_completo.trim().toLowerCase();
                 });
 
-                const assignedArea = matchingProfile ? assignments[matchingProfile.id] || "none" : "none";
+                const assignedArea = matchingProfile
+                  ? assignments[matchingProfile.id] || "none"
+                  : "none";
 
                 return (
                   <tr key={ins.id}>
@@ -148,9 +153,13 @@ export default function InscripcionesTable({
                       <span className={styles.cellSub}>{ins.telefono}</span>
                     </td>
                     <td>{ins.area_interes}</td>
-                    <td className={styles.nowrap}>{formatDate(ins.created_at)}</td>
+                    <td className={styles.nowrap}>
+                      {formatDate(ins.created_at)}
+                    </td>
                     <td>
-                      <span className={`${styles.badge} ${STATE_CLASSES[ins.estado]}`}>
+                      <span
+                        className={`${styles.badge} ${STATE_CLASSES[ins.estado]}`}
+                      >
                         {STATE_LABELS[ins.estado]}
                       </span>
                     </td>
@@ -162,7 +171,12 @@ export default function InscripcionesTable({
                               className={`form-input form-input-sm ${brig.areaSelect}`}
                               aria-label={`Área asignada a ${ins.nombre_completo}`}
                               value={assignedArea}
-                              onChange={(e) => handleAssignChange(matchingProfile.id, e.target.value)}
+                              onChange={(e) =>
+                                handleAssignChange(
+                                  matchingProfile.id,
+                                  e.target.value
+                                )
+                              }
                               disabled={isPending || isReadOnly}
                             >
                               <option value="none">Sin asignar</option>
@@ -175,11 +189,14 @@ export default function InscripcionesTable({
                           ) : (
                             <span className={brig.cellWarn}>
                               <TriangleAlert aria-hidden="true" />
-                              Sin perfil registrado. Solicitar registro en la app.
+                              Sin perfil registrado. Solicitar registro en la
+                              app.
                             </span>
                           )
                         ) : (
-                          <span className={styles.muted}>Debe ser aceptado primero.</span>
+                          <span className={styles.muted}>
+                            Debe ser aceptado primero.
+                          </span>
                         )}
                       </td>
                     )}

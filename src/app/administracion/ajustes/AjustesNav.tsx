@@ -1,8 +1,9 @@
 "use client";
 
+import { Mail, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Mail } from "lucide-react";
+import { MODO_OFFLINE } from "@/lib/offline";
 import aj from "@/styles/pages/admin-ajustes.module.css";
 
 /** Secciones de Ajustes: cada una es una carpeta con su page.tsx. */
@@ -12,6 +13,16 @@ const SECCIONES_AJUSTES = [
     label: "Correos",
     icon: <Mail aria-hidden="true" />,
   },
+  // solo en el servidor de la brigada (npm run offline)
+  ...(MODO_OFFLINE
+    ? [
+        {
+          href: "/administracion/ajustes/offline",
+          label: "Modo offline",
+          icon: <WifiOff aria-hidden="true" />,
+        },
+      ]
+    : []),
 ];
 
 export default function AjustesNav() {

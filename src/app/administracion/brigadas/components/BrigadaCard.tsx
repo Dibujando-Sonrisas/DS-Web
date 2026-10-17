@@ -16,6 +16,8 @@ const ESTADO_CLASSES: Record<EstadoBrigada, string> = {
   inscripciones_cerradas: styles.badgeNeutral,
   finalizada: styles.badgeNeutral,
   cancelada: styles.badgeDanger,
+  planificacion: styles.badgeNeutral,
+  en_preparacion: styles.badgeNeutral,
 };
 
 const ESTADO_LABELS: Record<EstadoBrigada, string> = {
@@ -23,6 +25,8 @@ const ESTADO_LABELS: Record<EstadoBrigada, string> = {
   inscripciones_cerradas: "Cerrada / Programada",
   finalizada: "Finalizada",
   cancelada: "Cancelada",
+  planificacion: "Planificación",
+  en_preparacion: "En preparación",
 };
 
 export default function BrigadaCard({
@@ -43,7 +47,20 @@ export default function BrigadaCard({
   };
 
   return (
-    <div onClick={onSelect} className={`${brig.card} ${isSelected ? brig.cardSelected : ""}`}>
+    // biome-ignore lint/a11y/useSemanticElements: la tarjeta tiene encabezado y párrafos, que no caben dentro de un <button>
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className={`${brig.card} ${isSelected ? brig.cardSelected : ""}`}
+    >
       <div className={brig.cardTop}>
         <span className={brig.cardCode}>{brigada.codigo}</span>
         <span className={`${styles.badge} ${ESTADO_CLASSES[brigada.estado]}`}>

@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
-import styles from "@/styles/pages/admin.module.css";
-import rep from "@/styles/pages/reportes.module.css";
-import listas from "@/styles/pages/admin-reportes-listas.module.css";
+import { useEffect, useState } from "react";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { supabase } from "@/lib/supabase";
+import styles from "@/styles/pages/admin.module.css";
+import listas from "@/styles/pages/admin-reportes-listas.module.css";
+import rep from "@/styles/pages/reportes.module.css";
 import PrintReportDocument from "./PrintReportDocument";
+
+const logger = getLogger("reportes", "client");
 
 export interface AtencionVoluntarioData {
   id: string; // This is the profile UUID
@@ -35,8 +38,8 @@ function parseHours(llegada?: string, salida?: string) {
   if (!llegada || !salida) return 5; // Default 5 hours per participation
   const [h1, m1] = llegada.split(":").map(Number);
   const [h2, m2] = salida.split(":").map(Number);
-  if (isNaN(h1) || isNaN(h2)) return 5;
-  const mins = (h2 * 60 + m2) - (h1 * 60 + m1);
+  if (Number.isNaN(h1) || Number.isNaN(h2)) return 5;
+  const mins = h2 * 60 + m2 - (h1 * 60 + m1);
   return Math.max(0, Math.round((mins / 60) * 10) / 10);
 }
 
@@ -44,13 +47,15 @@ export default function AtencionesVoluntario() {
   const { role } = usePermissions();
   const userRole = role.nombre;
   const [voluntarios, setVoluntarios] = useState<AtencionVoluntarioData[]>([]);
-  const [voluntarioSeleccionado, setVoluntarioSeleccionado] = useState<string>("");
+  const [voluntarioSeleccionado, setVoluntarioSeleccionado] =
+    useState<string>("");
   const [atenciones, setAtenciones] = useState<AtencionDetail[]>([]);
   const [loadingVoluntarios, setLoadingVoluntarios] = useState<boolean>(true);
   const [loadingAtenciones, setLoadingAtenciones] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: el filtro es el disparador; al cambiarlo se vuelve a la página 1
   useEffect(() => {
     setCurrentPage(1);
   }, [voluntarioSeleccionado]);
@@ -67,7 +72,8 @@ export default function AtencionesVoluntario() {
         const medicoCountMap: Record<string, number> = {};
         (consultationsData || []).forEach((c: { medico_id: string | null }) => {
           if (c.medico_id) {
-            medicoCountMap[c.medico_id] = (medicoCountMap[c.medico_id] || 0) + 1;
+            medicoCountMap[c.medico_id] =
+              (medicoCountMap[c.medico_id] || 0) + 1;
           }
         });
 
@@ -76,25 +82,14 @@ export default function AtencionesVoluntario() {
           .from("entregas_farmacia")
           .select("entregado_por");
         const deliveryCountMap: Record<string, number> = {};
-        (deliveriesData || []).forEach((d: { entregado_por: string | null }) => {
-          if (d.entregado_por) {
-            deliveryCountMap[d.entregado_por] = (deliveryCountMap[d.entregado_por] || 0) + 1;
+        (deliveriesData || []).forEach(
+          (d: { entregado_por: string | null }) => {
+            if (d.entregado_por) {
+              deliveryCountMap[d.entregado_por] =
+                (deliveryCountMap[d.entregado_por] || 0) + 1;
+            }
           }
-        });
-
-        interface Participation {
-          asistio: boolean | null;
-          hora_llegada: string | null;
-          hora_salida: string | null;
-          brigadas: { nombre: string | null; fecha_brigada: string | null } | null;
-        }
-
-        interface PerfilRow {
-          id: string;
-          nombre_completo: string | null;
-          especialidades: { nombre: string } | null;
-          participaciones_voluntarios: Participation[] | null;
-        }
+        );
 
         const { data: perfilesData, error } = await supabase
           .from("perfiles")
@@ -113,16 +108,23 @@ export default function AtencionesVoluntario() {
                 fecha_brigada
               )
             )
-          `) as unknown as { data: PerfilRow[] | null; error: { message: string } | null };
-        if (error) throw new Error(error.message);
+          `);
+        if (error) throw error;
 
-        let formatted: AtencionVoluntarioData[] = (perfilesData || [])
-          .map((p: PerfilRow) => {
+        const formatted: AtencionVoluntarioData[] = (perfilesData || [])
+          .map((p) => {
             const specName = p.especialidades?.nombre || "Voluntario General";
 
             // Determine patients/prescriptions attended strictly from DB counts
             let attended = 0;
-            if (specName.includes("Médico") || specName.includes("Odontólogo") || specName.includes("Pediatra") || specName.includes("Psicología") || specName.includes("Nutrición") || specName.includes("Enfermería")) {
+            if (
+              specName.includes("Médico") ||
+              specName.includes("Odontólogo") ||
+              specName.includes("Pediatra") ||
+              specName.includes("Psicología") ||
+              specName.includes("Nutrición") ||
+              specName.includes("Enfermería")
+            ) {
               attended = medicoCountMap[p.id] || 0;
             } else if (specName.includes("Farmacia")) {
               attended = deliveryCountMap[p.id] || 0;
@@ -132,19 +134,24 @@ export default function AtencionesVoluntario() {
             if (attended === 0) return null;
 
             const participations = (p.participaciones_voluntarios || []).filter(
-              (part: Participation) => part.asistio
+              (part) => part.asistio
             );
 
             // Calculate total hours strictly from actual registered hours
             const hours = participations.reduce(
-              (acc: number, part: Participation) => acc + parseHours(part.hora_llegada || undefined, part.hora_salida || undefined),
+              (acc, part) =>
+                acc +
+                parseHours(
+                  part.hora_llegada || undefined,
+                  part.hora_salida || undefined
+                ),
               0
             );
 
             // Find latest brigada strictly from actual participations
             let latestBrigadaName = "Ninguna";
             if (participations.length > 0) {
-              const sortedParts = [...participations].sort((a: Participation, b: Participation) => {
+              const sortedParts = [...participations].sort((a, b) => {
                 const dateA = a.brigadas?.fecha_brigada || "";
                 const dateB = b.brigadas?.fecha_brigada || "";
                 return dateB.localeCompare(dateA);
@@ -175,7 +182,7 @@ export default function AtencionesVoluntario() {
           setVoluntarioSeleccionado((prev) => prev || formatted[0].id);
         }
       } catch (err) {
-        console.error("Error fetching volunteers list:", err);
+        logger.error("Volunteer list load failed", errorInfo(err));
       } finally {
         setLoadingVoluntarios(false);
       }
@@ -192,7 +199,9 @@ export default function AtencionesVoluntario() {
       }
       setLoadingAtenciones(true);
       try {
-        const volunteer = voluntarios.find(v => v.id === voluntarioSeleccionado);
+        const volunteer = voluntarios.find(
+          (v) => v.id === voluntarioSeleccionado
+        );
         if (!volunteer) return;
 
         if (volunteer.rol.includes("Farmacia")) {
@@ -223,17 +232,25 @@ export default function AtencionesVoluntario() {
 
           if (error) throw error;
 
-          const formatted: AtencionDetail[] = (data || []).map((d: any) => {
+          const formatted: AtencionDetail[] = (data || []).map((d) => {
             const paciente = d.consulta?.paciente;
             const brigada = d.consulta?.brigada;
-            const pNombre = paciente ? `${paciente.nombres} ${paciente.apellidos || ""}`.trim() : "Anónimo";
+            const pNombre = paciente
+              ? `${paciente.nombres} ${paciente.apellidos || ""}`.trim()
+              : "Anónimo";
             const bNombre = brigada ? brigada.nombre : "N/A";
             return {
               id: d.id,
               pacienteNombre: pNombre,
               edad: paciente?.edad || 0,
               brigadaNombre: bNombre,
-              fecha: brigada?.fecha_brigada ? new Date(brigada.fecha_brigada).toLocaleDateString("es-HN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "N/A",
+              fecha: brigada?.fecha_brigada
+                ? new Date(brigada.fecha_brigada).toLocaleDateString("es-HN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
+                : "N/A",
               detalle: d.consulta?.diagnostico || "Entrega Receta",
               tratamiento: `${d.medicamento?.nombre || "Medicamento"} (${d.cantidad})`,
             };
@@ -262,17 +279,25 @@ export default function AtencionesVoluntario() {
 
           if (error) throw error;
 
-          let formatted: AtencionDetail[] = (data || []).map((c: any) => {
+          const formatted: AtencionDetail[] = (data || []).map((c) => {
             const paciente = c.paciente;
             const brigada = c.brigada;
-            const pNombre = paciente ? `${paciente.nombres} ${paciente.apellidos || ""}`.trim() : "Anónimo";
+            const pNombre = paciente
+              ? `${paciente.nombres} ${paciente.apellidos || ""}`.trim()
+              : "Anónimo";
             const bNombre = brigada ? brigada.nombre : "N/A";
             return {
               id: c.id,
               pacienteNombre: pNombre,
               edad: paciente?.edad || 0,
               brigadaNombre: bNombre,
-              fecha: brigada?.fecha_brigada ? new Date(brigada.fecha_brigada).toLocaleDateString("es-HN", { day: "2-digit", month: "2-digit", year: "numeric" }) : "N/A",
+              fecha: brigada?.fecha_brigada
+                ? new Date(brigada.fecha_brigada).toLocaleDateString("es-HN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
+                : "N/A",
               detalle: c.diagnostico || c.motivo_consulta || "Consulta General",
               tratamiento: c.tratamiento || "Triage/Control",
             };
@@ -280,7 +305,10 @@ export default function AtencionesVoluntario() {
           setAtenciones(formatted);
         }
       } catch (err) {
-        console.error("Error fetching patient attentions:", err);
+        logger.error("Volunteer attentions load failed", {
+          ...errorInfo(err),
+          perfilId: voluntarioSeleccionado,
+        });
       } finally {
         setLoadingAtenciones(false);
       }
@@ -288,22 +316,8 @@ export default function AtencionesVoluntario() {
     fetchAtenciones();
   }, [voluntarioSeleccionado, voluntarios]);
 
-  const selectedVol = voluntarios.find(v => v.id === voluntarioSeleccionado);
+  const selectedVol = voluntarios.find((v) => v.id === voluntarioSeleccionado);
   const totalPages = Math.ceil(atenciones.length / itemsPerPage);
-
-  const [fechaActualCompleta, setFechaActualCompleta] = useState("");
-
-  useEffect(() => {
-    setFechaActualCompleta(
-      new Date().toLocaleDateString("es-HN", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
-  }, []);
 
   const handlePrint = () => {
     const originalTitle = document.title;
@@ -326,9 +340,12 @@ export default function AtencionesVoluntario() {
         {/* Encabezado */}
         <div className={styles.sectionHead}>
           <div>
-            <h2 className={styles.sectionTitle}>Reporte de Atenciones por Voluntario</h2>
+            <h2 className={styles.sectionTitle}>
+              Reporte de Atenciones por Voluntario
+            </h2>
             <p className={styles.sectionLead}>
-              Detalle de pacientes atendidos, brigadas y recetas despachadas por voluntario seleccionado.
+              Detalle de pacientes atendidos, brigadas y recetas despachadas por
+              voluntario seleccionado.
             </p>
           </div>
           <button
@@ -346,7 +363,9 @@ export default function AtencionesVoluntario() {
           {/* Filtros */}
           <div className={styles.toolbar}>
             <div className={`${styles.filter} ${styles.filterWide}`}>
-              <label className={styles.filterLabel} htmlFor="voluntario-select">Seleccionar Voluntario</label>
+              <label className={styles.filterLabel} htmlFor="voluntario-select">
+                Seleccionar Voluntario
+              </label>
               <select
                 id="voluntario-select"
                 className="form-input form-input-sm"
@@ -385,7 +404,9 @@ export default function AtencionesVoluntario() {
           {loadingVoluntarios || loadingAtenciones ? (
             <div className={styles.panelBody}>
               <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
-                <span className="sr-only">Cargando atenciones del voluntario...</span>
+                <span className="sr-only">
+                  Cargando atenciones del voluntario...
+                </span>
               </div>
             </div>
           ) : (
@@ -406,22 +427,31 @@ export default function AtencionesVoluntario() {
                   {atenciones.length === 0 ? (
                     <tr>
                       <td colSpan={7} className={styles.emptyCell}>
-                        No se encontraron atenciones para el voluntario seleccionado.
+                        No se encontraron atenciones para el voluntario
+                        seleccionado.
                       </td>
                     </tr>
                   ) : (
                     atenciones
-                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .slice(
+                        (currentPage - 1) * itemsPerPage,
+                        currentPage * itemsPerPage
+                      )
                       .map((item, relativeIdx) => {
-                        const absoluteIdx = (currentPage - 1) * itemsPerPage + relativeIdx;
+                        const absoluteIdx =
+                          (currentPage - 1) * itemsPerPage + relativeIdx;
                         return (
                           <tr key={item.id}>
                             <td className={styles.muted}>{absoluteIdx + 1}</td>
-                            <td className={styles.cellMain}>{item.pacienteNombre}</td>
+                            <td className={styles.cellMain}>
+                              {item.pacienteNombre}
+                            </td>
                             <td className={styles.num}>{item.edad}</td>
                             <td>{item.brigadaNombre}</td>
                             <td>{item.detalle}</td>
-                            <td className={listas.cellAccent}>{item.tratamiento}</td>
+                            <td className={listas.cellAccent}>
+                              {item.tratamiento}
+                            </td>
                             <td className={styles.nowrap}>{item.fecha}</td>
                           </tr>
                         );
@@ -434,13 +464,17 @@ export default function AtencionesVoluntario() {
 
           {atenciones.length > 0 && (
             <div className={styles.panelFooter}>
-              <span className={styles.pagerInfo}>Página {currentPage} de {totalPages}</span>
+              <span className={styles.pagerInfo}>
+                Página {currentPage} de {totalPages}
+              </span>
               <div className={styles.row}>
                 <button
                   type="button"
                   className="btn-ghost btn-sm"
                   disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                 >
                   <ChevronLeft aria-hidden="true" />
                   Anterior
@@ -449,7 +483,9 @@ export default function AtencionesVoluntario() {
                   type="button"
                   className="btn-ghost btn-sm"
                   disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                 >
                   Siguiente
                   <ChevronRight aria-hidden="true" />
@@ -494,7 +530,8 @@ export default function AtencionesVoluntario() {
               ) : atenciones.length === 0 ? (
                 <tr>
                   <td colSpan={7} className={rep.printCenter}>
-                    No hay atenciones registradas para el voluntario seleccionado.
+                    No hay atenciones registradas para el voluntario
+                    seleccionado.
                   </td>
                 </tr>
               ) : (

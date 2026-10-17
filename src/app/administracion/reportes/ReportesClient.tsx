@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Banknote,
   ChartColumn,
@@ -17,21 +16,24 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import PageHeader from "@/app/administracion/components/PageHeader";
 import StatCard from "@/app/administracion/components/StatCard";
+import { errorInfo, getLogger } from "@/lib/logger";
 import admin from "@/styles/pages/admin.module.css";
 import styles from "@/styles/pages/reportes.module.css";
 import { getDashboardStatsAction } from "./actions";
-
+import AtencionesVoluntario from "./components/AtencionesVoluntario";
+import MedicamentosVencer from "./components/MedicamentosVencer";
 // ── Importar Reportes Individuales ─────────────────────────────────────────
 import PacientesBrigada from "./components/PacientesBrigada";
-import MedicamentosVencer from "./components/MedicamentosVencer";
-import StockMinimo from "./components/StockMinimo";
-import AtencionesVoluntario from "./components/AtencionesVoluntario";
-import ResumenInsumos from "./components/ResumenInsumos";
-import ResumenFinanciero from "./components/ResumenFinanciero";
 import ResumenBrigadas from "./components/ResumenBrigadas";
+import ResumenFinanciero from "./components/ResumenFinanciero";
+import ResumenInsumos from "./components/ResumenInsumos";
+import StockMinimo from "./components/StockMinimo";
 import TopDonantes from "./components/TopDonantes";
+
+const logger = getLogger("reportes", "client");
 
 // ── Tipos y Definiciones ───────────────────────────────────────────────────
 
@@ -170,17 +172,24 @@ export default function ReportesClient() {
     excepciones: "top-donantes",
   });
   const [dropdownAbierto, setDropdownAbierto] = useState<boolean>(false);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<Awaited<
+    ReturnType<typeof getDashboardStatsAction>
+  > | null>(null);
 
   useEffect(() => {
-    getDashboardStatsAction().then(setStats).catch(console.error);
+    getDashboardStatsAction()
+      .then(setStats)
+      .catch((error) =>
+        logger.error("Dashboard stats load failed", errorInfo(error))
+      );
   }, []);
 
-  const categoriaActual = categorias.find((c) => c.id === categoriaActiva)!;
+  const categoriaActual =
+    categorias.find((c) => c.id === categoriaActiva) ?? categorias[0];
   const reporteActivoId = reporteSeleccionado[categoriaActiva];
-  const reporteActual = categoriaActual.reportes.find(
-    (r) => r.id === reporteActivoId
-  )!;
+  const reporteActual =
+    categoriaActual.reportes.find((r) => r.id === reporteActivoId) ??
+    categoriaActual.reportes[0];
 
   const toggleDropdown = () => setDropdownAbierto(!dropdownAbierto);
 
@@ -209,7 +218,11 @@ export default function ReportesClient() {
       />
 
       {/* Switch Principal */}
-      <div className={`${admin.tabs} no-print`} role="tablist" aria-label="Vista de reportes">
+      <div
+        className={`${admin.tabs} no-print`}
+        role="tablist"
+        aria-label="Vista de reportes"
+      >
         <button
           type="button"
           role="tab"
@@ -271,24 +284,38 @@ export default function ReportesClient() {
             <section className={admin.panel}>
               <div className={admin.panelHeader}>
                 <div>
-                  <h2 className={admin.panelTitle}>Crecimiento de Atenciones (Pacientes)</h2>
+                  <h2 className={admin.panelTitle}>
+                    Crecimiento de Atenciones (Pacientes)
+                  </h2>
                   <p className={admin.panelSub}>Histórico Anual</p>
                 </div>
               </div>
               <div className={admin.panelBody}>
                 <div className={styles.chart}>
                   <div className={styles.barChartGrid}>
-                    {stats?.atencionesAnuales?.map((anioData: any) => {
-                      const maxPacientes = Math.max(...(stats?.atencionesAnuales?.map((d: any) => d.total_pacientes) || [1000]));
-                      const heightPercent = maxPacientes > 0 ? (anioData.total_pacientes / maxPacientes) * 100 : 0;
+                    {stats?.atencionesAnuales?.map((anioData) => {
+                      const maxPacientes = Math.max(
+                        ...(stats?.atencionesAnuales?.map(
+                          (d) => d.total_pacientes ?? 0
+                        ) || [1000])
+                      );
+                      const heightPercent =
+                        maxPacientes > 0
+                          ? ((anioData.total_pacientes ?? 0) / maxPacientes) *
+                            100
+                          : 0;
                       return (
                         <div className={styles.barCol} key={anioData.anio}>
-                          <div className={styles.barColTooltip}>{anioData.total_pacientes} Pacientes</div>
+                          <div className={styles.barColTooltip}>
+                            {anioData.total_pacientes} Pacientes
+                          </div>
                           <div
                             className={`${styles.chartBarElement} ${styles.barTeal}`}
                             style={{ height: `${heightPercent}%` }}
                           />
-                          <span className={styles.barLabel}>{anioData.anio}</span>
+                          <span className={styles.barLabel}>
+                            {anioData.anio}
+                          </span>
                         </div>
                       );
                     })}
@@ -330,7 +357,11 @@ export default function ReportesClient() {
       {vistaGlobal === "reportes" && (
         <div className={admin.stack}>
           {/* Categorías Principales */}
-          <div className={`${admin.tabs} no-print`} role="tablist" aria-label="Categorías de reportes">
+          <div
+            className={`${admin.tabs} no-print`}
+            role="tablist"
+            aria-label="Categorías de reportes"
+          >
             {categorias.map((cat) => (
               <button
                 key={cat.id}
@@ -376,13 +407,17 @@ export default function ReportesClient() {
                     className={`${styles.pickerItem} ${
                       reporteActivoId === rep.id ? styles.pickerItemActive : ""
                     }`}
-                    aria-current={reporteActivoId === rep.id ? "true" : undefined}
+                    aria-current={
+                      reporteActivoId === rep.id ? "true" : undefined
+                    }
                     onClick={() => cambiarReporte(rep.id)}
                   >
                     {rep.icon}
                     <span className={styles.pickerItemText}>
                       <span className={styles.pickerItemName}>{rep.label}</span>
-                      <span className={styles.pickerItemDesc}>{rep.descripcion}</span>
+                      <span className={styles.pickerItemDesc}>
+                        {rep.descripcion}
+                      </span>
                     </span>
                   </button>
                 ))}

@@ -1,7 +1,16 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { requirePermission, type RolTono } from "@/lib/auth/session";
-import { PERMISSIONS, resolvePermissions, type Permission } from "@/lib/auth/permissions";
 import PageHeader from "@/app/administracion/components/PageHeader";
+import {
+  PERMISSIONS,
+  type Permission,
+  resolvePermissions,
+} from "@/lib/auth/permissions";
+import {
+  type RolResumen,
+  type RolTono,
+  requirePermission,
+  toRolTono,
+} from "@/lib/auth/session";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "@/styles/pages/admin.module.css";
 import UsuariosAdminClient from "./UsuariosAdminClient";
 
@@ -22,12 +31,7 @@ export type ProfileWithSpecialty = {
     id: string;
     nombre: string;
   } | null;
-  rol: {
-    id: string;
-    nombre: string;
-    color: RolTono;
-    es_superadmin: boolean;
-  } | null;
+  rol: RolResumen | null;
 };
 
 export type SpecialtyRow = {
@@ -47,11 +51,6 @@ export type RolDetalle = {
   usuarios: number;
 };
 
-type RolFila = Omit<RolDetalle, "permisos" | "usuarios"> & {
-  rol_permisos: { permiso: string }[];
-  perfiles: { count: number }[];
-};
-
 export default async function UsuariosPage({
   searchParams,
 }: {
@@ -68,27 +67,46 @@ export default async function UsuariosPage({
   ] = await Promise.all([
     supabase
       .from("perfiles")
-      .select("*, especialidades:especialidad_id(id, nombre), rol:rol_id(id, nombre, color, es_superadmin)")
+      .select(
+        "*, especialidades:especialidad_id(id, nombre), rol:rol_id(id, nombre, color, es_superadmin)"
+      )
       .order("created_at", { ascending: false }),
-    supabase.from("especialidades").select("id, nombre").order("nombre", { ascending: true }),
+    supabase
+      .from("especialidades")
+      .select("id, nombre")
+      .order("nombre", { ascending: true }),
     supabase
       .from("roles")
-      .select("id, nombre, descripcion, color, es_superadmin, es_predeterminado, rol_permisos(permiso), perfiles(count)")
+      .select(
+        "id, nombre, descripcion, color, es_superadmin, es_predeterminado, rol_permisos(permiso), perfiles(count)"
+      )
       .order("es_superadmin", { ascending: false })
       .order("nombre", { ascending: true }),
   ]);
 
-  const rows = (profilesData ?? []) as unknown as ProfileWithSpecialty[];
+  const rows: ProfileWithSpecialty[] = (profilesData ?? []).map(
+    ({ rol, ...profile }) => ({
+      ...profile,
+      rol: rol ? { ...rol, color: toRolTono(rol.color) } : null,
+    })
+  );
   const specialties: SpecialtyRow[] = specialtiesData ?? [];
-  const roles: RolDetalle[] = ((rolesData ?? []) as unknown as RolFila[]).map(
+  const roles: RolDetalle[] = (rolesData ?? []).map(
     ({ rol_permisos, perfiles, ...rol }) => ({
       ...rol,
-      permisos: resolvePermissions({ es_superadmin: rol.es_superadmin, rol_permisos }),
+      color: toRolTono(rol.color),
+      permisos: resolvePermissions({
+        es_superadmin: rol.es_superadmin,
+        rol_permisos,
+      }),
       usuarios: perfiles[0]?.count ?? 0,
     })
   );
   const fetchError =
-    profilesError?.message || specialtiesError?.message || rolesError?.message || null;
+    profilesError?.message ||
+    specialtiesError?.message ||
+    rolesError?.message ||
+    null;
 
   return (
     <div className={styles.page}>

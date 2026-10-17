@@ -45,6 +45,9 @@ next-env.d.ts
 #ides
 .idea
 
+# modo offline: estado del equipo servidor y la descarga temporal de datos
+/.offline/
+
 #supabase temp files and branches
 /supabase/.temp
 /supabase/.branches
@@ -52,3 +55,4 @@ next-env.d.ts
 #AI files
 .claude
 .impeccable
+/graphify-out

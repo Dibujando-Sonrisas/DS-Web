@@ -1,5 +1,5 @@
-import { requirePermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/session";
 import PerfilClient from "./PerfilClient";
 
 export const metadata = {

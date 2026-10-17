@@ -1,7 +1,8 @@
 /* =====================================================
    AJUSTES — admin-ajustes.module.css
    El marco de Ajustes (menú de secciones + sección
-   abierta) y las filas de Correos. Paneles, tablas y
+   abierta), las filas de Correos y los pasos del Modo
+   offline. Paneles, tablas y
    formularios vienen de admin.module.css y globals.css.
    ===================================================== */
 
@@ -54,10 +55,6 @@
 .navItem[aria-current="page"] {
   background: var(--info-bg);
   color: var(--primaryDark);
-}
-
-.navItem[aria-current="page"] svg {
-  color: var(--primaryColor);
 }
 
 /* escritorio: columna lateral fija junto a la sección */
@@ -226,5 +223,141 @@
   .aviso {
     grid-template-columns: 28rem minmax(0, 1fr);
     gap: 3.2rem;
+  }
+}
+
+/* ── MODO OFFLINE: datos de la descarga y pasos de la preparación ── */
+.datosOffline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+  gap: 1.6rem 3.2rem;
+  margin: 0;
+}
+
+.datosOffline dt {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--gray);
+}
+
+.datosOffline dd {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0.4rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--dark);
+}
+
+.urlOffline {
+  font-variant-numeric: tabular-nums;
+  color: var(--primaryStrong);
+  overflow-wrap: anywhere;
+}
+
+.urlOffline:hover {
+  text-decoration: underline;
+}
+
+.pasos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.paso {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.8rem 1.4rem;
+  padding: 1.6rem 2.4rem;
+}
+
+.paso + .paso {
+  border-top: 1px solid var(--line);
+}
+
+.paso[data-estado="en_curso"] {
+  background: var(--surface-muted);
+}
+
+.pasoIcono {
+  display: grid;
+  color: var(--grayLight);
+}
+
+.pasoIcono svg {
+  width: 2.2rem;
+  height: 2.2rem;
+}
+
+.paso[data-estado="listo"] .pasoIcono {
+  color: var(--ok-ink);
+}
+
+.paso[data-estado="en_curso"] .pasoIcono {
+  color: var(--info-ink);
+}
+
+.paso[data-estado="error"] .pasoIcono {
+  color: var(--bad-ink);
+}
+
+.pasoTexto {
+  min-width: 0;
+}
+
+.pasoTitulo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--dark);
+}
+
+.paso[data-estado="pendiente"] .pasoTitulo,
+.paso[data-estado="omitido"] .pasoTitulo {
+  color: var(--gray);
+}
+
+.pasoDetalle {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  line-height: 1.5;
+  color: var(--gray);
+  overflow-wrap: anywhere;
+}
+
+.paso[data-estado="error"] .pasoDetalle {
+  color: var(--bad-ink);
+}
+
+.pasoMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  font-size: 1.25rem;
+  color: var(--gray);
+  font-variant-numeric: tabular-nums;
+}
+
+.navItem[aria-current="page"] svg {
+  color: var(--primaryColor);
+}
+
+/* en móvil: estado y duración debajo del título */
+@media (max-width: 559px) {
+  .paso {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pasoMeta {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
   }
 }

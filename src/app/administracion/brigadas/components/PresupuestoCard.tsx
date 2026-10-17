@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
 import { CircleAlert, LoaderCircle, Pencil } from "lucide-react";
+import type React from "react";
+import { useState } from "react";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
 
@@ -23,11 +24,12 @@ export default function PresupuestoCard({
   const [loading, setLoading] = useState(false);
 
   const disponible = presupuestoEstimado - presupuestoEjecutado;
-  
+
   // Calculate percentage, avoid divide by zero
-  const percentage = presupuestoEstimado > 0 
-    ? Math.round((presupuestoEjecutado / presupuestoEstimado) * 100) 
-    : 0;
+  const percentage =
+    presupuestoEstimado > 0
+      ? Math.round((presupuestoEjecutado / presupuestoEstimado) * 100)
+      : 0;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-HN", {
@@ -40,7 +42,7 @@ export default function PresupuestoCard({
     e.preventDefault();
     const parsed = parseFloat(inputValue);
     if (Number.isNaN(parsed) || parsed < 0) return;
-    
+
     setLoading(true);
     await onUpdateBudget(parsed);
     setLoading(false);
@@ -49,7 +51,11 @@ export default function PresupuestoCard({
 
   // barra: amarilla desde el 80 %, roja al sobrepasar el presupuesto
   const isOver = disponible < 0;
-  const progressTone = isOver ? styles.progressBad : percentage >= 80 ? styles.progressWarn : "";
+  const progressTone = isOver
+    ? styles.progressBad
+    : percentage >= 80
+      ? styles.progressWarn
+      : "";
 
   return (
     <section className={styles.stackSm}>
@@ -90,7 +96,11 @@ export default function PresupuestoCard({
               required
             />
           </label>
-          <button type="submit" className="btn-primary btn-sm" disabled={loading}>
+          <button
+            type="submit"
+            className="btn-primary btn-sm"
+            disabled={loading}
+          >
             {loading && <LoaderCircle className="spin" aria-hidden="true" />}
             {loading ? "Guardando..." : "Guardar"}
           </button>
@@ -105,7 +115,9 @@ export default function PresupuestoCard({
             <dt>Total Gastado</dt>
             <dd>{formatCurrency(presupuestoEjecutado)}</dd>
           </div>
-          <div className={`${brig.figure} ${isOver ? brig.figureBad : brig.figureOk}`}>
+          <div
+            className={`${brig.figure} ${isOver ? brig.figureBad : brig.figureOk}`}
+          >
             <dt>Presupuesto Disponible</dt>
             <dd>{formatCurrency(disponible)}</dd>
           </div>
@@ -128,7 +140,9 @@ export default function PresupuestoCard({
           <p className="notice notice-bad">
             <CircleAlert aria-hidden="true" />
             <span>
-              <strong>Alerta:</strong> El presupuesto ejecutado ha sobrepasado el límite inicial estimado por {formatCurrency(Math.abs(disponible))}.
+              <strong>Alerta:</strong> El presupuesto ejecutado ha sobrepasado
+              el límite inicial estimado por{" "}
+              {formatCurrency(Math.abs(disponible))}.
             </span>
           </p>
         )}

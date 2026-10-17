@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import type React from "react";
+import { useEffect, useState } from "react";
 import styles from "@/styles/pages/reportes.module.css";
 
 export interface MetaItem {
@@ -49,9 +51,13 @@ export default function PrintReportDocument({
       {/* Membrete Oficial Institucional */}
       <div className={styles.printHeaderBlock}>
         <div className={styles.printBrandRow}>
-          {/* el tamaño del logo lo fija .printBrandRow img en la hoja de impresión */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Logo Fundación Dibujando Sonrisas" />
+          <Image
+            src="/logo.png"
+            alt="Logo Fundación Dibujando Sonrisas"
+            width={52}
+            height={52}
+            loading="eager"
+          />
           <div>
             <h1 className={styles.printFoundationTitle}>
               Fundación Dibujando Sonrisas
@@ -71,8 +77,8 @@ export default function PrintReportDocument({
           <div className={styles.printMetaItem}>
             <strong>Fecha de Generación:</strong> {fechaGeneracion}
           </div>
-          {metaItems.map((item, idx) => (
-            <div key={idx} className={styles.printMetaItem}>
+          {metaItems.map((item) => (
+            <div key={item.label} className={styles.printMetaItem}>
               <strong>{item.label}:</strong> {item.value}
             </div>
           ))}
@@ -82,8 +88,8 @@ export default function PrintReportDocument({
       {/* Tarjetas Resumen si aplican */}
       {summaryCards.length > 0 && (
         <div className={styles.printSummaryGrid}>
-          {summaryCards.map((card, idx) => (
-            <div key={idx} className={styles.printSummaryCard}>
+          {summaryCards.map((card) => (
+            <div key={card.label} className={styles.printSummaryCard}>
               <span className={styles.printSummaryCardLabel}>{card.label}</span>
               <span className={styles.printSummaryCardValue}>{card.value}</span>
             </div>

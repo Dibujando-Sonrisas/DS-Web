@@ -1,17 +1,19 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
-import { z } from "zod";
 import { CircleAlert, LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import type React from "react";
+import { useState, useTransition } from "react";
+import { z } from "zod";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
+import { Constants, type Enums } from "@/lib/database.types";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
 
 export type GastoRow = {
   id: string;
   brigada_id: string;
-  categoria: "medicamentos" | "alimentacion" | "publicidad" | "otros";
+  categoria: Enums<"categoria_gasto">;
   descripcion: string;
   monto: number;
   fecha_gasto: string; // ISO String YYYY-MM-DD
@@ -22,38 +24,67 @@ export type GastoRow = {
 type GastosTableProps = {
   brigadaId: string;
   gastos: GastoRow[];
-  onSaveGasto: (gasto: Omit<GastoRow, "id"> & { id?: string }, isDelete?: boolean) => Promise<void>;
+  onSaveGasto: (
+    gasto: Omit<GastoRow, "id"> & { id?: string },
+    isDelete?: boolean
+  ) => Promise<void>;
   isReadOnly?: boolean;
 };
 
 // Esquema Zod 4 de Validación Estricta (Capítulo 15 - Análisis y Diseño de Datos)
 const gastoSchema = z.object({
-  categoria: z.enum(["medicamentos", "alimentacion", "publicidad", "otros"], {
+  categoria: z.enum(Constants.public.Enums.categoria_gasto, {
     message: "Prueba de valores válidos: Selecciona una categoría válida.",
   }),
   descripcion: z
     .string()
     .trim()
-    .min(3, "Prueba de presencia: El concepto o descripción debe tener al menos 3 caracteres.")
-    .max(200, "Prueba de longitud: La descripción no debe exceder 200 caracteres."),
+    .min(
+      3,
+      "Prueba de presencia: El concepto o descripción debe tener al menos 3 caracteres."
+    )
+    .max(
+      200,
+      "Prueba de longitud: La descripción no debe exceder 200 caracteres."
+    ),
   monto: z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? 0 : Number(val)),
+    (val) =>
+      val === "" || val === null || val === undefined ? 0 : Number(val),
     z
-      .number({ message: "Prueba de clase: El monto del gasto debe ser numérico." })
-      .min(0.01, "Prueba de sensatez: El monto del gasto debe ser un valor positivo mayor a L 0.00.")
+      .number({
+        message: "Prueba de clase: El monto del gasto debe ser numérico.",
+      })
+      .min(
+        0.01,
+        "Prueba de sensatez: El monto del gasto debe ser un valor positivo mayor a L 0.00."
+      )
   ),
   fecha_gasto: z
     .string()
-    .min(1, "Prueba de presencia: La fecha de registro del gasto es obligatoria."),
+    .min(
+      1,
+      "Prueba de presencia: La fecha de registro del gasto es obligatoria."
+    ),
 });
 
 type GastoFormData = z.infer<typeof gastoSchema>;
 
-const CATEGORIA_LABELS: Record<string, string> = {
+// the panel offers four categories; older rows may use the other database values
+const PANEL_CATEGORIES: readonly Enums<"categoria_gasto">[] = [
+  "medicamentos",
+  "alimentacion",
+  "publicidad",
+  "otros",
+];
+
+const CATEGORIA_LABELS: Record<Enums<"categoria_gasto">, string> = {
   medicamentos: "Medicamentos / Clínica",
   alimentacion: "Alimentación / Viáticos",
   publicidad: "Publicidad / Impresión",
   otros: "Otros / Varios",
+  combustible: "Combustible",
+  material_medico: "Material médico",
+  papeleria: "Papelería",
 };
 
 export default function GastosTable({
@@ -76,7 +107,9 @@ export default function GastosTable({
     fecha_gasto: "",
   });
 
-  const [formErrors, setFormErrors] = useState<Partial<Record<keyof GastoFormData, string>>>({});
+  const [formErrors, setFormErrors] = useState<
+    Partial<Record<keyof GastoFormData, string>>
+  >({});
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   const handleInputChange = (
@@ -159,7 +192,9 @@ export default function GastosTable({
         }
       });
       setFormErrors(errors);
-      setGeneralError("Existen errores en los datos del gasto. Por favor revísalos a continuación.");
+      setGeneralError(
+        "Existen errores en los datos del gasto. Por favor revísalos a continuación."
+      );
       return;
     }
 
@@ -193,10 +228,15 @@ export default function GastosTable({
     <section className={styles.stackSm}>
       <div className={styles.rowBetween}>
         <h3 className={styles.subTitle}>
-          Gastos Registrados <span className={styles.count}>{gastos.length}</span>
+          Gastos Registrados{" "}
+          <span className={styles.count}>{gastos.length}</span>
         </h3>
         {!isReadOnly && (
-          <button type="button" className="btn-primary btn-sm" onClick={openCreate}>
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            onClick={openCreate}
+          >
             <Plus aria-hidden="true" />
             Registrar Nuevo Gasto
           </button>
@@ -218,7 +258,8 @@ export default function GastosTable({
             {gastos.length === 0 ? (
               <tr>
                 <td colSpan={isReadOnly ? 4 : 5} className={styles.emptyCell}>
-                  Aún no se han registrado gastos presupuestarios para esta brigada médica.
+                  Aún no se han registrado gastos presupuestarios para esta
+                  brigada médica.
                 </td>
               </tr>
             ) : (
@@ -230,7 +271,9 @@ export default function GastosTable({
                     </span>
                   </td>
                   <td>{g.descripcion}</td>
-                  <td className={`${styles.num} ${brig.valueBad}`}>{formatCurrency(g.monto)}</td>
+                  <td className={`${styles.num} ${brig.valueBad}`}>
+                    {formatCurrency(g.monto)}
+                  </td>
                   <td className={styles.nowrap}>{formatDate(g.fecha_gasto)}</td>
                   {!isReadOnly && (
                     <td>
@@ -266,7 +309,11 @@ export default function GastosTable({
       {/* Modal de Registro / Edición de Gasto (Diseño de Columna Única Vertical) */}
       {modalMode && (
         <AdminModal
-          title={modalMode === "create" ? "Registrar Nuevo Gasto" : "Editar Registro de Gasto"}
+          title={
+            modalMode === "create"
+              ? "Registrar Nuevo Gasto"
+              : "Editar Registro de Gasto"
+          }
           size="sm"
           onClose={handleRequestClose}
           busy={isPending}
@@ -284,7 +331,10 @@ export default function GastosTable({
               {/* Categoría del Gasto */}
               <label className="form-field">
                 <span className="form-label">
-                  Categoría del Gasto <span className="form-required" aria-hidden="true">*</span>
+                  Categoría del Gasto{" "}
+                  <span className="form-required" aria-hidden="true">
+                    *
+                  </span>
                 </span>
                 <select
                   name="categoria"
@@ -294,10 +344,22 @@ export default function GastosTable({
                   disabled={isPending}
                   required
                 >
-                  <option value="medicamentos">{CATEGORIA_LABELS.medicamentos}</option>
-                  <option value="alimentacion">{CATEGORIA_LABELS.alimentacion}</option>
-                  <option value="publicidad">{CATEGORIA_LABELS.publicidad}</option>
+                  <option value="medicamentos">
+                    {CATEGORIA_LABELS.medicamentos}
+                  </option>
+                  <option value="alimentacion">
+                    {CATEGORIA_LABELS.alimentacion}
+                  </option>
+                  <option value="publicidad">
+                    {CATEGORIA_LABELS.publicidad}
+                  </option>
                   <option value="otros">{CATEGORIA_LABELS.otros}</option>
+                  {formData.categoria &&
+                    !PANEL_CATEGORIES.includes(formData.categoria) && (
+                      <option value={formData.categoria}>
+                        {CATEGORIA_LABELS[formData.categoria]}
+                      </option>
+                    )}
                 </select>
                 {formErrors.categoria && (
                   <span className="form-error">
@@ -310,7 +372,10 @@ export default function GastosTable({
               {/* Descripción / Concepto del Gasto */}
               <label className="form-field">
                 <span className="form-label">
-                  Descripción / Concepto del Gasto <span className="form-required" aria-hidden="true">*</span>
+                  Descripción / Concepto del Gasto{" "}
+                  <span className="form-required" aria-hidden="true">
+                    *
+                  </span>
                 </span>
                 <input
                   name="descripcion"
@@ -333,7 +398,10 @@ export default function GastosTable({
               {/* Monto en Lempiras */}
               <label className="form-field">
                 <span className="form-label">
-                  Monto Ejecutado (HNL) <span className="form-required" aria-hidden="true">*</span>
+                  Monto Ejecutado (HNL){" "}
+                  <span className="form-required" aria-hidden="true">
+                    *
+                  </span>
                 </span>
                 <input
                   name="monto"
@@ -358,7 +426,10 @@ export default function GastosTable({
               {/* Fecha de Ejecución del Gasto */}
               <label className="form-field">
                 <span className="form-label">
-                  Fecha de Ejecución del Gasto <span className="form-required" aria-hidden="true">*</span>
+                  Fecha de Ejecución del Gasto{" "}
+                  <span className="form-required" aria-hidden="true">
+                    *
+                  </span>
                 </span>
                 <input
                   name="fecha_gasto"
@@ -388,8 +459,14 @@ export default function GastosTable({
               >
                 Cancelar
               </button>
-              <button type="submit" className="btn-primary btn-sm" disabled={isPending}>
-                {isPending && <LoaderCircle className="spin" aria-hidden="true" />}
+              <button
+                type="submit"
+                className="btn-primary btn-sm"
+                disabled={isPending}
+              >
+                {isPending && (
+                  <LoaderCircle className="spin" aria-hidden="true" />
+                )}
                 {isPending ? "Guardando Registro..." : "Guardar Gasto"}
               </button>
             </div>
@@ -410,7 +487,8 @@ export default function GastosTable({
             setModalMode(null);
           }}
         >
-          Has modificado información del gasto. Si cierras la ventana ahora, los datos introducidos se perderán.
+          Has modificado información del gasto. Si cierras la ventana ahora, los
+          datos introducidos se perderán.
         </ConfirmDialog>
       )}
 
@@ -425,7 +503,9 @@ export default function GastosTable({
           onConfirm={confirmDelete}
         >
           ¿Estás seguro de que deseas eliminar permanentemente el gasto por{" "}
-          <strong>{formatCurrency(deleteTarget.monto)}</strong> (Concepto: {deleteTarget.descripcion})? Esta acción recalculará automáticamente el presupuesto restante de la brigada.
+          <strong>{formatCurrency(deleteTarget.monto)}</strong> (Concepto:{" "}
+          {deleteTarget.descripcion})? Esta acción recalculará automáticamente
+          el presupuesto restante de la brigada.
         </ConfirmDialog>
       )}
     </section>

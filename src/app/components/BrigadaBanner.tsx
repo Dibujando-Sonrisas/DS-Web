@@ -1,11 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import type { Brigada } from "@/lib/db/brigadas";
-import CountdownCard from "@/app/components/CountdownCard";
-import InscripcionModal from "@/app/components/InscripcionModal";
-import styles from "@/styles/components/brigada-banner.module.css";
 import {
   ArrowRight,
   Calendar,
@@ -16,6 +10,12 @@ import {
   MapPin,
   UserPlus,
 } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import CountdownCard from "@/app/components/CountdownCard";
+import InscripcionModal from "@/app/components/InscripcionModal";
+import type { Brigada } from "@/lib/db/brigadas";
+import styles from "@/styles/components/brigada-banner.module.css";
 
 export type CuposInfo = {
   total: number | null;
@@ -41,7 +41,10 @@ const formatDate = (isoString?: string | null) => {
 };
 
 /* Tarjeta de la próxima brigada: se usa en el inicio y en /voluntariado */
-export default function BrigadaBanner({ brigada, cuposInfo }: BrigadaBannerProps) {
+export default function BrigadaBanner({
+  brigada,
+  cuposInfo,
+}: BrigadaBannerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const isInscripcionesAbiertas = brigada.estado === "inscripciones_abiertas";

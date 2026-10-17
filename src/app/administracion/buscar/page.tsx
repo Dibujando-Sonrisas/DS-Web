@@ -1,24 +1,44 @@
-import type { ReactNode } from "react";
-import Link from "next/link";
+import {
+  ArrowRight,
+  Boxes,
+  CircleAlert,
+  Eye,
+  HeartPulse,
+  Layers,
+  Search,
+  SearchX,
+  Settings2,
+  Tent,
+} from "lucide-react";
 import Form from "next/form";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Boxes, CircleAlert, Eye, HeartPulse, Layers, Search, SearchX, Settings2, Tent } from "lucide-react";
-import { requireAuthContext } from "@/lib/auth/session";
+import type { ReactNode } from "react";
+import EmptyState from "@/app/administracion/components/EmptyState";
+import PageHeader from "@/app/administracion/components/PageHeader";
+import { ESTADOS as ESTADOS_PACIENTE } from "@/app/administracion/pacientes/estados";
 import { canAccessRoute } from "@/lib/auth/permissions";
+import { requireAuthContext } from "@/lib/auth/session";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { coincide } from "@/lib/texto";
-import { ESTADOS as ESTADOS_PACIENTE } from "@/app/administracion/pacientes/estados";
-import PageHeader from "@/app/administracion/components/PageHeader";
-import EmptyState from "@/app/administracion/components/EmptyState";
 import styles from "@/styles/pages/admin.module.css";
+
+const logger = getLogger("buscar");
 
 const VISTA_PREVIA = 5; // filas por grupo en "Todos"
 const MAX_FILAS = 50; // filas en la pestaña de un solo tipo
 
 // el enum de la base tiene estados heredados que la app no usa: esos caen en su nombre crudo
 const ESTADOS_BRIGADA: Record<string, { label: string; badge: string }> = {
-  inscripciones_abiertas: { label: "Inscripciones Abiertas", badge: "badgeInfo" },
-  inscripciones_cerradas: { label: "Inscripciones Cerradas", badge: "badgeNeutral" },
+  inscripciones_abiertas: {
+    label: "Inscripciones Abiertas",
+    badge: "badgeInfo",
+  },
+  inscripciones_cerradas: {
+    label: "Inscripciones Cerradas",
+    badge: "badgeNeutral",
+  },
   finalizada: { label: "Finalizada", badge: "badgeNeutral" },
   cancelada: { label: "Cancelada", badge: "badgeDanger" },
 };
@@ -30,7 +50,11 @@ const TIPOS_RECURSO: Record<string, { label: string; badge: string }> = {
 };
 
 const stockBadge = (estado: string) =>
-  estado === "Sin Existencias" ? "badgeDanger" : estado === "Normal" ? "badgeSuccess" : "badgeWarning";
+  estado === "Sin Existencias"
+    ? "badgeDanger"
+    : estado === "Normal"
+      ? "badgeSuccess"
+      : "badgeWarning";
 
 // fecha_brigada es un DATE: en UTC no se corre un día según la zona del servidor
 const formatFecha = new Intl.DateTimeFormat("es-HN", {
@@ -82,25 +106,42 @@ export default async function BuscarPage({
     buscar && acceso.brigadas
       ? supabase
           .from("brigadas")
-          .select("id, codigo, nombre, lugar, municipio, departamento, fecha_brigada, estado")
+          .select(
+            "id, codigo, nombre, lugar, municipio, departamento, fecha_brigada, estado"
+          )
           .order("fecha_brigada", { ascending: false })
       : null,
     buscar && acceso.inventario
       ? supabase
           .from("stock_actual")
-          .select("medicamento_id, nombre, descripcion, tipo_recurso, stock_total, unidad_medida, estado_stock")
+          .select(
+            "medicamento_id, nombre, descripcion, tipo_recurso, stock_total, unidad_medida, estado_stock"
+          )
           .order("nombre")
       : null,
   ]);
-  for (const res of [pac, brig, inv]) {
-    if (res?.error) console.error("Error en la búsqueda global:", res.error.message);
+  // nunca se registra el término buscado, solo la fuente que falló
+  const fuentes = { pacientes: pac, brigadas: brig, inventario: inv };
+  for (const [fuente, res] of Object.entries(fuentes)) {
+    if (res?.error)
+      logger.error("Global search query failed", {
+        ...errorInfo(res.error),
+        fuente,
+      });
   }
 
-  const pacientes = (pac?.data ?? []).filter((p) => coincide(`${p.codigo ?? ""} ${p.paciente ?? ""}`, q));
-  const brigadas = (brig?.data ?? []).filter((b) =>
-    coincide(`${b.codigo} ${b.nombre} ${b.lugar} ${b.municipio} ${b.departamento}`, q)
+  const pacientes = (pac?.data ?? []).filter((p) =>
+    coincide(`${p.codigo ?? ""} ${p.paciente ?? ""}`, q)
   );
-  const recursos = (inv?.data ?? []).filter((r) => coincide(`${r.nombre ?? ""} ${r.descripcion ?? ""}`, q));
+  const brigadas = (brig?.data ?? []).filter((b) =>
+    coincide(
+      `${b.codigo} ${b.nombre} ${b.lugar} ${b.municipio} ${b.departamento}`,
+      q
+    )
+  );
+  const recursos = (inv?.data ?? []).filter((r) =>
+    coincide(`${r.nombre ?? ""} ${r.descripcion ?? ""}`, q)
+  );
 
   const grupos: Grupo[] = [];
   if (acceso.pacientes) {
@@ -124,14 +165,20 @@ export default async function BuscarPage({
             </thead>
             <tbody>
               {pacientes.slice(0, filas).map((p) => {
-                const estado = ESTADOS_PACIENTE[p.estado ?? ""] ?? ESTADOS_PACIENTE.finalizada;
+                const estado =
+                  ESTADOS_PACIENTE[p.estado ?? ""] ??
+                  ESTADOS_PACIENTE.finalizada;
                 return (
                   <tr key={p.id}>
                     <td className={styles.cellCode}>{p.codigo}</td>
                     <td className={styles.cellMain}>{p.paciente}</td>
                     <td>{p.brigada || "—"}</td>
                     <td>
-                      <span className={`${styles.badge} ${styles[estado.badge]}`}>{estado.label}</span>
+                      <span
+                        className={`${styles.badge} ${styles[estado.badge]}`}
+                      >
+                        {estado.label}
+                      </span>
                     </td>
                     <td>
                       <div className={styles.rowActions}>
@@ -175,12 +222,17 @@ export default async function BuscarPage({
             </thead>
             <tbody>
               {brigadas.slice(0, filas).map((b) => {
-                const estado = ESTADOS_BRIGADA[b.estado] ?? { label: b.estado, badge: "badgeNeutral" };
+                const estado = ESTADOS_BRIGADA[b.estado] ?? {
+                  label: b.estado,
+                  badge: "badgeNeutral",
+                };
                 return (
                   <tr key={b.id}>
                     <td>
                       <span className={styles.cellMain}>{b.nombre}</span>
-                      <span className={`${styles.cellSub} ${styles.nowrap}`}>{b.codigo}</span>
+                      <span className={`${styles.cellSub} ${styles.nowrap}`}>
+                        {b.codigo}
+                      </span>
                     </td>
                     <td>
                       {b.lugar}
@@ -188,9 +240,15 @@ export default async function BuscarPage({
                         {b.municipio}, {b.departamento}
                       </span>
                     </td>
-                    <td className={styles.nowrap}>{formatFecha.format(new Date(b.fecha_brigada))}</td>
+                    <td className={styles.nowrap}>
+                      {formatFecha.format(new Date(b.fecha_brigada))}
+                    </td>
                     <td>
-                      <span className={`${styles.badge} ${styles[estado.badge]}`}>{estado.label}</span>
+                      <span
+                        className={`${styles.badge} ${styles[estado.badge]}`}
+                      >
+                        {estado.label}
+                      </span>
                     </td>
                     <td>
                       <div className={styles.rowActions}>
@@ -234,26 +292,37 @@ export default async function BuscarPage({
             </thead>
             <tbody>
               {recursos.slice(0, filas).map((r) => {
-                const tipoRecurso = TIPOS_RECURSO[r.tipo_recurso ?? ""] ?? TIPOS_RECURSO.medicamento;
+                const tipoRecurso =
+                  TIPOS_RECURSO[r.tipo_recurso ?? ""] ??
+                  TIPOS_RECURSO.medicamento;
                 const estadoStock = r.estado_stock || "Sin Existencias";
                 return (
                   <tr key={r.medicamento_id}>
                     <td>
                       <span className={styles.cellMain}>{r.nombre}</span>
                       {r.descripcion && (
-                        <span className={`${styles.cellSub} ${styles.truncate}`} title={r.descripcion}>
+                        <span
+                          className={`${styles.cellSub} ${styles.truncate}`}
+                          title={r.descripcion}
+                        >
                           {r.descripcion}
                         </span>
                       )}
                     </td>
                     <td>
-                      <span className={`${styles.badge} ${styles[tipoRecurso.badge]}`}>{tipoRecurso.label}</span>
+                      <span
+                        className={`${styles.badge} ${styles[tipoRecurso.badge]}`}
+                      >
+                        {tipoRecurso.label}
+                      </span>
                     </td>
                     <td className={`${styles.num} ${styles.nowrap}`}>
                       {r.stock_total ?? 0} {r.unidad_medida}
                     </td>
                     <td>
-                      <span className={`${styles.badge} ${styles.badgeDot} ${styles[stockBadge(estadoStock)]}`}>
+                      <span
+                        className={`${styles.badge} ${styles.badgeDot} ${styles[stockBadge(estadoStock)]}`}
+                      >
                         {estadoStock}
                       </span>
                     </td>
@@ -284,7 +353,9 @@ export default async function BuscarPage({
   const hrefTipo = (t: string) =>
     `/administracion/buscar?q=${encodeURIComponent(q)}${t === "todos" ? "" : `&tipo=${t}`}`;
   const visibles =
-    tipo === "todos" ? grupos.filter((g) => g.total > 0 || g.error) : grupos.filter((g) => g.id === tipo);
+    tipo === "todos"
+      ? grupos.filter((g) => g.total > 0 || g.error)
+      : grupos.filter((g) => g.id === tipo);
   const filas = tipo === "todos" ? VISTA_PREVIA : MAX_FILAS;
   const alcance = new Intl.ListFormat("es", { type: "disjunction" }).format(
     grupos.map((g) => g.label.toLowerCase())
@@ -306,7 +377,11 @@ export default async function BuscarPage({
       />
 
       <section className={styles.panel} aria-label="Buscar en el sistema">
-        <Form action="/administracion/buscar" className={styles.toolbar} role="search">
+        <Form
+          action="/administracion/buscar"
+          className={styles.toolbar}
+          role="search"
+        >
           <div className={`${styles.filter} ${styles.filterWide}`}>
             <label className={styles.filterLabel} htmlFor="buscar-q">
               Nombre o código
@@ -322,6 +397,7 @@ export default async function BuscarPage({
                 defaultValue={q}
                 minLength={2}
                 required
+                // biome-ignore lint/a11y/noAutofocus: la página existe para buscar; el foco va al campo solo cuando aún no hay búsqueda
                 autoFocus={!q}
               />
             </div>
@@ -334,13 +410,22 @@ export default async function BuscarPage({
       </section>
 
       {!buscar ? (
-        <EmptyState dashed icon={<Search />} title={q ? "Escribe al menos 2 caracteres" : "¿Qué estás buscando?"}>
-          Puedes escribir parte del nombre o del código. No importan las tildes ni las mayúsculas.
+        <EmptyState
+          dashed
+          icon={<Search />}
+          title={q ? "Escribe al menos 2 caracteres" : "¿Qué estás buscando?"}
+        >
+          Puedes escribir parte del nombre o del código. No importan las tildes
+          ni las mayúsculas.
         </EmptyState>
       ) : (
         <>
           <nav className={styles.tabs} aria-label="Tipo de resultado">
-            <Link href={hrefTipo("todos")} className={styles.tab} aria-current={tipo === "todos" ? "page" : undefined}>
+            <Link
+              href={hrefTipo("todos")}
+              className={styles.tab}
+              aria-current={tipo === "todos" ? "page" : undefined}
+            >
               <Search aria-hidden="true" />
               Todos
               <span className={styles.tabCount}>{total}</span>
@@ -360,12 +445,20 @@ export default async function BuscarPage({
           </nav>
 
           {visibles.length === 0 ? (
-            <EmptyState dashed icon={<SearchX />} title={`Sin resultados para “${q}”`}>
+            <EmptyState
+              dashed
+              icon={<SearchX />}
+              title={`Sin resultados para “${q}”`}
+            >
               Revisa la ortografía o prueba con menos palabras.
             </EmptyState>
           ) : (
             visibles.map((g) => (
-              <section key={g.id} className={styles.panel} aria-labelledby={`grupo-${g.id}`}>
+              <section
+                key={g.id}
+                className={styles.panel}
+                aria-labelledby={`grupo-${g.id}`}
+              >
                 <div className={styles.panelHeader}>
                   <h2 id={`grupo-${g.id}`} className={styles.panelTitle}>
                     {g.label} <span className={styles.count}>{g.total}</span>
@@ -376,11 +469,17 @@ export default async function BuscarPage({
                   <div className={styles.panelBody}>
                     <p className="notice notice-bad" role="alert">
                       <CircleAlert aria-hidden="true" />
-                      <span>No se pudo buscar en {g.label.toLowerCase()}. Intenta de nuevo en unos minutos.</span>
+                      <span>
+                        No se pudo buscar en {g.label.toLowerCase()}. Intenta de
+                        nuevo en unos minutos.
+                      </span>
                     </p>
                   </div>
                 ) : g.total === 0 ? (
-                  <EmptyState icon={<SearchX />} title={`Ningún resultado en ${g.label.toLowerCase()}`}>
+                  <EmptyState
+                    icon={<SearchX />}
+                    title={`Ningún resultado en ${g.label.toLowerCase()}`}
+                  >
                     Revisa la ortografía o prueba con menos palabras.
                   </EmptyState>
                 ) : (
@@ -396,7 +495,8 @@ export default async function BuscarPage({
                       </Link>
                     ) : (
                       <span className={styles.pagerInfo}>
-                        Mostrando {filas} de {g.total}. Agrega más palabras para afinar la búsqueda.
+                        Mostrando {filas} de {g.total}. Agrega más palabras para
+                        afinar la búsqueda.
                       </span>
                     )}
                   </div>

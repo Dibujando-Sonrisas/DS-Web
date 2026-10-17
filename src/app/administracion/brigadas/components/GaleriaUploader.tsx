@@ -1,15 +1,24 @@
 "use client";
 
+import {
+  CircleAlert,
+  CircleCheck,
+  ImagePlus,
+  LoaderCircle,
+  X,
+} from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
-import { CircleAlert, CircleCheck, ImagePlus, LoaderCircle, X } from "lucide-react";
-import { subirImagenBrigadaStorageAction } from "../actions";
+import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
+import { subirImagenBrigadaStorageAction } from "../actions";
+
+const logger = getLogger("brigadas", "client");
 
 type GaleriaUploaderProps = {
   brigadaId: string;
   brigadaCodigo: string;
-  existingImages: { id: string; nombre_archivo: string; orden: number }[];
   onUploadSuccess: () => void;
   isReadOnly?: boolean;
 };
@@ -39,7 +48,6 @@ const isHeicFile = (file: File) => {
 export default function GaleriaUploader({
   brigadaId,
   brigadaCodigo,
-  existingImages,
   onUploadSuccess,
   isReadOnly = false,
 }: GaleriaUploaderProps) {
@@ -60,7 +68,6 @@ export default function GaleriaUploader({
     // 1. Decodificación cliente para archivos HEIC/HEIF
     if (isHeicFile(file)) {
       try {
-        // @ts-ignore
         const heic2any = (await import("heic2any")).default;
         const converted = await heic2any({
           blob: file,
@@ -69,13 +76,17 @@ export default function GaleriaUploader({
         });
         sourceBlob = Array.isArray(converted) ? converted[0] : converted;
       } catch (heicErr) {
+        logger.warning("HEIC decoding failed", {
+          ...errorInfo(heicErr),
+          size: file.size,
+        });
         throw new Error(`No se pudo decodificar la foto HEIC ${file.name}.`);
       }
     }
 
     // 2. Renderizado en Canvas para aplanado y compresión JPG (máximo 1600px)
     return new Promise((resolve, reject) => {
-      const img = new Image();
+      const img = new window.Image();
       img.src = URL.createObjectURL(sourceBlob);
       img.onload = () => {
         URL.revokeObjectURL(img.src);
@@ -98,7 +109,9 @@ export default function GaleriaUploader({
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          reject(new Error("No se pudo obtener el contexto del lienzo canvas."));
+          reject(
+            new Error("No se pudo obtener el contexto del lienzo canvas.")
+          );
           return;
         }
 
@@ -136,7 +149,9 @@ export default function GaleriaUploader({
     });
 
     if (imageFiles.length === 0) {
-      setErrorMsg("Selecciona únicamente archivos de imagen válidos (.jpg, .png, .webp, .heic, .heif).");
+      setErrorMsg(
+        "Selecciona únicamente archivos de imagen válidos (.jpg, .png, .webp, .heic, .heif)."
+      );
       return;
     }
 
@@ -154,9 +169,13 @@ export default function GaleriaUploader({
 
     if (overweightFiles.length > 0) {
       if (overweightFiles.length === 1) {
-        setErrorMsg(`El archivo ${overweightFiles[0]} supera el límite de 15 MB. Por favor, selecciona imágenes más ligeras.`);
+        setErrorMsg(
+          `El archivo ${overweightFiles[0]} supera el límite de 15 MB. Por favor, selecciona imágenes más ligeras.`
+        );
       } else {
-        setErrorMsg(`Los siguientes archivos superan el límite de 15 MB: ${overweightFiles.join(", ")}. Por favor, selecciona imágenes más ligeras.`);
+        setErrorMsg(
+          `Los siguientes archivos superan el límite de 15 MB: ${overweightFiles.join(", ")}. Por favor, selecciona imágenes más ligeras.`
+        );
       }
     }
 
@@ -172,7 +191,6 @@ export default function GaleriaUploader({
         let previewUrl = "";
         if (isHeicFile(file)) {
           try {
-            // @ts-ignore
             const heic2any = (await import("heic2any")).default;
             const converted = await heic2any({
               blob: file,
@@ -181,7 +199,9 @@ export default function GaleriaUploader({
             });
             const jpgBlob = Array.isArray(converted) ? converted[0] : converted;
             previewUrl = URL.createObjectURL(jpgBlob);
-          } catch {
+          } catch (error) {
+            // sin conversión se muestra el archivo original
+            logger.warning("HEIC preview failed", errorInfo(error));
             previewUrl = URL.createObjectURL(file);
           }
         } else {
@@ -197,7 +217,8 @@ export default function GaleriaUploader({
       }
 
       setSelectedImages((prev) => [...prev, ...newPreviews]);
-    } catch {
+    } catch (error) {
+      logger.error("Gallery preview generation failed", errorInfo(error));
       setErrorMsg("Error al generar vista previa de algunas imágenes.");
     } finally {
       setUploadStatusMsg("");
@@ -254,7 +275,10 @@ export default function GaleriaUploader({
         formData.append("brigadaId", brigadaId);
         formData.append("brigadaCodigo", brigadaCodigo);
         formData.append("portada", item.isCover ? "true" : "false");
-        formData.append("file", new File([jpgBlob], item.file.name, { type: "image/jpeg" }));
+        formData.append(
+          "file",
+          new File([jpgBlob], item.file.name, { type: "image/jpeg" })
+        );
 
         // 3. Ejecutar subida mediante Server Action autenticada
         const res = await subirImagenBrigadaStorageAction(formData);
@@ -266,7 +290,18 @@ export default function GaleriaUploader({
         }
       } catch (err) {
         // Captura de excepción individual sin detener el bucle
-        const errorMsgDetail = err instanceof Error ? err.message : "Error de conexión o red";
+        // el mensaje puede llevar el nombre del archivo: se reemplaza antes del log
+        logger.error("Gallery upload failed", {
+          ...errorInfo(
+            err instanceof Error
+              ? err.message.replaceAll(item.file.name, "[file]")
+              : err
+          ),
+          brigadaId,
+          size: item.file.size,
+        });
+        const errorMsgDetail =
+          err instanceof Error ? err.message : "Error de conexión o red";
         failedFiles.push(`${item.file.name} (${errorMsgDetail})`);
       }
     }
@@ -282,7 +317,7 @@ export default function GaleriaUploader({
       setSuccessMsg(
         `Se subieron con éxito ${successCount} de ${selectedImages.length} fotografías a la galería.`
       );
-      selectedImages.forEach((img) => URL.revokeObjectURL(img.previewUrl));
+      for (const img of selectedImages) URL.revokeObjectURL(img.previewUrl);
       setSelectedImages([]);
       onUploadSuccess();
     }
@@ -296,7 +331,8 @@ export default function GaleriaUploader({
       <div className={styles.rowBetween}>
         <h3 className={styles.subTitle}>Cargar Fotografías a la Galería</h3>
         <p className={brig.meta}>
-          Bucket: <strong>brigadas</strong> | Máx: <strong>15 MB por foto</strong>
+          Bucket: <strong>brigadas</strong> | Máx:{" "}
+          <strong>15 MB por foto</strong>
         </p>
       </div>
 
@@ -316,6 +352,7 @@ export default function GaleriaUploader({
       )}
 
       {!isReadOnly && (
+        // biome-ignore lint/a11y/noStaticElementInteractions: arrastrar es un atajo; el input de archivo que cubre la zona da el acceso por clic y teclado
         <div
           className={`${styles.dropzone} ${brig.dropzoneFocus} ${dragOver ? styles.dropzoneActive : ""}`}
           onDragOver={(e) => {
@@ -326,15 +363,20 @@ export default function GaleriaUploader({
           onDrop={(e) => {
             e.preventDefault();
             setDragOver(false);
-            if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
+            if (e.dataTransfer.files.length > 0)
+              handleFiles(e.dataTransfer.files);
           }}
         >
           <ImagePlus aria-hidden="true" />
           <p className={styles.dropzoneText}>
-            <strong>Haz clic aquí o arrastra imágenes (JPG, PNG, HEIC de iPhone)</strong>
+            <strong>
+              Haz clic aquí o arrastra imágenes (JPG, PNG, HEIC de iPhone)
+            </strong>
             <br />
             <span className={brig.dropzoneHint}>
-              Procesamiento secuencial seguro para <strong>HEIC / HEIF de iPhone</strong>, PNG y JPG (máx. 15 MB por imagen). Se guardarán en <strong>formato JPG (.jpg)</strong>.
+              Procesamiento secuencial seguro para{" "}
+              <strong>HEIC / HEIF de iPhone</strong>, PNG y JPG (máx. 15 MB por
+              imagen). Se guardarán en <strong>formato JPG (.jpg)</strong>.
             </span>
           </p>
           {/* el input invisible cubre toda la zona: clic y teclado abren el selector */}
@@ -345,7 +387,8 @@ export default function GaleriaUploader({
             className={styles.dropzoneInput}
             aria-label="Seleccionar fotografías para la galería"
             onChange={(e) => {
-              if (e.target.files && e.target.files.length > 0) handleFiles(e.target.files);
+              if (e.target.files && e.target.files.length > 0)
+                handleFiles(e.target.files);
               e.target.value = "";
             }}
           />
@@ -356,14 +399,25 @@ export default function GaleriaUploader({
         <div className={styles.stackSm}>
           <h4 className={brig.subTitleSm}>
             Previsualización de Selección{" "}
-            <span className={styles.count}>{selectedImages.length} fotos listas</span>
+            <span className={styles.count}>
+              {selectedImages.length} fotos listas
+            </span>
           </h4>
 
           {/* Cuadrícula de miniaturas previsualizadas */}
           <div className={styles.photoGrid}>
             {selectedImages.map((img) => (
-              <div key={img.id} className={`${styles.photoItem} ${img.isCover ? brig.photoCover : ""}`}>
-                <img src={img.previewUrl} alt="Vista previa" />
+              <div
+                key={img.id}
+                className={`${styles.photoItem} ${img.isCover ? brig.photoCover : ""}`}
+              >
+                <Image
+                  src={img.previewUrl}
+                  alt="Vista previa"
+                  fill
+                  sizes="240px"
+                  unoptimized
+                />
 
                 {/* Botón de quitar selección individual */}
                 <button
@@ -396,11 +450,14 @@ export default function GaleriaUploader({
             {uploading || uploadStatusMsg ? (
               <p className={brig.uploadStatus} role="status">
                 <LoaderCircle className="spin" aria-hidden="true" />
-                <span>{uploadStatusMsg || "Subiendo imágenes secuencialmente..."}</span>
+                <span>
+                  {uploadStatusMsg || "Subiendo imágenes secuencialmente..."}
+                </span>
               </p>
             ) : (
               <p className={brig.meta}>
-                Los archivos se guardarán uno a uno en <code>brigadas/{brigadaCodigo}/</code>
+                Los archivos se guardarán uno a uno en{" "}
+                <code>brigadas/{brigadaCodigo}/</code>
               </p>
             )}
 
@@ -410,7 +467,9 @@ export default function GaleriaUploader({
               onClick={handleUpload}
               disabled={uploading || selectedImages.length === 0}
             >
-              {uploading && <LoaderCircle className="spin" aria-hidden="true" />}
+              {uploading && (
+                <LoaderCircle className="spin" aria-hidden="true" />
+              )}
               {uploading ? "Subiendo 1 a 1..." : "Guardar en Galería"}
             </button>
           </div>

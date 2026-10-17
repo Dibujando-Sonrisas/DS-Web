@@ -47,11 +47,15 @@ export const emailSchema = z
   .trim()
   .min(1, "Prueba de presencia: El correo electrónico es obligatorio.")
   .refine((val) => REGEX_PATTERNS.EMAIL.test(val), {
-    message: "Prueba de sintaxis: Ingrese una dirección de correo electrónico válida (ej. usuario@dominio.com).",
+    message:
+      "Prueba de sintaxis: Ingrese una dirección de correo electrónico válida (ej. usuario@dominio.com).",
   });
 
-export function sanitizeNumberInput(val: unknown, fallback: number = 0): number {
+export function sanitizeNumberInput(
+  val: unknown,
+  fallback: number = 0
+): number {
   if (val === "" || val === null || val === undefined) return fallback;
   const num = Number(val);
-  return isNaN(num) ? fallback : num;
+  return Number.isNaN(num) ? fallback : num;
 }

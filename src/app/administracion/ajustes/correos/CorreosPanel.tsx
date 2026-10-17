@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 import {
   BellOff,
   HeartHandshake,
@@ -11,15 +10,16 @@ import {
   TriangleAlert,
   UserPlus,
 } from "lucide-react";
+import { type FormEvent, type ReactNode, useState, useTransition } from "react";
+import Combobox, { type ComboboxOption } from "@/app/components/Combobox";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import type { AvisoCorreo } from "@/lib/avisosCorreo";
-import Combobox, { type ComboboxOption } from "@/app/components/Combobox";
-import UserAvatar from "../../components/UserAvatar";
-import { useToast } from "../../components/AdminToast";
-import { usePermissions } from "../../components/PermissionsProvider";
-import { agregarDestinatarioAction, quitarDestinatarioAction } from "./actions";
 import styles from "@/styles/pages/admin.module.css";
 import aj from "@/styles/pages/admin-ajustes.module.css";
+import { useToast } from "../../components/AdminToast";
+import { usePermissions } from "../../components/PermissionsProvider";
+import UserAvatar from "../../components/UserAvatar";
+import { agregarDestinatarioAction, quitarDestinatarioAction } from "./actions";
 
 export type Destinatario = {
   id: string;
@@ -58,7 +58,11 @@ type CorreosPanelProps = {
 };
 
 /** Ajustes → Correos: quién recibe cada aviso por correo (catálogo en lib/avisosCorreo.ts). */
-export default function CorreosPanel({ secciones, fetchError, configFaltante }: CorreosPanelProps) {
+export default function CorreosPanel({
+  secciones,
+  fetchError,
+  configFaltante,
+}: CorreosPanelProps) {
   const { can } = usePermissions();
   const puedeEditar = can(PERMISSIONS.AJUSTES_UPDATE);
 
@@ -70,8 +74,9 @@ export default function CorreosPanel({ secciones, fetchError, configFaltante }: 
             Avisos por correo
           </h2>
           <p className={`${styles.panelSub} ${styles.muted}`}>
-            Elige quién recibe un correo cuando pasa algo en el sitio. Llega al correo de acceso de
-            cada usuario; los usuarios desactivados dejan de recibirlo.
+            Elige quién recibe un correo cuando pasa algo en el sitio. Llega al
+            correo de acceso de cada usuario; los usuarios desactivados dejan de
+            recibirlo.
           </p>
         </div>
       </div>
@@ -90,8 +95,8 @@ export default function CorreosPanel({ secciones, fetchError, configFaltante }: 
               <TriangleAlert aria-hidden="true" />
               <span>
                 Los correos no están configurados en el servidor (falta{" "}
-                <strong>{configFaltante.join(", ")}</strong>). Los avisos siguen llegando a la
-                campana del panel.
+                <strong>{configFaltante.join(", ")}</strong>). Los avisos siguen
+                llegando a la campana del panel.
               </span>
             </p>
           )}
@@ -107,7 +112,13 @@ export default function CorreosPanel({ secciones, fetchError, configFaltante }: 
   );
 }
 
-function SeccionAvisoItem({ seccion, puedeEditar }: { seccion: SeccionAviso; puedeEditar: boolean }) {
+function SeccionAvisoItem({
+  seccion,
+  puedeEditar,
+}: {
+  seccion: SeccionAviso;
+  puedeEditar: boolean;
+}) {
   const { id, titulo, cuando, destinatarios, opciones } = seccion;
   const { icono, tono } = ICONOS[id];
   const { showToast } = useToast();
@@ -122,7 +133,10 @@ function SeccionAvisoItem({ seccion, puedeEditar }: { seccion: SeccionAviso; pue
     startTransition(async () => {
       const res = await agregarDestinatarioAction(id, usuario.value);
       if (res.error) return showToast(res.error, "error");
-      showToast(`${usuario.label} recibirá el aviso de ${titulo.toLowerCase()}.`, "success");
+      showToast(
+        `${usuario.label} recibirá el aviso de ${titulo.toLowerCase()}.`,
+        "success"
+      );
       setElegido("");
     });
   };
@@ -131,18 +145,29 @@ function SeccionAvisoItem({ seccion, puedeEditar }: { seccion: SeccionAviso; pue
     startTransition(async () => {
       const res = await quitarDestinatarioAction(id, d.id);
       if (res.error) return showToast(res.error, "error");
-      showToast(`${d.nombre} ya no recibirá el aviso de ${titulo.toLowerCase()}.`, "success");
+      showToast(
+        `${d.nombre} ya no recibirá el aviso de ${titulo.toLowerCase()}.`,
+        "success"
+      );
     });
 
   return (
-    <li className={aj.aviso} id={`aviso-${id}`} aria-labelledby={`aviso-${id}-titulo`}>
+    <li
+      className={aj.aviso}
+      id={`aviso-${id}`}
+      aria-labelledby={`aviso-${id}-titulo`}
+    >
       <div className={aj.avisoInfo}>
-        <span className={`icon-circle ${tono} ${aj.avisoIcono}`} aria-hidden="true">
+        <span
+          className={`icon-circle ${tono} ${aj.avisoIcono}`}
+          aria-hidden="true"
+        >
           {icono}
         </span>
         <div>
           <h3 id={`aviso-${id}-titulo`} className={aj.avisoTitulo}>
-            {titulo} <span className={styles.count}>{destinatarios.length}</span>
+            {titulo}{" "}
+            <span className={styles.count}>{destinatarios.length}</span>
           </h3>
           <p className={aj.avisoCuando}>{cuando}</p>
         </div>
@@ -152,7 +177,8 @@ function SeccionAvisoItem({ seccion, puedeEditar }: { seccion: SeccionAviso; pue
         {destinatarios.length === 0 ? (
           <p className={aj.vacio}>
             <BellOff aria-hidden="true" />
-            Nadie lo recibe: este correo no se envía hasta que agregues a alguien.
+            Nadie lo recibe: este correo no se envía hasta que agregues a
+            alguien.
           </p>
         ) : (
           <ul className={aj.destinatarios}>
@@ -163,12 +189,17 @@ function SeccionAvisoItem({ seccion, puedeEditar }: { seccion: SeccionAviso; pue
                   <span className={styles.cellMain}>
                     {d.nombre}{" "}
                     {!d.activo && (
-                      <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+                      <span
+                        className={`${styles.badge} ${styles.badgeNeutral}`}
+                      >
                         Inactivo · no recibe
                       </span>
                     )}
                   </span>
-                  <span className={styles.cellSub} title={`Agregado el ${formatFecha.format(new Date(d.agregado))}`}>
+                  <span
+                    className={styles.cellSub}
+                    title={`Agregado el ${formatFecha.format(new Date(d.agregado))}`}
+                  >
                     {d.email}
                   </span>
                 </span>
@@ -208,8 +239,16 @@ function SeccionAvisoItem({ seccion, puedeEditar }: { seccion: SeccionAviso; pue
               onChange={setElegido}
               disabled={isPending}
             />
-            <button type="submit" className="btn-primary btn-sm" disabled={isPending || !elegido}>
-              {isPending ? <LoaderCircle className="spin" aria-hidden="true" /> : <Plus aria-hidden="true" />}
+            <button
+              type="submit"
+              className="btn-primary btn-sm"
+              disabled={isPending || !elegido}
+            >
+              {isPending ? (
+                <LoaderCircle className="spin" aria-hidden="true" />
+              ) : (
+                <Plus aria-hidden="true" />
+              )}
               Agregar
             </button>
           </form>

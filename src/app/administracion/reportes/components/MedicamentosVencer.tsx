@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
-import styles from "@/styles/pages/admin.module.css";
-import rep from "@/styles/pages/reportes.module.css";
-import listas from "@/styles/pages/admin-reportes-listas.module.css";
+import { useEffect, useState } from "react";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { supabase } from "@/lib/supabase";
+import styles from "@/styles/pages/admin.module.css";
+import listas from "@/styles/pages/admin-reportes-listas.module.css";
+import rep from "@/styles/pages/reportes.module.css";
 import PrintReportDocument from "./PrintReportDocument";
+
+const logger = getLogger("reportes", "client");
 
 export interface MedicamentoVenceData {
   id: string;
@@ -24,11 +27,14 @@ export default function MedicamentosVencer() {
   const userRole = role.nombre;
   const [diasFiltro, setDiasFiltro] = useState<number>(90); // 30, 60, 90, 180
   const [filtroAlerta, setFiltroAlerta] = useState<string>("todos"); // todos, critico, advertencia, seguro
-  const [rawMedicamentos, setRawMedicamentos] = useState<MedicamentoVenceData[]>([]);
+  const [rawMedicamentos, setRawMedicamentos] = useState<
+    MedicamentoVenceData[]
+  >([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: los filtros son el disparador; al cambiarlos se vuelve a la página 1
   useEffect(() => {
     setCurrentPage(1);
   }, [diasFiltro, filtroAlerta]);
@@ -53,31 +59,33 @@ export default function MedicamentosVencer() {
           `);
         if (error) throw error;
 
-        let formatted: MedicamentoVenceData[] = (data || []).map((l: {
-          id: string;
-          numero_lote: string | null;
-          fecha_vencimiento: string;
-          cantidad_actual: number | null;
-          medicamentos: {
-            nombre: string;
-            categorias_inventario: { nombre: string } | null;
-          } | null;
-        }) => {
-          const med = l.medicamentos;
-          const cat = med?.categorias_inventario?.nombre || "Sin Categoría";
-          return {
-            id: l.id.slice(0, 8).toUpperCase(),
-            nombre: med?.nombre || "Medicamento Desconocido",
-            lote: l.numero_lote || "N/A",
-            fechaVencimiento: l.fecha_vencimiento,
-            stock: l.cantidad_actual || 0,
-            ubicacion: "Farmacia Central",
-            categoria: cat,
-          };
-        });
+        const formatted: MedicamentoVenceData[] = (data || []).map(
+          (l: {
+            id: string;
+            numero_lote: string | null;
+            fecha_vencimiento: string;
+            cantidad_actual: number | null;
+            medicamentos: {
+              nombre: string;
+              categorias_inventario: { nombre: string } | null;
+            } | null;
+          }) => {
+            const med = l.medicamentos;
+            const cat = med?.categorias_inventario?.nombre || "Sin Categoría";
+            return {
+              id: l.id.slice(0, 8).toUpperCase(),
+              nombre: med?.nombre || "Medicamento Desconocido",
+              lote: l.numero_lote || "N/A",
+              fechaVencimiento: l.fecha_vencimiento,
+              stock: l.cantidad_actual || 0,
+              ubicacion: "Farmacia Central",
+              categoria: cat,
+            };
+          }
+        );
         setRawMedicamentos(formatted);
       } catch (err) {
-        console.error("Error fetching lotes:", err);
+        logger.error("Expiring lots load failed", errorInfo(err));
       } finally {
         setLoading(false);
       }
@@ -148,23 +156,8 @@ export default function MedicamentosVencer() {
     setTimeout(restoreTitle, 1000);
   };
 
-  const [fechaActualCompleta, setFechaActualCompleta] = useState("");
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFechaActualCompleta(
-      new Date().toLocaleDateString("es-HN", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    );
-  }, []);
-
   // Prepare sorted data for print view (chronologically by expiration date ascending)
-  const printData = [...medicamentosFiltrados].sort((a, b) => 
+  const printData = [...medicamentosFiltrados].sort((a, b) =>
     a.fechaVencimiento.localeCompare(b.fechaVencimiento)
   );
 
@@ -175,13 +168,19 @@ export default function MedicamentosVencer() {
         {/* Encabezado */}
         <div className={styles.sectionHead}>
           <div>
-            <h2 className={styles.sectionTitle}>Reporte de Medicamentos Próximos a Vencer</h2>
+            <h2 className={styles.sectionTitle}>
+              Reporte de Medicamentos Próximos a Vencer
+            </h2>
             <p className={styles.sectionLead}>
               Supervisa las fechas de caducidad del inventario para su
               distribución prioritaria o descarte seguro.
             </p>
           </div>
-          <button type="button" className="btn-ghost btn-sm" onClick={handlePrint}>
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            onClick={handlePrint}
+          >
             <Printer aria-hidden="true" />
             Imprimir
           </button>
@@ -191,7 +190,9 @@ export default function MedicamentosVencer() {
           {/* Filtros */}
           <div className={styles.toolbar}>
             <div className={styles.filter}>
-              <label className={styles.filterLabel} htmlFor="dias-vence">Vence en menos de</label>
+              <label className={styles.filterLabel} htmlFor="dias-vence">
+                Vence en menos de
+              </label>
               <select
                 id="dias-vence"
                 className="form-input form-input-sm"
@@ -206,7 +207,9 @@ export default function MedicamentosVencer() {
             </div>
 
             <div className={styles.filter}>
-              <label className={styles.filterLabel} htmlFor="alerta-filtro">Alerta/Estado</label>
+              <label className={styles.filterLabel} htmlFor="alerta-filtro">
+                Alerta/Estado
+              </label>
               <select
                 id="alerta-filtro"
                 className="form-input form-input-sm"
@@ -221,7 +224,14 @@ export default function MedicamentosVencer() {
             </div>
 
             <p className={styles.toolbarNote}>
-              Fecha de Control: <strong>{hoy.toLocaleDateString("es-HN", { day: "2-digit", month: "short", year: "numeric" })}</strong>
+              Fecha de Control:{" "}
+              <strong>
+                {hoy.toLocaleDateString("es-HN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </strong>
             </p>
           </div>
 
@@ -229,7 +239,9 @@ export default function MedicamentosVencer() {
           {loading ? (
             <div className={styles.panelBody}>
               <div className={`${styles.skeleton} ${styles.skeletonBlock}`}>
-                <span className="sr-only">Cargando información de lotes...</span>
+                <span className="sr-only">
+                  Cargando información de lotes...
+                </span>
               </div>
             </div>
           ) : (
@@ -256,9 +268,13 @@ export default function MedicamentosVencer() {
                     </tr>
                   ) : (
                     medicamentosFiltrados
-                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .slice(
+                        (currentPage - 1) * itemsPerPage,
+                        currentPage * itemsPerPage
+                      )
                       .map((m, relativeIdx) => {
-                        const absoluteIdx = (currentPage - 1) * itemsPerPage + relativeIdx;
+                        const absoluteIdx =
+                          (currentPage - 1) * itemsPerPage + relativeIdx;
                         return (
                           <tr key={m.id}>
                             <td className={styles.muted}>{absoluteIdx + 1}</td>
@@ -266,24 +282,33 @@ export default function MedicamentosVencer() {
                             <td>{m.categoria}</td>
                             <td className={styles.cellCode}>{m.lote}</td>
                             <td className={styles.nowrap}>
-                              {new Date(m.fechaVencimiento).toLocaleDateString("es-HN", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                              })}
+                              {new Date(m.fechaVencimiento).toLocaleDateString(
+                                "es-HN",
+                                {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  year: "numeric",
+                                }
+                              )}
                             </td>
                             <td
                               className={`${styles.num} ${
-                                m.diasRestantes <= 30 ? listas.cellBad : styles.cellMain
+                                m.diasRestantes <= 30
+                                  ? listas.cellBad
+                                  : styles.cellMain
                               }`}
                             >
                               {m.diasRestantes <= 0
                                 ? "Vencido"
                                 : `${m.diasRestantes} días`}
                             </td>
-                            <td className={`${styles.num} ${styles.cellMain}`}>{m.stock}</td>
+                            <td className={`${styles.num} ${styles.cellMain}`}>
+                              {m.stock}
+                            </td>
                             <td>
-                              <span className={`${styles.badge} ${m.statusClass}`}>
+                              <span
+                                className={`${styles.badge} ${m.statusClass}`}
+                              >
                                 {m.estadoLabel}
                               </span>
                             </td>
@@ -298,13 +323,17 @@ export default function MedicamentosVencer() {
 
           {medicamentosFiltrados.length > 0 && (
             <div className={styles.panelFooter}>
-              <span className={styles.pagerInfo}>Página {currentPage} de {totalPages}</span>
+              <span className={styles.pagerInfo}>
+                Página {currentPage} de {totalPages}
+              </span>
               <div className={styles.row}>
                 <button
                   type="button"
                   className="btn-ghost btn-sm"
                   disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                 >
                   <ChevronLeft aria-hidden="true" />
                   Anterior
@@ -313,7 +342,9 @@ export default function MedicamentosVencer() {
                   type="button"
                   className="btn-ghost btn-sm"
                   disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
                 >
                   Siguiente
                   <ChevronRight aria-hidden="true" />
@@ -331,7 +362,11 @@ export default function MedicamentosVencer() {
           userRole={userRole}
           metaItems={[
             { label: "Filtro Días", value: `Menos de ${diasFiltro} días` },
-            { label: "Nivel Alerta", value: filtroAlerta === "todos" ? "Todos" : filtroAlerta.toUpperCase() },
+            {
+              label: "Nivel Alerta",
+              value:
+                filtroAlerta === "todos" ? "Todos" : filtroAlerta.toUpperCase(),
+            },
             { label: "Total Registros", value: printData.length },
           ]}
           footerNote="Reporte de control interno — Fundación Dibujando Sonrisas"
@@ -369,16 +404,23 @@ export default function MedicamentosVencer() {
                     <td>{m.categoria}</td>
                     <td className={rep.printMono}>{m.lote}</td>
                     <td>
-                      {new Date(m.fechaVencimiento).toLocaleDateString("es-HN", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
+                      {new Date(m.fechaVencimiento).toLocaleDateString(
+                        "es-HN",
+                        {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        }
+                      )}
                     </td>
                     <td className={rep.printStrong}>
-                      {m.diasRestantes <= 0 ? "Vencido" : `${m.diasRestantes} días`}
+                      {m.diasRestantes <= 0
+                        ? "Vencido"
+                        : `${m.diasRestantes} días`}
                     </td>
-                    <td className={`${rep.printRight} ${rep.printStrong}`}>{m.stock}</td>
+                    <td className={`${rep.printRight} ${rep.printStrong}`}>
+                      {m.stock}
+                    </td>
                   </tr>
                 ))
               )}

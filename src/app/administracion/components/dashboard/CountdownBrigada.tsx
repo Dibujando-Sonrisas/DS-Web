@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { ArrowRight, CalendarDays, Clock, MapPin } from "lucide-react";
+import Link from "next/link";
+import CountdownCard from "@/app/components/CountdownCard";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import styles from "@/styles/pages/admin.module.css";
 import dash from "@/styles/pages/admin-dashboard.module.css";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import CountdownCard from "@/app/components/CountdownCard";
 
 // fecha_brigada es una fecha sin hora: se formatea en UTC para no correr el día
 const formatFecha = (fecha: string) =>

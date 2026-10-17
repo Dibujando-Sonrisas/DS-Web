@@ -1,21 +1,23 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { requirePermission } from "@/lib/auth/session";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/session";
 import { AVISOS_CORREO } from "@/lib/avisosCorreo";
-import { configuracionFaltante } from "@/lib/email/avisos";
+import { getMissingEmailConfig } from "@/lib/email/emails";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 import CorreosPanel, { type SeccionAviso } from "./CorreosPanel";
 
 export default async function AjustesCorreosPage() {
   await requirePermission(PERMISSIONS.AJUSTES_READ);
   const supabase = await createSupabaseServerClient();
-  const [{ data: usuarios, error: usuariosError }, { data: filas, error: filasError }] =
-    await Promise.all([
-      supabase.rpc("usuarios_con_correo"),
-      supabase
-        .from("destinatarios_correo")
-        .select("aviso, perfil_id, created_at")
-        .order("created_at", { ascending: true }),
-    ]);
+  const [
+    { data: usuarios, error: usuariosError },
+    { data: filas, error: filasError },
+  ] = await Promise.all([
+    supabase.rpc("usuarios_con_correo"),
+    supabase
+      .from("destinatarios_correo")
+      .select("aviso, perfil_id, created_at")
+      .order("created_at", { ascending: true }),
+  ]);
 
   const porId = new Map((usuarios ?? []).map((u) => [u.id, u]));
   const secciones: SeccionAviso[] = AVISOS_CORREO.map((aviso) => {
@@ -37,7 +39,7 @@ export default async function AjustesCorreosPage() {
     <CorreosPanel
       secciones={secciones}
       fetchError={usuariosError?.message || filasError?.message || null}
-      configFaltante={configuracionFaltante()}
+      configFaltante={getMissingEmailConfig()}
     />
   );
 }

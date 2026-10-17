@@ -13,7 +13,13 @@ type EmptyStateProps = {
 };
 
 /** Estado vacío: ícono, título, qué hacer y una acción opcional. */
-export default function EmptyState({ icon, title, children, action, dashed = false }: EmptyStateProps) {
+export default function EmptyState({
+  icon,
+  title,
+  children,
+  action,
+  dashed = false,
+}: EmptyStateProps) {
   return (
     <div className={`${styles.empty} ${dashed ? styles.emptyDashed : ""}`}>
       <span className={styles.emptyIcon} aria-hidden="true">

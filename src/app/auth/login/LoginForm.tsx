@@ -1,8 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useActionState } from "react";
-import { useSearchParams } from "next/navigation";
 import {
   LoaderCircle,
   Lock,
@@ -11,10 +8,13 @@ import {
   TriangleAlert,
   UserRound,
 } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useActionState } from "react";
 import { loginAction } from "@/app/auth/actions";
+import styles from "@/styles/pages/auth.module.css";
 import AuthField from "../AuthField";
 import AuthShell from "../AuthShell";
-import styles from "@/styles/pages/auth.module.css";
 
 export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(loginAction, null);

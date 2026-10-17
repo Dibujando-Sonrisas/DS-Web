@@ -1,9 +1,12 @@
-import Link from "next/link";
 import { ArrowRight, Check, UsersRound, Zap } from "lucide-react";
+import Link from "next/link";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import SolicitudesWidgetClient from "./SolicitudesWidgetClient";
 import styles from "@/styles/pages/admin.module.css";
 import dash from "@/styles/pages/admin-dashboard.module.css";
+import SolicitudesWidgetClient from "./SolicitudesWidgetClient";
+
+const logger = getLogger("panel");
 
 export default async function SolicitudesRecientesWidget() {
   const supabase = await createSupabaseServerClient();
@@ -33,10 +36,17 @@ export default async function SolicitudesRecientesWidget() {
     .limit(10);
 
   if (error) {
-    console.error("Error fetching volunteer registrations:", error.message);
+    logger.error("Volunteer registrations load failed", {
+      ...errorInfo(error),
+      brigadaId: activeBrigada.id,
+    });
   }
 
-  const list = (solicitudes as any[]) ?? [];
+  // the query filters by this brigade, so every row belongs to it
+  const list = (solicitudes ?? []).map((s) => ({
+    ...s,
+    brigada_id: activeBrigada.id,
+  }));
   const pendientesCount = list.filter((s) => s.estado === "pendiente").length;
 
   return (
@@ -51,7 +61,8 @@ export default async function SolicitudesRecientesWidget() {
               Solicitudes de Inscripción Recibidas
             </h2>
             <p className={styles.panelSub}>
-              Brigada Activa: <strong>{activeBrigada.nombre}</strong> ({activeBrigada.lugar})
+              Brigada Activa: <strong>{activeBrigada.nombre}</strong> (
+              {activeBrigada.lugar})
             </p>
           </div>
         </div>
@@ -60,7 +71,8 @@ export default async function SolicitudesRecientesWidget() {
           {pendientesCount > 0 ? (
             <span className={`${styles.badge} ${styles.badgeWarning}`}>
               <Zap aria-hidden="true" />
-              {pendientesCount} {pendientesCount === 1 ? "pendiente" : "pendientes"}
+              {pendientesCount}{" "}
+              {pendientesCount === 1 ? "pendiente" : "pendientes"}
             </span>
           ) : (
             <span className={`${styles.badge} ${styles.badgeSuccess}`}>

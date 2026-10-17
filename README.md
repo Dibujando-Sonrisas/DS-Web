@@ -27,7 +27,7 @@ Este repositorio contiene la plataforma web principal de la fundación. Ha sido 
 - **Estilos**: Vanilla CSS Modules (`.module.css`), priorizando un diseño limpio, ligero y completamente _Responsive_.
 - **Base de Datos & Backend**: [Supabase](https://supabase.com/) (PostgreSQL).
 - **Almacenamiento (Storage)**: Supabase Storage Bucket para la gestión dinámica de las galerías fotográficas de las brigadas.
-- **Formateo de Código**: [Prettier](https://prettier.io/)
+- **Formateo y Linter**: [Biome](https://biomejs.dev/)
 
 ### Arquitectura y Características
 
@@ -78,12 +78,13 @@ npm run dev
 
 El servidor iniciará en `http://localhost:3000`.
 
-### 5. Formateo de código
+### 5. Formateo y revisión de código
 
-Para mantener el estándar de estilo del código del proyecto, utiliza Prettier antes de hacer commits:
+Para mantener el estándar de estilo del código del proyecto, utiliza Biome antes de hacer commits:
 
 ```bash
-npm run format
+npm run format   # formatea el código
+npm run lint     # revisa formato, reglas de lint y orden de imports
 ```
 
 ---

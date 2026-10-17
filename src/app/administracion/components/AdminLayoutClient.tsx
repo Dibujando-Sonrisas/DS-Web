@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import AdminHeader from "./AdminHeader";
-import SideBar from "./SideBar";
-import { ToastProvider } from "./AdminToast";
+import type React from "react";
+import { useEffect, useState } from "react";
 import styles from "@/styles/pages/admin.module.css";
+import AdminHeader from "./AdminHeader";
+import { ToastProvider } from "./AdminToast";
+import SideBar from "./SideBar";
 
 interface AdminLayoutClientProps {
   displayName: string;

@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
 import {
   Bell,
   Boxes,
@@ -16,13 +14,24 @@ import {
   UserPlus,
   UserRound,
 } from "lucide-react";
+import Link from "next/link";
 import {
-  marcarNotificacionesVistasAction,
-  obtenerNotificacionesAction,
-  type Notificacion,
-} from "../notificaciones/actions";
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { useCambiosEnVivo } from "@/lib/realtime";
 import styles from "@/styles/pages/admin.module.css";
+import {
+  marcarNotificacionesVistasAction,
+  type Notificacion,
+  obtenerNotificacionesAction,
+} from "../notificaciones/actions";
+
+const logger = getLogger("panel", "client");
 
 type Tono = "primary" | "secondary" | "tertiary";
 
@@ -34,7 +43,10 @@ const TIPOS: Record<string, { icono: ReactNode; tono: Tono }> = {
   brigada_actualizada: { icono: <Tent />, tono: "primary" },
   brigada_nueva: { icono: <Tent />, tono: "primary" },
 };
-const TIPO_GENERICO: { icono: ReactNode; tono: Tono } = { icono: <Bell />, tono: "primary" };
+const TIPO_GENERICO: { icono: ReactNode; tono: Tono } = {
+  icono: <Bell />,
+  tono: "primary",
+};
 
 /** Resuelve ícono y tono de forma agnóstica según la categoría o prefijo del evento. */
 function resolverIconoYTono(tipo: string): { icono: ReactNode; tono: Tono } {
@@ -58,7 +70,11 @@ function resolverIconoYTono(tipo: string): { icono: ReactNode; tono: Tono } {
   if (tipo.startsWith("actividad")) {
     return { icono: <Sparkles />, tono: "secondary" };
   }
-  if (tipo.startsWith("alerta") || tipo.startsWith("error") || tipo.startsWith("critico")) {
+  if (
+    tipo.startsWith("alerta") ||
+    tipo.startsWith("error") ||
+    tipo.startsWith("critico")
+  ) {
     return { icono: <TriangleAlert />, tono: "tertiary" };
   }
   if (tipo.startsWith("exito") || tipo.startsWith("completado")) {
@@ -79,7 +95,9 @@ const UNIDADES: [Intl.RelativeTimeFormatUnit, number][] = [
 function hace(iso: string, ahora: number) {
   const segundos = Math.round((new Date(iso).getTime() - ahora) / 1000);
   const unidad = UNIDADES.find(([, s]) => Math.abs(segundos) >= s);
-  return unidad ? relativo.format(Math.round(segundos / unidad[1]), unidad[0]) : "ahora";
+  return unidad
+    ? relativo.format(Math.round(segundos / unidad[1]), unidad[0])
+    : "ahora";
 }
 
 export default function NotificacionesBtn() {
@@ -97,7 +115,7 @@ export default function NotificacionesBtn() {
           setAhora(Date.now());
           setVistas(false);
         },
-        (e) => console.error("No se pudieron cargar las notificaciones:", e)
+        (e) => logger.warning("Notifications load failed", errorInfo(e))
       ),
     []
   );
@@ -115,14 +133,16 @@ export default function NotificacionesBtn() {
   useEffect(() => {
     if (!open) return;
     const fuera = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
     };
-    const escape = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const conEscape = (e: KeyboardEvent) =>
+      e.key === "Escape" && setOpen(false);
     document.addEventListener("mousedown", fuera);
-    document.addEventListener("keydown", escape);
+    document.addEventListener("keydown", conEscape);
     return () => {
       document.removeEventListener("mousedown", fuera);
-      document.removeEventListener("keydown", escape);
+      document.removeEventListener("keydown", conEscape);
     };
   }, [open]);
 
@@ -144,7 +164,11 @@ export default function NotificacionesBtn() {
         type="button"
         className={`btn-icon ${styles.notifBtn}`}
         onClick={() => (open ? setOpen(false) : abrir())}
-        aria-label={contador > 0 ? `Notificaciones: ${contador} por revisar` : "Notificaciones"}
+        aria-label={
+          contador > 0
+            ? `Notificaciones: ${contador} por revisar`
+            : "Notificaciones"
+        }
         aria-expanded={open}
         aria-haspopup="dialog"
         title="Notificaciones"
@@ -158,7 +182,11 @@ export default function NotificacionesBtn() {
       </button>
 
       {open && (
-        <div className={`${styles.dropdown} ${styles.notifPanel}`} role="dialog" aria-label="Notificaciones">
+        <div
+          className={`${styles.dropdown} ${styles.notifPanel}`}
+          role="dialog"
+          aria-label="Notificaciones"
+        >
           <div className={styles.notifHead}>
             <span className={styles.notifTitle}>
               <Bell aria-hidden="true" />
@@ -181,7 +209,12 @@ export default function NotificacionesBtn() {
               </div>
             ) : (
               lista.map((n) => (
-                <NotificacionItem key={n.id} n={n} ahora={ahora} onNavegar={() => setOpen(false)} />
+                <NotificacionItem
+                  key={n.id}
+                  n={n}
+                  ahora={ahora}
+                  onNavegar={() => setOpen(false)}
+                />
               ))
             )}
           </div>
@@ -203,13 +236,18 @@ function NotificacionItem({
   const { icono, tono } = resolverIconoYTono(n.tipo);
   const contenido = (
     <>
-      <span className={`icon-circle tone-${tono} ${styles.notifIcon}`} aria-hidden="true">
+      <span
+        className={`icon-circle tone-${tono} ${styles.notifIcon}`}
+        aria-hidden="true"
+      >
         {icono}
       </span>
       <span className={styles.notifInfo}>
         <span className={styles.notifName}>{n.titulo}</span>
         {n.detalle && <span className={styles.notifMeta}>{n.detalle}</span>}
-        {n.fecha && <span className={styles.notifTime}>{hace(n.fecha, ahora)}</span>}
+        {n.fecha && (
+          <span className={styles.notifTime}>{hace(n.fecha, ahora)}</span>
+        )}
       </span>
       {n.nueva && (
         <span className={styles.notifDot}>

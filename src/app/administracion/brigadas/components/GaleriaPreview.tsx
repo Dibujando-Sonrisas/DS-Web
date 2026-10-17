@@ -1,22 +1,24 @@
 "use client";
 
-import { useTransition, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Star, Trash2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { cambiarPortada, eliminarImagenBrigada, reordenarGaleria } from "../actions";
+import Image from "next/image";
+import { useState, useTransition } from "react";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import EmptyState from "@/app/administracion/components/EmptyState";
+import type { Tables } from "@/lib/database.types";
+import { errorInfo, getLogger } from "@/lib/logger";
+import { supabase } from "@/lib/supabase";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
+import {
+  cambiarPortada,
+  eliminarImagenBrigada,
+  reordenarGaleria,
+} from "../actions";
 
-export type BrigadaImagenRow = {
-  id: string;
-  brigada_id: string;
-  nombre_archivo: string;
-  portada: boolean;
-  orden: number;
-  created_at: string;
-};
+const logger = getLogger("brigadas", "client");
+
+export type BrigadaImagenRow = Tables<"brigada_imagenes">;
 
 type GaleriaPreviewProps = {
   brigadaId: string;
@@ -34,7 +36,9 @@ export default function GaleriaPreview({
   isReadOnly = false,
 }: GaleriaPreviewProps) {
   const [isPending, startTransition] = useTransition();
-  const [deleteTarget, setDeleteTarget] = useState<BrigadaImagenRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BrigadaImagenRow | null>(
+    null
+  );
 
   // Obtener URL pública desde el bucket 'brigadas' en Supabase Storage
   const getPublicUrl = (filename: string) => {
@@ -53,12 +57,22 @@ export default function GaleriaPreview({
     startTransition(async () => {
       try {
         // Invocar Server Action autenticada que borra de Storage y de la BD
-        const res = await eliminarImagenBrigada(img.id, brigadaCodigo, img.nombre_archivo);
+        const res = await eliminarImagenBrigada(
+          img.id,
+          brigadaCodigo,
+          img.nombre_archivo
+        );
         if (res.error) throw new Error(res.error);
 
         onReload();
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Error al eliminar la imagen.");
+        logger.error("Gallery image deletion failed", {
+          ...errorInfo(err),
+          imageId: img.id,
+        });
+        alert(
+          err instanceof Error ? err.message : "Error al eliminar la imagen."
+        );
       }
     });
   };
@@ -70,7 +84,13 @@ export default function GaleriaPreview({
         if (res.error) throw new Error(res.error);
         onReload();
       } catch (err) {
-        alert(err instanceof Error ? err.message : "Error al establecer la portada.");
+        logger.error("Gallery cover change failed", {
+          ...errorInfo(err),
+          imageId: img.id,
+        });
+        alert(
+          err instanceof Error ? err.message : "Error al establecer la portada."
+        );
       }
     });
   };
@@ -92,6 +112,10 @@ export default function GaleriaPreview({
 
         onReload();
       } catch (err) {
+        logger.error("Gallery reorder failed", {
+          ...errorInfo(err),
+          brigadaId,
+        });
         alert(err instanceof Error ? err.message : "Error al reordenar.");
       }
     });
@@ -102,7 +126,8 @@ export default function GaleriaPreview({
       <section className={styles.stackSm}>
         <div className={styles.rowBetween}>
           <h3 className={styles.subTitle}>
-            Fotografías Guardadas en Galería <span className={styles.count}>{imagenes.length}</span>
+            Fotografías Guardadas en Galería{" "}
+            <span className={styles.count}>{imagenes.length}</span>
           </h3>
           <p className={brig.meta}>
             Carpeta: <code>brigadas/{brigadaCodigo}/</code>
@@ -110,7 +135,10 @@ export default function GaleriaPreview({
         </div>
 
         {imagenes.length === 0 ? (
-          <EmptyState icon={<Camera />} title="Esta brigada aún no cuenta con fotografías subidas.">
+          <EmptyState
+            icon={<Camera />}
+            title="Esta brigada aún no cuenta con fotografías subidas."
+          >
             Utiliza el panel superior para cargar imágenes.
           </EmptyState>
         ) : (
@@ -125,9 +153,16 @@ export default function GaleriaPreview({
                 >
                   {/* Elemento de Imagen */}
                   <div className={brig.photoMedia}>
-                    <img src={url} alt={img.nombre_archivo} loading="lazy" />
+                    <Image
+                      src={url}
+                      alt={img.nombre_archivo}
+                      fill
+                      sizes="(max-width: 600px) 100vw, 440px"
+                    />
                     {img.portada && (
-                      <span className={`${styles.badge} ${styles.badgeBrand} ${brig.coverBadge}`}>
+                      <span
+                        className={`${styles.badge} ${styles.badgeBrand} ${brig.coverBadge}`}
+                      >
                         <Star aria-hidden="true" />
                         Portada Principal
                       </span>
@@ -207,7 +242,9 @@ export default function GaleriaPreview({
           onCancel={() => setDeleteTarget(null)}
           onConfirm={confirmDelete}
         >
-          Se eliminará permanentemente el archivo <strong>{deleteTarget.nombre_archivo}</strong> de Supabase Storage y de la base de datos de esta brigada.
+          Se eliminará permanentemente el archivo{" "}
+          <strong>{deleteTarget.nombre_archivo}</strong> de Supabase Storage y
+          de la base de datos de esta brigada.
         </ConfirmDialog>
       )}
     </>

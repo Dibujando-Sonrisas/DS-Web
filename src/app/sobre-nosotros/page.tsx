@@ -1,11 +1,19 @@
+import {
+  BookOpenText,
+  Briefcase,
+  Check,
+  Lightbulb,
+  PillBottle,
+  Stethoscope,
+  Users,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import PageHero from "../components/PageHero";
 import { getBrigadas } from "../../lib/db/brigadas";
 import styles from "../../styles/pages/about.module.css";
-import { BookOpenText, Briefcase, Check, Lightbulb, PillBottle, Stethoscope, Users } from "lucide-react";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import PageHero from "../components/PageHero";
 
 export const metadata: Metadata = {
   title: "Sobre Nosotros | Dibujando Sonrisas",
@@ -118,7 +126,6 @@ export default async function SobreNosotros() {
         </div>
       </section>
 
-
       <section className={styles.ourValues}>
         <h2 className={styles.ourValuesTitle}>Nuestros Valores</h2>
         <ul className={styles.valuesList}>
@@ -126,32 +133,46 @@ export default async function SobreNosotros() {
             <span className={styles.checkmark}>
               <Check />
             </span>
-            <span><strong>Fe:</strong> Todo lo que hacemos es inspirado por nuestra fe en Cristo.</span>
+            <span>
+              <strong>Fe:</strong> Todo lo que hacemos es inspirado por nuestra
+              fe en Cristo.
+            </span>
           </li>
           <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>
               <Check />
             </span>
-            <span><strong>Compasión:</strong> Tratamos a cada persona con amor, dignidad y respeto.</span>
+            <span>
+              <strong>Compasión:</strong> Tratamos a cada persona con amor,
+              dignidad y respeto.
+            </span>
           </li>
           <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>
               <Check />
             </span>
-            <span><strong>Integridad:</strong> Actuamos con transparencia y ética en todo momento.</span>
+            <span>
+              <strong>Integridad:</strong> Actuamos con transparencia y ética en
+              todo momento.
+            </span>
           </li>
           <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>
               <Check />
             </span>
-            <span><strong>Trabajo en equipo:</strong> Creemos en la fuerza de la unión para lograr
-              más.</span>
+            <span>
+              <strong>Trabajo en equipo:</strong> Creemos en la fuerza de la
+              unión para lograr más.
+            </span>
           </li>
           <li className={`${styles.valuesItem} card-soft`}>
             <span className={styles.checkmark}>
               <Check />
             </span>
-            <span><strong>Excelencia:</strong> Nos comprometemos con la calidad en cada brigada.</span>
+            <span>
+              <strong>Excelencia:</strong> Nos comprometemos con la calidad en
+              cada brigada.
+            </span>
           </li>
         </ul>
       </section>

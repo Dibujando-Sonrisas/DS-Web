@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { CircleAlert, ClipboardList, LoaderCircle, Pencil } from "lucide-react";
+import { useState } from "react";
 import EmptyState from "@/app/administracion/components/EmptyState";
+import { errorInfo, getLogger } from "@/lib/logger";
 import styles from "@/styles/pages/admin.module.css";
 import { actualizarAsignacion } from "../actions";
+
+const logger = getLogger("voluntarios", "client");
 
 type AsignacionRow = {
   id: string;
@@ -21,7 +24,10 @@ type AsignacionesCardProps = {
   asignaciones: AsignacionRow[];
 };
 
-export default function AsignacionesCard({ perfilId, asignaciones }: AsignacionesCardProps) {
+export default function AsignacionesCard({
+  perfilId,
+  asignaciones,
+}: AsignacionesCardProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [area, setArea] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,8 +46,14 @@ export default function AsignacionesCard({ perfilId, asignaciones }: Asignacione
       const res = await actualizarAsignacion(asigId, area, perfilId);
       if (res.error) throw new Error(res.error);
       setEditingId(null);
-    } catch (e: any) {
-      setError(e.message || "Error al actualizar asignación.");
+    } catch (e) {
+      logger.error("Assignment update failed", {
+        ...errorInfo(e),
+        asignacionId: asigId,
+      });
+      setError(
+        (e instanceof Error && e.message) || "Error al actualizar asignación."
+      );
     } finally {
       setLoading(false);
     }
@@ -51,7 +63,8 @@ export default function AsignacionesCard({ perfilId, asignaciones }: Asignacione
     <section className={styles.panel} aria-labelledby="areas-asignadas">
       <div className={styles.panelHeader}>
         <h2 id="areas-asignadas" className={styles.panelTitle}>
-          Áreas Asignadas <span className={styles.count}>{asignaciones.length}</span>
+          Áreas Asignadas{" "}
+          <span className={styles.count}>{asignaciones.length}</span>
         </h2>
       </div>
 
@@ -67,7 +80,10 @@ export default function AsignacionesCard({ perfilId, asignaciones }: Asignacione
       )}
 
       {asignaciones.length === 0 ? (
-        <EmptyState icon={<ClipboardList />} title="No tiene asignaciones en brigadas pendientes." />
+        <EmptyState
+          icon={<ClipboardList />}
+          title="No tiene asignaciones en brigadas pendientes."
+        />
       ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
@@ -78,27 +94,32 @@ export default function AsignacionesCard({ perfilId, asignaciones }: Asignacione
               </tr>
             </thead>
             <tbody>
-              {asignaciones.map(asig => {
+              {asignaciones.map((asig) => {
                 const isEditing = editingId === asig.id;
-                const brigadaNombre = asig.brigada?.nombre || `Brigada ID: ${asig.brigada_id.substring(0,8)}...`;
+                const brigadaNombre =
+                  asig.brigada?.nombre ||
+                  `Brigada ID: ${asig.brigada_id.substring(0, 8)}...`;
                 return (
                   <tr key={asig.id}>
                     <td>
                       <span className={styles.cellMain}>{brigadaNombre}</span>
                       {isEditing ? (
                         <label className={styles.cellSub}>
-                          <span className="sr-only">Área asignada en {brigadaNombre}</span>
-                          <input 
-                            type="text" 
+                          <span className="sr-only">
+                            Área asignada en {brigadaNombre}
+                          </span>
+                          <input
+                            type="text"
                             className="form-input form-input-sm"
                             value={area}
-                            onChange={e => setArea(e.target.value)}
+                            onChange={(e) => setArea(e.target.value)}
                             placeholder="Ej. Triage, Farmacia..."
                           />
                         </label>
                       ) : (
                         <span className={styles.cellSub}>
-                          <strong>Área:</strong> {asig.area_asignada || "Sin área específica"}
+                          <strong>Área:</strong>{" "}
+                          {asig.area_asignada || "Sin área específica"}
                         </span>
                       )}
                     </td>
@@ -106,16 +127,21 @@ export default function AsignacionesCard({ perfilId, asignaciones }: Asignacione
                       <div className={styles.rowActions}>
                         {isEditing ? (
                           <>
-                            <button 
+                            <button
                               type="button"
                               className="btn-primary btn-xs"
                               onClick={() => handleSave(asig.id)}
                               disabled={loading}
                             >
-                              {loading && <LoaderCircle className="spin" aria-hidden="true" />}
+                              {loading && (
+                                <LoaderCircle
+                                  className="spin"
+                                  aria-hidden="true"
+                                />
+                              )}
                               Guardar
                             </button>
-                            <button 
+                            <button
                               type="button"
                               className="btn-ghost btn-xs"
                               onClick={() => setEditingId(null)}
@@ -125,7 +151,7 @@ export default function AsignacionesCard({ perfilId, asignaciones }: Asignacione
                             </button>
                           </>
                         ) : (
-                          <button 
+                          <button
                             type="button"
                             className="btn-ghost btn-xs"
                             onClick={() => handleEdit(asig)}

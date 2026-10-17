@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useActionState } from "react";
 import {
   LoaderCircle,
   Lock,
@@ -11,10 +9,12 @@ import {
   UserPlus,
   UserRound,
 } from "lucide-react";
+import Link from "next/link";
+import { useActionState } from "react";
 import { signUpAction } from "@/app/auth/actions";
+import styles from "@/styles/pages/auth.module.css";
 import AuthField from "../AuthField";
 import AuthShell from "../AuthShell";
-import styles from "@/styles/pages/auth.module.css";
 
 export default function RegistroForm() {
   const [state, formAction, isPending] = useActionState(signUpAction, null);

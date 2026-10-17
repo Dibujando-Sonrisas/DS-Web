@@ -1,9 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import {
+  isPermission,
+  PERMISSIONS,
+  permissionLabel,
+} from "@/lib/auth/permissions";
+import {
+  assertPermission,
+  getAuthContext,
+  ROL_TONOS,
+  type RolTono,
+} from "@/lib/auth/session";
+import { errorInfo, getLogger } from "@/lib/logger";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { assertPermission, getAuthContext, ROL_TONOS, type RolTono } from "@/lib/auth/session";
-import { PERMISSIONS, isPermission, permissionLabel } from "@/lib/auth/permissions";
+
+const logger = getLogger("usuarios");
 
 export type ActionResponse = {
   success?: boolean;
@@ -16,6 +28,27 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** RLS no da error cuando no deja tocar una fila: solo devuelve 0 filas. */
 function assertFilas(data: unknown[] | null, mensaje: string) {
   if (!data?.length) throw new Error(mensaje);
+}
+
+// los RAISE EXCEPTION propios (roles y trigger de perfiles) usan estos códigos y un mensaje en
+// español para la interfaz; los mensajes de Postgres empiezan en minúscula y no se muestran
+const CODIGOS_PROPIOS = new Set(["42501", "22023", "P0002"]);
+
+/** Registra el error de la base y devuelve el mensaje para la interfaz: la regla propia o uno genérico. */
+function falloBD(
+  evento: string,
+  error: { code: string; message: string },
+  datos: Record<string, unknown>,
+  generico: string
+): { error: string } {
+  const propio =
+    CODIGOS_PROPIOS.has(error.code) && /^[A-ZÁÉÍÓÚÑ]/.test(error.message);
+  if (propio) {
+    logger.warning(evento, { ...errorInfo(error), ...datos });
+    return { error: error.message };
+  }
+  logger.error(evento, { ...errorInfo(error), ...datos });
+  return { error: generico };
 }
 
 /** Actualizar datos básicos de perfil (Tarea 4) */
@@ -51,7 +84,14 @@ export async function updateProfileAction(
       })
       .eq("id", userId);
 
-    if (error) throw new Error(error.message);
+    if (error)
+      return falloBD(
+        "Profile update failed",
+        error,
+        { perfilId: userId },
+        "No se pudo actualizar el perfil."
+      );
+    logger.info("Profile updated", { perfilId: userId });
 
     revalidatePath("/administracion/usuarios");
     revalidatePath("/administracion/perfil");
@@ -60,6 +100,10 @@ export async function updateProfileAction(
       message: "Perfil actualizado exitosamente.",
     };
   } catch (e) {
+    logger.warning("Profile update rejected", {
+      ...errorInfo(e),
+      perfilId: userId,
+    });
     return {
       error: e instanceof Error ? e.message : "Error al actualizar perfil.",
     };
@@ -90,7 +134,14 @@ export async function updateAvatarAction(
       })
       .eq("id", userId);
 
-    if (error) throw new Error(error.message);
+    if (error)
+      return falloBD(
+        "Avatar update failed",
+        error,
+        { perfilId: userId },
+        "No se pudo actualizar la fotografía de perfil."
+      );
+    logger.info("Avatar updated", { perfilId: userId });
 
     revalidatePath("/administracion/usuarios");
     revalidatePath("/administracion/perfil");
@@ -99,6 +150,10 @@ export async function updateAvatarAction(
       message: "Avatar actualizado exitosamente.",
     };
   } catch (e) {
+    logger.warning("Avatar update rejected", {
+      ...errorInfo(e),
+      perfilId: userId,
+    });
     return {
       error: e instanceof Error ? e.message : "Error al actualizar avatar.",
     };
@@ -133,7 +188,9 @@ export async function changeRoleAction(
         .maybeSingle();
       const actual = involucrados?.rol as { es_superadmin: boolean } | null;
       if (actual?.es_superadmin || destino?.es_superadmin) {
-        throw new Error("Solo un administrador puede asignar o quitar el rol de administrador.");
+        throw new Error(
+          "Solo un administrador puede asignar o quitar el rol de administrador."
+        );
       }
     }
 
@@ -146,8 +203,18 @@ export async function changeRoleAction(
       .eq("id", userId)
       .select("id");
 
-    if (error) throw new Error(error.message);
-    assertFilas(data, "No se pudo cambiar el rol: el usuario no existe o no tienes acceso a él.");
+    if (error)
+      return falloBD(
+        "User role change failed",
+        error,
+        { perfilId: userId, rolId: roleId },
+        "No se pudo cambiar el rol."
+      );
+    assertFilas(
+      data,
+      "No se pudo cambiar el rol: el usuario no existe o no tienes acceso a él."
+    );
+    logger.info("User role changed", { perfilId: userId, rolId: roleId });
 
     revalidatePath("/administracion/usuarios");
     return {
@@ -155,6 +222,11 @@ export async function changeRoleAction(
       message: "Rol de usuario actualizado exitosamente.",
     };
   } catch (e) {
+    logger.warning("User role change rejected", {
+      ...errorInfo(e),
+      perfilId: userId,
+      rolId: roleId,
+    });
     return {
       error: e instanceof Error ? e.message : "Error al cambiar rol.",
     };
@@ -179,8 +251,21 @@ export async function changeSpecialtyAction(
       .eq("id", userId)
       .select("id");
 
-    if (error) throw new Error(error.message);
-    assertFilas(data, "No se pudo cambiar la especialidad: el usuario no existe o no tienes acceso a él.");
+    if (error)
+      return falloBD(
+        "User specialty change failed",
+        error,
+        { perfilId: userId, especialidadId: specialtyId },
+        "No se pudo cambiar la especialidad."
+      );
+    assertFilas(
+      data,
+      "No se pudo cambiar la especialidad: el usuario no existe o no tienes acceso a él."
+    );
+    logger.info("User specialty changed", {
+      perfilId: userId,
+      especialidadId: specialtyId,
+    });
 
     revalidatePath("/administracion/usuarios");
     return {
@@ -188,6 +273,10 @@ export async function changeSpecialtyAction(
       message: "Especialidad de usuario actualizada exitosamente.",
     };
   } catch (e) {
+    logger.warning("User specialty change rejected", {
+      ...errorInfo(e),
+      perfilId: userId,
+    });
     return {
       error: e instanceof Error ? e.message : "Error al cambiar especialidad.",
     };
@@ -211,8 +300,18 @@ export async function activateUserAction(
       .eq("id", userId)
       .select("id");
 
-    if (error) throw new Error(error.message);
-    assertFilas(data, "No se pudo activar la cuenta: el usuario no existe o no tienes acceso a él.");
+    if (error)
+      return falloBD(
+        "User activation failed",
+        error,
+        { perfilId: userId },
+        "No se pudo activar la cuenta."
+      );
+    assertFilas(
+      data,
+      "No se pudo activar la cuenta: el usuario no existe o no tienes acceso a él."
+    );
+    logger.info("User activated", { perfilId: userId });
 
     revalidatePath("/administracion/usuarios");
     return {
@@ -220,6 +319,10 @@ export async function activateUserAction(
       message: "Cuenta de usuario activada exitosamente.",
     };
   } catch (e) {
+    logger.warning("User activation rejected", {
+      ...errorInfo(e),
+      perfilId: userId,
+    });
     return {
       error: e instanceof Error ? e.message : "Error al activar usuario.",
     };
@@ -249,8 +352,18 @@ export async function deactivateUserAction(
       .eq("id", userId)
       .select("id");
 
-    if (error) throw new Error(error.message);
-    assertFilas(data, "No se pudo desactivar la cuenta: el usuario no existe o no tienes acceso a él.");
+    if (error)
+      return falloBD(
+        "User deactivation failed",
+        error,
+        { perfilId: userId },
+        "No se pudo desactivar la cuenta."
+      );
+    assertFilas(
+      data,
+      "No se pudo desactivar la cuenta: el usuario no existe o no tienes acceso a él."
+    );
+    logger.info("User deactivated", { perfilId: userId });
 
     revalidatePath("/administracion/usuarios");
     return {
@@ -258,6 +371,10 @@ export async function deactivateUserAction(
       message: "Cuenta de usuario desactivada exitosamente.",
     };
   } catch (e) {
+    logger.warning("User deactivation rejected", {
+      ...errorInfo(e),
+      perfilId: userId,
+    });
     return {
       error: e instanceof Error ? e.message : "Error al desactivar usuario.",
     };
@@ -276,25 +393,40 @@ export type GuardarRolInput = {
 };
 
 /** Crea o edita un rol y deja sus permisos exactamente como vienen (una sola transacción en la base). */
-export async function guardarRolAction(input: GuardarRolInput): Promise<ActionResponse & { id?: string }> {
+export async function guardarRolAction(
+  input: GuardarRolInput
+): Promise<ActionResponse & { id?: string }> {
   try {
-    const ctx = await assertPermission(input.id ? PERMISSIONS.ROLES_UPDATE : PERMISSIONS.ROLES_CREATE);
+    const ctx = await assertPermission(
+      input.id ? PERMISSIONS.ROLES_UPDATE : PERMISSIONS.ROLES_CREATE
+    );
     if (input.id && !UUID.test(input.id)) throw new Error("Rol no válido.");
 
     const nombre = input.nombre.trim();
     const descripcion = input.descripcion.trim();
-    if (nombre.length < 2 || nombre.length > 60) throw new Error("El nombre debe tener entre 2 y 60 caracteres.");
-    if (descripcion.length > 240) throw new Error("La descripción admite hasta 240 caracteres.");
-    if (!(ROL_TONOS as readonly string[]).includes(input.color)) throw new Error("Color no válido.");
+    if (nombre.length < 2 || nombre.length > 60)
+      throw new Error("El nombre debe tener entre 2 y 60 caracteres.");
+    if (descripcion.length > 240)
+      throw new Error("La descripción admite hasta 240 caracteres.");
+    if (!(ROL_TONOS as readonly string[]).includes(input.color))
+      throw new Error("Color no válido.");
 
     // solo claves del catálogo; perfil.read va siempre (sin él no se entra al panel)
-    const permisos = [...new Set([...input.permisos.filter(isPermission), PERMISSIONS.PERFIL_READ])];
+    const permisos = [
+      ...new Set([
+        ...input.permisos.filter(isPermission),
+        PERMISSIONS.PERFIL_READ,
+      ]),
+    ];
 
     if (!ctx.role.es_superadmin) {
-      if (input.id === ctx.role.id) throw new Error("No puedes editar tu propio rol.");
+      if (input.id === ctx.role.id)
+        throw new Error("No puedes editar tu propio rol.");
       const ajenos = permisos.filter((p) => !ctx.permissions.includes(p));
       if (ajenos.length) {
-        throw new Error(`No puedes otorgar permisos que no tienes: ${ajenos.map(permissionLabel).join(", ")}.`);
+        throw new Error(
+          `No puedes otorgar permisos que no tienes: ${ajenos.map(permissionLabel).join(", ")}.`
+        );
       }
     }
 
@@ -309,38 +441,70 @@ export async function guardarRolAction(input: GuardarRolInput): Promise<ActionRe
     });
 
     if (error) {
-      if (error.code === "23505") throw new Error(`Ya existe un rol llamado "${nombre}".`);
-      throw new Error(error.message);
+      // se devuelve aquí y no se lanza: el nombre del rol no debe llegar al registro
+      if (error.code === "23505") {
+        logger.warning("Role name already exists", { rolId: input.id });
+        return { error: `Ya existe un rol llamado "${nombre}".` };
+      }
+      return falloBD(
+        "Role save failed",
+        error,
+        { rolId: input.id },
+        "No se pudo guardar el rol."
+      );
     }
+    logger.info(input.id ? "Role updated" : "Role created", {
+      rolId: data,
+      count: permisos.length,
+    });
 
     // el nombre del rol se ve en el encabezado y en otras páginas del panel
     revalidatePath("/administracion", "layout");
     return {
       success: true,
       id: data as string,
-      message: input.id ? "Rol actualizado exitosamente." : "Rol creado exitosamente.",
+      message: input.id
+        ? "Rol actualizado exitosamente."
+        : "Rol creado exitosamente.",
     };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al guardar el rol." };
+    logger.warning("Role save rejected", { ...errorInfo(e), rolId: input.id });
+    return {
+      error: e instanceof Error ? e.message : "Error al guardar el rol.",
+    };
   }
 }
 
 /** Elimina un rol; si tiene usuarios, primero los pasa a destinoId. */
-export async function eliminarRolAction(rolId: string, destinoId: string | null): Promise<ActionResponse> {
+export async function eliminarRolAction(
+  rolId: string,
+  destinoId: string | null
+): Promise<ActionResponse> {
   try {
     await assertPermission(PERMISSIONS.ROLES_DELETE);
-    if (!UUID.test(rolId) || (destinoId && !UUID.test(destinoId))) throw new Error("Rol no válido.");
+    if (!UUID.test(rolId) || (destinoId && !UUID.test(destinoId)))
+      throw new Error("Rol no válido.");
 
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.rpc("eliminar_rol", {
       p_id: rolId,
       p_destino: destinoId as string,
     });
-    if (error) throw new Error(error.message);
+    if (error)
+      return falloBD(
+        "Role deletion failed",
+        error,
+        { rolId, destinoId },
+        "No se pudo eliminar el rol."
+      );
+    logger.info("Role deleted", { rolId, destinoId });
 
     revalidatePath("/administracion", "layout");
     return { success: true, message: "Rol eliminado exitosamente." };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Error al eliminar el rol." };
+    logger.warning("Role deletion rejected", { ...errorInfo(e), rolId });
+    return {
+      error: e instanceof Error ? e.message : "Error al eliminar el rol.",
+    };
   }
 }

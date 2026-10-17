@@ -1,29 +1,53 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
-  getMedicamentosAction as getMedicamentos,
-  getCategoriasInventarioAction as getCategoriasInventario,
-  createMedicamentoAction as createMedicamento,
-  updateMedicamentoAction as updateMedicamento,
-  deleteMedicamentoAction as deleteMedicamento,
-} from "./actions";
-import { LotesModal } from "./components/LotesModal";
-import { MedicamentoForm } from "./components/MedicamentoForm";
-import { CategoriasModal } from "./components/CategoriasModal";
-import type { CategoriaInventario, TipoRecurso } from "@/lib/db/inventario";
-import { Boxes, Layers, Lock, Pencil, Pill, Plus, Syringe, Tags, Tent, Trash2 } from "lucide-react";
+  Boxes,
+  Layers,
+  Lock,
+  Pencil,
+  Pill,
+  Plus,
+  Syringe,
+  Tags,
+  Tent,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
-import styles from "@/styles/pages/admin.module.css";
-
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-
 import { generateCleanToken } from "@/lib/coding/codingUtils";
+import type { Tables } from "@/lib/database.types";
+import type {
+  CategoriaInventario,
+  InsertMedicamento,
+  TipoRecurso,
+} from "@/lib/db/inventario";
+import { errorInfo, getLogger } from "@/lib/logger";
+import styles from "@/styles/pages/admin.module.css";
+import {
+  createMedicamentoAction as createMedicamento,
+  deleteMedicamentoAction as deleteMedicamento,
+  getCategoriasInventarioAction as getCategoriasInventario,
+  getMedicamentosAction as getMedicamentos,
+  updateMedicamentoAction as updateMedicamento,
+} from "./actions";
+import { CategoriasModal } from "./components/CategoriasModal";
+import { LotesModal } from "./components/LotesModal";
+import { MedicamentoForm } from "./components/MedicamentoForm";
 
-function generarCodigoRecurso(nombre: string, tipo: string): string {
-  const prefijo = tipo === "insumo_medico" ? "INS" : (tipo === "material_brigada" ? "MAT" : "MED");
+const logger = getLogger("inventario", "client");
+
+type StockItem = Tables<"stock_actual">;
+
+function generarCodigoRecurso(tipo?: string): string {
+  const prefijo =
+    tipo === "insumo_medico"
+      ? "INS"
+      : tipo === "material_brigada"
+        ? "MAT"
+        : "MED";
   const tokenLimpio = generateCleanToken(5);
   return `INV-${prefijo}-${tokenLimpio}`;
 }
@@ -35,49 +59,54 @@ export function InventarioClient({
   initialLotes?: { id: string; nombre: string } | null;
 }) {
   const { can } = usePermissions();
-  const [medicamentos, setMedicamentos] = useState<Record<string, unknown>[]>([]);
+  const [medicamentos, setMedicamentos] = useState<StockItem[]>([]);
   const [categorias, setCategorias] = useState<CategoriaInventario[]>([]);
   // pestaña con la que se abre Categorías; null = cerrado
-  const [categoriasTipo, setCategoriasTipo] = useState<TipoRecurso | null>(null);
+  const [categoriasTipo, setCategoriasTipo] = useState<TipoRecurso | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMedLotes, setSelectedMedLotes] = useState(initialLotes);
-  const [filtroTipo, setFiltroTipo] = useState<"todos" | "medicamento" | "insumo_medico" | "material_brigada">("todos");
+  const [filtroTipo, setFiltroTipo] = useState<
+    "todos" | "medicamento" | "insumo_medico" | "material_brigada"
+  >("todos");
 
   const [isMedModalOpen, setIsMedModalOpen] = useState(false);
-  const [selectedMedForEdit, setSelectedMedForEdit] = useState<any>(null);
+  const [selectedMedForEdit, setSelectedMedForEdit] =
+    useState<StockItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // States for Delete Modal
-  const [medToDelete, setMedToDelete] = useState<any>(null);
+  const [medToDelete, setMedToDelete] = useState<StockItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchMedicamentos = async () => {
+  const fetchMedicamentos = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log("fetchMedicamentos ejecutado, refrescando lista desde stock_actual");
       const data = await getMedicamentos(filtroTipo);
       setMedicamentos(data);
-    } catch (_error) {
-      console.error("Error al cargar el inventario");
+      logger.debug("Inventory loaded", { count: data?.length, filtroTipo });
+    } catch (error) {
+      logger.error("Inventory load failed", errorInfo(error));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filtroTipo]);
 
-  const fetchCategorias = async () => {
+  const fetchCategorias = useCallback(async () => {
     try {
       const data = await getCategoriasInventario();
       setCategorias(data);
-    } catch (_error) {
-      console.error("Error al cargar categorías");
+    } catch (error) {
+      logger.error("Inventory categories load failed", errorInfo(error));
     }
-  };
+  }, []);
 
+  // se recarga al montar y cada vez que cambia filtroTipo (fetchMedicamentos depende de él)
   useEffect(() => {
     fetchMedicamentos();
     fetchCategorias();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtroTipo]);
+  }, [fetchMedicamentos, fetchCategorias]);
 
   // recarga al abrir: el conteo de recursos por categoría cambia al crear o borrar recursos
   const abrirCategorias = (tipo: TipoRecurso) => {
@@ -85,8 +114,10 @@ export function InventarioClient({
     fetchCategorias();
   };
 
-  const handleOpenMedForm = (med: any = null) => {
-    console.log("Medicamento seleccionado:", med);
+  const handleOpenMedForm = (med: StockItem | null = null) => {
+    logger.debug("Resource form opened", {
+      medicamentoId: med?.medicamento_id ?? null,
+    });
     setSelectedMedForEdit(med);
     setIsMedModalOpen(true);
   };
@@ -96,19 +127,25 @@ export function InventarioClient({
     setSelectedMedForEdit(null);
   };
 
-  const handleSubmitMed = async (data: any, cantidadInicial: number = 0) => {
+  const handleSubmitMed = async (
+    data: InsertMedicamento,
+    cantidadInicial: number = 0
+  ) => {
     try {
       setIsSubmitting(true);
-      
+
       const payload = { ...data };
 
       if (selectedMedForEdit) {
         // EDICIÓN: Conservar el código almacenado o el ingresado por el usuario. NO REGENERAR.
-        payload.codigo = data.codigo || selectedMedForEdit.codigo || generarCodigoRecurso(payload.nombre, payload.tipo_recurso);
+        payload.codigo =
+          data.codigo ||
+          selectedMedForEdit.codigo ||
+          generarCodigoRecurso(payload.tipo_recurso);
       } else {
         // CREACIÓN: Generar únicamente cuando es un nuevo recurso y no se ingresó código manual
         if (!payload.codigo || payload.codigo.trim() === "") {
-          payload.codigo = generarCodigoRecurso(payload.nombre, payload.tipo_recurso);
+          payload.codigo = generarCodigoRecurso(payload.tipo_recurso);
         }
       }
 
@@ -117,12 +154,13 @@ export function InventarioClient({
         payload.codigo = payload.codigo.substring(0, 20);
       }
 
-      const targetId = selectedMedForEdit ? (selectedMedForEdit.medicamento_id || selectedMedForEdit.id) : null;
+      const targetId = selectedMedForEdit?.medicamento_id ?? null;
 
       // Depuración temporal requerida por las instrucciones
-      console.log("Payload enviado:", payload);
-      console.log("ID utilizado:", targetId);
-      console.log("Medicamento seleccionado:", selectedMedForEdit);
+      logger.debug("Resource save submitted", {
+        medicamentoId: targetId,
+        isUpdate: Boolean(selectedMedForEdit && targetId),
+      });
 
       if (selectedMedForEdit && targetId) {
         await updateMedicamento(targetId, payload);
@@ -132,8 +170,12 @@ export function InventarioClient({
 
       handleCloseMedForm();
       fetchMedicamentos();
-    } catch (error: any) {
-      alert(error.message || "Error al guardar el recurso.");
+    } catch (error) {
+      logger.error("Resource save failed", errorInfo(error));
+      alert(
+        (error instanceof Error && error.message) ||
+          "Error al guardar el recurso."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -141,27 +183,50 @@ export function InventarioClient({
 
   const handleDeleteConfirm = async () => {
     if (!medToDelete) return;
+    const targetId = medToDelete.medicamento_id;
+    if (!targetId) {
+      alert("Error al eliminar el recurso.");
+      return;
+    }
     try {
       setIsDeleting(true);
-      const targetId = medToDelete.medicamento_id || medToDelete.id;
       await deleteMedicamento(targetId);
       setMedToDelete(null);
       fetchMedicamentos();
-    } catch (error: any) {
-      alert(error.message || "Error al eliminar el recurso.");
+    } catch (error) {
+      logger.error("Resource deletion failed", {
+        ...errorInfo(error),
+        medicamentoId: targetId,
+      });
+      alert(
+        (error instanceof Error && error.message) ||
+          "Error al eliminar el recurso."
+      );
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const getTipoBadge = (tipo?: string) => {
+  const getTipoBadge = (tipo: string | null) => {
     switch (tipo) {
       case "insumo_medico":
-        return <span className={`${styles.badge} ${styles.badgeBrand}`}>Insumo Médico</span>;
+        return (
+          <span className={`${styles.badge} ${styles.badgeBrand}`}>
+            Insumo Médico
+          </span>
+        );
       case "material_brigada":
-        return <span className={`${styles.badge} ${styles.badgeNeutral}`}>Material Brigada</span>;
+        return (
+          <span className={`${styles.badge} ${styles.badgeNeutral}`}>
+            Material Brigada
+          </span>
+        );
       default:
-        return <span className={`${styles.badge} ${styles.badgeInfo}`}>Medicamento</span>;
+        return (
+          <span className={`${styles.badge} ${styles.badgeInfo}`}>
+            Medicamento
+          </span>
+        );
     }
   };
 
@@ -173,14 +238,26 @@ export function InventarioClient({
       tone = styles.badgeWarning;
     }
 
-    return <span className={`${styles.badge} ${styles.badgeDot} ${tone}`}>{estado}</span>;
+    return (
+      <span className={`${styles.badge} ${styles.badgeDot} ${tone}`}>
+        {estado}
+      </span>
+    );
   };
 
   const FILTROS = [
     { id: "todos", label: "Todos", icon: <Boxes aria-hidden="true" /> },
     { id: "medicamento", label: "Fármacos", icon: <Pill aria-hidden="true" /> },
-    { id: "insumo_medico", label: "Insumos", icon: <Syringe aria-hidden="true" /> },
-    { id: "material_brigada", label: "Material Brigada", icon: <Tent aria-hidden="true" /> },
+    {
+      id: "insumo_medico",
+      label: "Insumos",
+      icon: <Syringe aria-hidden="true" />,
+    },
+    {
+      id: "material_brigada",
+      label: "Material Brigada",
+      icon: <Tent aria-hidden="true" />,
+    },
   ] as const;
 
   return (
@@ -190,10 +267,13 @@ export function InventarioClient({
           <div>
             <h2 className={styles.panelTitle}>
               Gestión Global de Inventario
-              {!isLoading && <span className={styles.count}>{medicamentos.length}</span>}
+              {!isLoading && (
+                <span className={styles.count}>{medicamentos.length}</span>
+              )}
             </h2>
             <p className={styles.panelSub}>
-              Control unificado de medicamentos, insumos médicos y material de brigadas
+              Control unificado de medicamentos, insumos médicos y material de
+              brigadas
             </p>
           </div>
 
@@ -201,13 +281,21 @@ export function InventarioClient({
             <button
               type="button"
               className="btn-ghost btn-sm"
-              onClick={() => abrirCategorias(filtroTipo === "todos" ? "medicamento" : filtroTipo)}
+              onClick={() =>
+                abrirCategorias(
+                  filtroTipo === "todos" ? "medicamento" : filtroTipo
+                )
+              }
             >
               <Tags aria-hidden="true" />
               Categorías
             </button>
             {can(PERMISSIONS.INVENTARIO_CREATE) ? (
-              <button type="button" className="btn-primary btn-sm" onClick={() => handleOpenMedForm()}>
+              <button
+                type="button"
+                className="btn-primary btn-sm"
+                onClick={() => handleOpenMedForm()}
+              >
                 <Plus aria-hidden="true" />
                 Nuevo Recurso
               </button>
@@ -220,7 +308,11 @@ export function InventarioClient({
           </div>
         </div>
 
-        <div className={styles.tabs} role="tablist" aria-label="Tipo de recurso">
+        <div
+          className={styles.tabs}
+          role="tablist"
+          aria-label="Tipo de recurso"
+        >
           {FILTROS.map((f) => (
             <button
               key={f.id}
@@ -258,12 +350,13 @@ export function InventarioClient({
                 {medicamentos.length === 0 ? (
                   <tr>
                     <td colSpan={7} className={styles.emptyCell}>
-                      No hay recursos registrados en esta categoría de inventario.
+                      No hay recursos registrados en esta categoría de
+                      inventario.
                     </td>
                   </tr>
                 ) : (
-                  medicamentos.map((med: any) => (
-                    <tr key={med.medicamento_id || med.id}>
+                  medicamentos.map((med) => (
+                    <tr key={med.medicamento_id}>
                       <td>{getTipoBadge(med.tipo_recurso)}</td>
                       {/* la descripción va bajo el nombre para que las acciones quepan sin desplazar */}
                       <td>
@@ -279,8 +372,12 @@ export function InventarioClient({
                       </td>
                       <td>{med.unidad_medida || "-"}</td>
                       <td className={styles.num}>{med.stock_minimo}</td>
-                      <td className={`${styles.num} ${styles.cellMain}`}>{med.stock_total || 0}</td>
-                      <td>{getStockBadge(med.estado_stock || "Sin Existencias")}</td>
+                      <td className={`${styles.num} ${styles.cellMain}`}>
+                        {med.stock_total || 0}
+                      </td>
+                      <td>
+                        {getStockBadge(med.estado_stock || "Sin Existencias")}
+                      </td>
                       <td>
                         <div className={styles.rowActions}>
                           {can(PERMISSIONS.INVENTARIO_UPDATE) && (
@@ -297,7 +394,13 @@ export function InventarioClient({
                           <button
                             type="button"
                             className="btn-ghost btn-xs"
-                            onClick={() => setSelectedMedLotes({ id: med.medicamento_id || med.id, nombre: med.nombre })}
+                            onClick={() => {
+                              if (!med.medicamento_id) return;
+                              setSelectedMedLotes({
+                                id: med.medicamento_id,
+                                nombre: med.nombre ?? "",
+                              });
+                            }}
                             aria-label={`Ver lotes de ${med.nombre}`}
                           >
                             <Layers aria-hidden="true" />
@@ -337,7 +440,11 @@ export function InventarioClient({
 
       {isMedModalOpen && (
         <AdminModal
-          title={selectedMedForEdit ? "Editar medicamento" : "Nuevo Medicamento o Insumo"}
+          title={
+            selectedMedForEdit
+              ? "Editar medicamento"
+              : "Nuevo Medicamento o Insumo"
+          }
           onClose={handleCloseMedForm}
           busy={isSubmitting}
         >
@@ -372,7 +479,9 @@ export function InventarioClient({
           onCancel={() => setMedToDelete(null)}
           onConfirm={handleDeleteConfirm}
         >
-          Estás a punto de eliminar <strong>{medToDelete.nombre}</strong>. Esta acción borrará permanentemente todos sus lotes asociados y el historial de stock en este sistema.
+          Estás a punto de eliminar <strong>{medToDelete.nombre}</strong>. Esta
+          acción borrará permanentemente todos sus lotes asociados y el
+          historial de stock en este sistema.
         </ConfirmDialog>
       )}
     </div>

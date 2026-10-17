@@ -1,8 +1,5 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
-import { inscribirVoluntarioAction } from "@/app/voluntariado/actions";
-import styles from "@/styles/components/inscripcion-modal.module.css";
 import {
   Calendar,
   Check,
@@ -12,6 +9,12 @@ import {
   Send,
   X,
 } from "lucide-react";
+import { type FormEvent, useEffect, useState } from "react";
+import { inscribirVoluntarioAction } from "@/app/voluntariado/actions";
+import { errorInfo, getLogger } from "@/lib/logger";
+import styles from "@/styles/components/inscripcion-modal.module.css";
+
+const logger = getLogger("voluntariado", "client");
 
 export const AREAS_INTERES_LIST = [
   "Registro",
@@ -85,7 +88,8 @@ export default function InscripcionModal({
     const errors: Record<string, string> = {};
 
     if (!nombreCompleto.trim() || nombreCompleto.trim().length < 3) {
-      errors.nombreCompleto = "Ingresa tu nombre completo (mínimo 3 caracteres).";
+      errors.nombreCompleto =
+        "Ingresa tu nombre completo (mínimo 3 caracteres).";
     }
 
     if (!lugar.trim() || lugar.trim().length < 5) {
@@ -96,14 +100,16 @@ export default function InscripcionModal({
     if (!correo.trim()) {
       errors.correo = "El correo electrónico es requerido.";
     } else if (!emailRegex.test(correo.trim())) {
-      errors.correo = "Ingresa un formato de correo válido (ej. nombre@correo.com).";
+      errors.correo =
+        "Ingresa un formato de correo válido (ej. nombre@correo.com).";
     }
 
     const cleanPhone = telefono.replace(/\D/g, "");
     if (!telefono.trim()) {
       errors.telefono = "El número de teléfono es requerido.";
     } else if (cleanPhone.length < 7) {
-      errors.telefono = "Ingresa un número telefónico válido (mínimo 7 dígitos).";
+      errors.telefono =
+        "Ingresa un número telefónico válido (mínimo 7 dígitos).";
     }
 
     if (!areaInteres) {
@@ -131,9 +137,13 @@ export default function InscripcionModal({
       profesion,
       comentarios,
       lugar,
-    }).catch(() => ({
-      error: "Ocurrió un error al enviar tu solicitud. Intenta de nuevo más tarde.",
-    }));
+    }).catch((error) => {
+      logger.error("Volunteer request submission failed", errorInfo(error));
+      return {
+        error:
+          "Ocurrió un error al enviar tu solicitud. Intenta de nuevo más tarde.",
+      };
+    });
 
     if (actionError) {
       setGeneralError(actionError);
@@ -162,6 +172,7 @@ export default function InscripcionModal({
     );
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: el clic en el fondo es un atajo de ratón; desde el teclado el modal se cierra con Escape
     <div
       className={styles.overlay}
       onClick={(e) => {
@@ -230,9 +241,12 @@ export default function InscripcionModal({
                       onChange={(e) => setNombreCompleto(e.target.value)}
                       disabled={loading}
                       required
+                      // biome-ignore lint/a11y/noAutofocus: al abrir el modal el foco pasa al primer campo, como pide el patrón de diálogo
                       autoFocus
                       aria-invalid={!!formErrors.nombreCompleto}
-                      aria-describedby={formErrors.nombreCompleto ? "err_nombre" : undefined}
+                      aria-describedby={
+                        formErrors.nombreCompleto ? "err_nombre" : undefined
+                      }
                     />
                     {fieldError("nombreCompleto", "err_nombre")}
                   </div>
@@ -251,7 +265,9 @@ export default function InscripcionModal({
                       required
                       autoComplete="address-level2"
                       aria-invalid={!!formErrors.lugar}
-                      aria-describedby={formErrors.lugar ? "err_lugar" : undefined}
+                      aria-describedby={
+                        formErrors.lugar ? "err_lugar" : undefined
+                      }
                     />
                     {fieldError("lugar", "err_lugar")}
                   </div>
@@ -269,13 +285,17 @@ export default function InscripcionModal({
                       disabled={loading}
                       required
                       aria-invalid={!!formErrors.correo}
-                      aria-describedby={formErrors.correo ? "err_correo" : undefined}
+                      aria-describedby={
+                        formErrors.correo ? "err_correo" : undefined
+                      }
                     />
                     {fieldError("correo", "err_correo")}
                   </div>
 
                   <div className="form-field">
-                    <label htmlFor="modal_telefono">Teléfono / WhatsApp *</label>
+                    <label htmlFor="modal_telefono">
+                      Teléfono / WhatsApp *
+                    </label>
                     <input
                       id="modal_telefono"
                       maxLength={20}
@@ -287,7 +307,9 @@ export default function InscripcionModal({
                       disabled={loading}
                       required
                       aria-invalid={!!formErrors.telefono}
-                      aria-describedby={formErrors.telefono ? "err_telefono" : undefined}
+                      aria-describedby={
+                        formErrors.telefono ? "err_telefono" : undefined
+                      }
                     />
                     {fieldError("telefono", "err_telefono")}
                   </div>
@@ -302,7 +324,9 @@ export default function InscripcionModal({
                       disabled={loading}
                       required
                       aria-invalid={!!formErrors.areaInteres}
-                      aria-describedby={formErrors.areaInteres ? "err_area" : undefined}
+                      aria-describedby={
+                        formErrors.areaInteres ? "err_area" : undefined
+                      }
                     >
                       {AREAS_INTERES_LIST.map((area) => (
                         <option key={area} value={area}>
@@ -314,7 +338,9 @@ export default function InscripcionModal({
                   </div>
 
                   <div className="form-field">
-                    <label htmlFor="modal_profesion">Profesión / Oficio (Opcional)</label>
+                    <label htmlFor="modal_profesion">
+                      Profesión / Oficio (Opcional)
+                    </label>
                     <input
                       id="modal_profesion"
                       maxLength={100}
@@ -353,7 +379,11 @@ export default function InscripcionModal({
                   >
                     Cancelar
                   </button>
-                  <button type="submit" className="btn-primary" disabled={loading}>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={loading}
+                  >
                     {loading ? (
                       <>
                         <LoaderCircle className="spin" aria-hidden="true" />
@@ -373,20 +403,28 @@ export default function InscripcionModal({
         ) : (
           /* ── PANTALLA DE ÉXITO Y REGISTRO / LOGIN ── */
           <div className={styles.success} role="status">
-            <div className={`${styles.successIcon} icon-circle tone-primary`} aria-hidden="true">
+            <div
+              className={`${styles.successIcon} icon-circle tone-primary`}
+              aria-hidden="true"
+            >
               <Check strokeWidth={2.5} />
             </div>
             <h2 className={styles.successTitle} id="modal-title">
               ¡Solicitud enviada con éxito!
             </h2>
             <p className={styles.successDesc}>
-              Hemos recibido tu postulación para <strong>{brigada.nombre}</strong> y
-              te enviamos un correo de confirmación a <strong>{correo.trim()}</strong>.
-              Un coordinador la revisará pronto y, cuando sea aprobada, recibirás
-              otro correo con las instrucciones para entrar a tu cuenta de voluntario.
+              Hemos recibido tu postulación para{" "}
+              <strong>{brigada.nombre}</strong> y te enviamos un correo de
+              confirmación a <strong>{correo.trim()}</strong>. Un coordinador la
+              revisará pronto y, cuando sea aprobada, recibirás otro correo con
+              las instrucciones para entrar a tu cuenta de voluntario.
             </p>
 
-            <button type="button" className={styles.btnDismiss} onClick={onClose}>
+            <button
+              type="button"
+              className={styles.btnDismiss}
+              onClick={onClose}
+            >
               Entendido, cerrar esta ventana
             </button>
           </div>

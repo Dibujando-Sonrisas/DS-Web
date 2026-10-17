@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { usePermissions } from "./PermissionsProvider";
 import type { Permission } from "@/lib/auth/permissions";
+import { usePermissions } from "./PermissionsProvider";
 
 type CanProps = {
   permission?: Permission;

@@ -1,7 +1,12 @@
 "use client";
 
-import { useId, useState, type ComponentProps, type KeyboardEvent } from "react";
 import { Check, ChevronDown } from "lucide-react";
+import {
+  type ComponentProps,
+  type KeyboardEvent,
+  useId,
+  useState,
+} from "react";
 import { coincide } from "@/lib/texto";
 
 export type ComboboxOption = { value: string; label: string; detail?: string };
@@ -37,7 +42,8 @@ export default function Combobox({
   const [active, setActive] = useState(-1);
 
   const chosen = options.find((o) => o.value === value);
-  const results = query === null ? options : options.filter((o) => coincide(o.label, query));
+  const results =
+    query === null ? options : options.filter((o) => coincide(o.label, query));
   const current = open ? results[active] : undefined;
   const chosenIndex = results.findIndex((o) => o.value === value);
 
@@ -115,16 +121,28 @@ export default function Combobox({
       {open &&
         (results.length > 0 ? (
           // mousedown sin default: el foco se queda en el campo al hacer clic en la lista
-          <ul id={listId} role="listbox" className="combobox-list" onMouseDown={(e) => e.preventDefault()}>
+          <ul
+            id={listId}
+            // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: patrón combobox de WAI-ARIA; la lista se maneja desde el campo con aria-activedescendant
+            role="listbox"
+            className="combobox-list"
+            onMouseDown={(e) => e.preventDefault()}
+          >
             {results.map((o, i) => (
+              // biome-ignore lint/a11y/useFocusableInteractive lint/a11y/useKeyWithClickEvents: en el patrón combobox el foco y el teclado quedan en el campo (aria-activedescendant); las opciones no reciben foco
               <li
                 key={o.value}
                 id={`${listId}-${i}`}
+                // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: opción del patrón combobox de WAI-ARIA
                 role="option"
                 aria-selected={i === active}
                 data-chosen={o.value === value || undefined}
                 className="combobox-option"
-                ref={i === active ? (el) => el?.scrollIntoView({ block: "nearest" }) : undefined}
+                ref={
+                  i === active
+                    ? (el) => el?.scrollIntoView({ block: "nearest" })
+                    : undefined
+                }
                 onMouseMove={() => i !== active && setActive(i)}
                 onClick={(e) => {
                   e.preventDefault(); // dentro de un <label> no reenvía el clic al campo
@@ -133,7 +151,9 @@ export default function Combobox({
               >
                 <Check aria-hidden="true" />
                 <span>{o.label}</span>
-                {o.detail && <span className="combobox-detail">{o.detail}</span>}
+                {o.detail && (
+                  <span className="combobox-detail">{o.detail}</span>
+                )}
               </li>
             ))}
           </ul>

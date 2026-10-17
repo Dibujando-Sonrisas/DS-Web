@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Clock, LoaderCircle, LogOut, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { logoutAction } from "@/app/auth/actions";
-import AuthShell from "../AuthShell";
 import styles from "@/styles/pages/auth.module.css";
+import AuthShell from "../AuthShell";
 
 export default function SinAccesoClient({
   userName,

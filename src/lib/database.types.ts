@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -1613,6 +1618,42 @@ export type Database = {
           },
         ]
       }
+      registros_offline: {
+        Row: {
+          cambiado_en: string
+          conflicto: Json | null
+          id: string
+          operacion: string
+          preparada_en: string
+          registro: Json
+          sesion_id: string
+          subido_en: string
+          tabla: string
+        }
+        Insert: {
+          cambiado_en: string
+          conflicto?: Json | null
+          id?: string
+          operacion: string
+          preparada_en: string
+          registro: Json
+          sesion_id: string
+          subido_en?: string
+          tabla: string
+        }
+        Update: {
+          cambiado_en?: string
+          conflicto?: Json | null
+          id?: string
+          operacion?: string
+          preparada_en?: string
+          registro?: Json
+          sesion_id?: string
+          subido_en?: string
+          tabla?: string
+        }
+        Relationships: []
+      }
       rol_permisos: {
         Row: {
           permiso: string
@@ -1947,7 +1988,15 @@ export type Database = {
           tipo_recurso: string | null
           unidad_medida: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "medicamentos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categorias_inventario"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_actividad_reciente: {
         Row: {
@@ -2148,15 +2197,16 @@ export type Database = {
         Returns: string
       }
       marcar_notificaciones_vistas: { Args: never; Returns: undefined }
+      normalizar_telefono: { Args: { p_telefono: string }; Returns: string }
       notificar: {
         Args: {
+          p_actor_id?: string
+          p_detalle?: string
+          p_enlace?: string
+          p_para_todos?: boolean
+          p_permiso?: string
           p_tipo: string
           p_titulo: string
-          p_detalle?: string | null
-          p_enlace?: string | null
-          p_permiso?: string | null
-          p_actor_id?: string | null
-          p_para_todos?: boolean | null
         }
         Returns: undefined
       }
@@ -2375,4 +2425,3 @@ export const Constants = {
     },
   },
 } as const
-

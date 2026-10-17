@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { z } from "zod";
-import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
-import { generarCodigoBrigada } from "../actions";
 import { CircleAlert, Hash, LoaderCircle } from "lucide-react";
+import type React from "react";
+import { useEffect, useState } from "react";
+import { z } from "zod";
 import AdminModal from "@/app/administracion/components/AdminModal";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
+import { Constants } from "@/lib/database.types";
+import type { Brigada, EstadoBrigada } from "@/lib/db/brigadas";
 import styles from "@/styles/pages/admin.module.css";
 import brig from "@/styles/pages/admin-brigadas.module.css";
+import { generarCodigoBrigada } from "../actions";
 
 // Lista oficial de Departamentos de Honduras (Prueba 5: Valores válidos)
 const DEPARTAMENTOS_HONDURAS = [
@@ -40,51 +42,86 @@ const brigadaSchema = z
     nombre: z
       .string()
       .trim()
-      .min(5, "Prueba de longitud: El nombre de la brigada debe tener al menos 5 caracteres.")
-      .max(100, "Prueba de longitud: El nombre no debe exceder 100 caracteres."),
+      .min(
+        5,
+        "Prueba de longitud: El nombre de la brigada debe tener al menos 5 caracteres."
+      )
+      .max(
+        100,
+        "Prueba de longitud: El nombre no debe exceder 100 caracteres."
+      ),
     lugar: z
       .string()
       .trim()
-      .min(3, "Prueba de presencia: El lugar o comunidad debe tener al menos 3 caracteres.")
+      .min(
+        3,
+        "Prueba de presencia: El lugar o comunidad debe tener al menos 3 caracteres."
+      )
       .max(150, "Prueba de longitud: El lugar no debe exceder 150 caracteres."),
     municipio: z
       .string()
       .trim()
       .min(2, "Prueba de presencia: El municipio es obligatorio.")
-      .max(100, "Prueba de longitud: El municipio no debe exceder 100 caracteres."),
+      .max(
+        100,
+        "Prueba de longitud: El municipio no debe exceder 100 caracteres."
+      ),
     departamento: z
       .string()
-      .min(1, "Prueba de valores válidos: Selecciona un departamento oficial de Honduras."),
+      .min(
+        1,
+        "Prueba de valores válidos: Selecciona un departamento oficial de Honduras."
+      ),
     fecha_brigada: z
       .string()
-      .min(1, "Prueba de presencia: La fecha y hora del evento son obligatorias."),
+      .min(
+        1,
+        "Prueba de presencia: La fecha y hora del evento son obligatorias."
+      ),
     fecha_inicio_inscripcion: z
       .string()
-      .min(1, "Prueba de presencia: La fecha de inicio de inscripción es obligatoria."),
+      .min(
+        1,
+        "Prueba de presencia: La fecha de inicio de inscripción es obligatoria."
+      ),
     fecha_fin_inscripcion: z
       .string()
-      .min(1, "Prueba de presencia: La fecha de fin de inscripción es obligatoria."),
+      .min(
+        1,
+        "Prueba de presencia: La fecha de fin de inscripción es obligatoria."
+      ),
     descripcion: z
       .string()
-      .max(500, "Prueba de longitud: La descripción no debe exceder 500 caracteres.")
+      .max(
+        500,
+        "Prueba de longitud: La descripción no debe exceder 500 caracteres."
+      )
       .optional()
       .or(z.literal("")),
-    estado: z.enum(
-      ["inscripciones_abiertas", "inscripciones_cerradas", "finalizada", "cancelada"],
-      { message: "Prueba de valores válidos: Selecciona un estado válido." }
-    ),
+    estado: z.enum(Constants.public.Enums.estado_brigada, {
+      message: "Prueba de valores válidos: Selecciona un estado válido.",
+    }),
     presupuesto_estimado: z.preprocess(
-      (val) => (val === "" || val === null || val === undefined ? 0 : Number(val)),
+      (val) =>
+        val === "" || val === null || val === undefined ? 0 : Number(val),
       z
-        .number({ message: "Prueba de clase: El presupuesto debe ser numérico." })
+        .number({
+          message: "Prueba de clase: El presupuesto debe ser numérico.",
+        })
         .min(0, "Prueba de sensatez: El presupuesto no puede ser negativo.")
     ),
     capacidad_voluntarios: z.preprocess(
-      (val) => (val === "" || val === null || val === undefined ? null : Number(val)),
+      (val) =>
+        val === "" || val === null || val === undefined ? null : Number(val),
       z
-        .number({ message: "Prueba de clase: La capacidad debe ser un número entero." })
+        .number({
+          message: "Prueba de clase: La capacidad debe ser un número entero.",
+        })
         .int("Prueba de composición: La capacidad debe ser un entero.")
-        .min(1, "Prueba de sensatez: La capacidad debe ser de al menos 1 voluntario.")
+        .min(
+          1,
+          "Prueba de sensatez: La capacidad debe ser de al menos 1 voluntario."
+        )
         .nullable()
         .optional()
     ),
@@ -95,7 +132,8 @@ const brigadaSchema = z
       .or(z.literal(""))
       .nullable(),
     latitud: z.preprocess(
-      (val) => (val === "" || val === null || val === undefined ? null : Number(val)),
+      (val) =>
+        val === "" || val === null || val === undefined ? null : Number(val),
       z
         .number({ message: "Prueba de clase: La latitud debe ser numérica." })
         .min(-90, "Prueba de sensatez: La latitud mínima es -90°.")
@@ -104,7 +142,8 @@ const brigadaSchema = z
         .optional()
     ),
     longitud: z.preprocess(
-      (val) => (val === "" || val === null || val === undefined ? null : Number(val)),
+      (val) =>
+        val === "" || val === null || val === undefined ? null : Number(val),
       z
         .number({ message: "Prueba de clase: La longitud debe ser numérica." })
         .min(-180, "Prueba de sensatez: La longitud mínima es -180°.")
@@ -115,21 +154,29 @@ const brigadaSchema = z
   })
   .refine(
     (data) => {
-      if (!data.fecha_inicio_inscripcion || !data.fecha_fin_inscripcion) return true;
-      return new Date(data.fecha_inicio_inscripcion) <= new Date(data.fecha_fin_inscripcion);
+      if (!data.fecha_inicio_inscripcion || !data.fecha_fin_inscripcion)
+        return true;
+      return (
+        new Date(data.fecha_inicio_inscripcion) <=
+        new Date(data.fecha_fin_inscripcion)
+      );
     },
     {
-      message: "Prueba de referencia cruzada: El inicio de inscripción debe ser previo o igual al fin de inscripción.",
+      message:
+        "Prueba de referencia cruzada: El inicio de inscripción debe ser previo o igual al fin de inscripción.",
       path: ["fecha_inicio_inscripcion"],
     }
   )
   .refine(
     (data) => {
       if (!data.fecha_fin_inscripcion || !data.fecha_brigada) return true;
-      return new Date(data.fecha_fin_inscripcion) <= new Date(data.fecha_brigada);
+      return (
+        new Date(data.fecha_fin_inscripcion) <= new Date(data.fecha_brigada)
+      );
     },
     {
-      message: "Prueba de referencia cruzada: El fin de inscripción no puede ser posterior a la fecha del evento.",
+      message:
+        "Prueba de referencia cruzada: El fin de inscripción no puede ser posterior a la fecha del evento.",
       path: ["fecha_fin_inscripcion"],
     }
   );
@@ -150,6 +197,8 @@ const ESTADO_LABELS: Record<EstadoBrigada, string> = {
   inscripciones_cerradas: "Inscripciones Cerradas",
   finalizada: "Finalizada (Solo Lectura)",
   cancelada: "Cancelada",
+  planificacion: "Planificación",
+  en_preparacion: "En preparación",
 };
 
 export default function BrigadaForm({
@@ -164,7 +213,7 @@ export default function BrigadaForm({
   const formatDatetimeLocal = (isoString?: string | null) => {
     if (!isoString) return "";
     const date = new Date(isoString);
-    if (isNaN(date.getTime())) return "";
+    if (Number.isNaN(date.getTime())) return "";
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, "0");
     const dd = String(date.getDate()).padStart(2, "0");
@@ -177,8 +226,6 @@ export default function BrigadaForm({
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [showDiscardModal, setShowDiscardModal] = useState<boolean>(false);
 
-
-
   const [formData, setFormData] = useState<Partial<BrigadaFormData>>({
     codigo: brigada?.codigo ?? "",
     nombre: brigada?.nombre ?? "",
@@ -186,7 +233,9 @@ export default function BrigadaForm({
     municipio: brigada?.municipio ?? "",
     departamento: brigada?.departamento ?? "Francisco Morazán",
     fecha_brigada: formatDatetimeLocal(brigada?.fecha_brigada),
-    fecha_inicio_inscripcion: formatDatetimeLocal(brigada?.fecha_inicio_inscripcion),
+    fecha_inicio_inscripcion: formatDatetimeLocal(
+      brigada?.fecha_inicio_inscripcion
+    ),
     fecha_fin_inscripcion: formatDatetimeLocal(brigada?.fecha_fin_inscripcion),
     descripcion: brigada?.descripcion ?? "",
     estado: brigada?.estado ?? "inscripciones_cerradas",
@@ -197,7 +246,9 @@ export default function BrigadaForm({
     longitud: brigada?.longitud ?? null,
   });
 
-  const [formErrors, setFormErrors] = useState<Partial<Record<keyof BrigadaFormData, string>>>({});
+  const [formErrors, setFormErrors] = useState<
+    Partial<Record<keyof BrigadaFormData, string>>
+  >({});
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   // Carga previa del código autogenerado en modo creación y re-calculo dinámico si cambia la fecha
@@ -212,7 +263,9 @@ export default function BrigadaForm({
   }, [mode, formData.fecha_brigada, brigada?.codigo]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     setIsDirty(true);
@@ -247,7 +300,9 @@ export default function BrigadaForm({
         }
       });
       setFormErrors(errors);
-      setGeneralError("Existen campos incompletos o con datos inválidos. Revisa el formulario a continuación.");
+      setGeneralError(
+        "Existen campos incompletos o con datos inválidos. Revisa el formulario a continuación."
+      );
       return;
     }
 
@@ -257,7 +312,9 @@ export default function BrigadaForm({
       id: mode === "edit" ? brigada?.id : undefined,
       codigo: mode === "edit" ? brigada?.codigo : codePreview,
       fecha_brigada: new Date(data.fecha_brigada).toISOString(),
-      fecha_inicio_inscripcion: new Date(data.fecha_inicio_inscripcion).toISOString(),
+      fecha_inicio_inscripcion: new Date(
+        data.fecha_inicio_inscripcion
+      ).toISOString(),
       fecha_fin_inscripcion: new Date(data.fecha_fin_inscripcion).toISOString(),
     };
     onSubmit(formattedData);
@@ -275,7 +332,11 @@ export default function BrigadaForm({
   return (
     <>
       <AdminModal
-        title={mode === "create" ? "Registrar Nueva Brigada Médica" : "Editar Brigada Médica"}
+        title={
+          mode === "create"
+            ? "Registrar Nueva Brigada Médica"
+            : "Editar Brigada Médica"
+        }
         size="lg"
         onClose={handleRequestClose}
         busy={isSubmitting}
@@ -294,21 +355,30 @@ export default function BrigadaForm({
             <p className="notice">
               <Hash aria-hidden="true" />
               <span>
-                {mode === "create" ? "Código Asignado Automáticamente" : "Código Identificador de Brigada"}
+                {mode === "create"
+                  ? "Código Asignado Automáticamente"
+                  : "Código Identificador de Brigada"}
                 <strong className={brig.codeValue}>
-                  {mode === "create" ? codePreview || "Generando..." : brigada?.codigo}
+                  {mode === "create"
+                    ? codePreview || "Generando..."
+                    : brigada?.codigo}
                 </strong>
               </span>
             </p>
 
             {/* SECCIÓN 2: Información General */}
             <div className={styles.formSection}>
-              <h3 className={styles.formSectionTitle}>1. Información General del Evento</h3>
+              <h3 className={styles.formSectionTitle}>
+                1. Información General del Evento
+              </h3>
               <div className="form-grid">
                 {/* Nombre de Brigada */}
                 <label className="form-field form-field-full">
                   <span className="form-label">
-                    Nombre de la Brigada <span className="form-required" aria-hidden="true">*</span>
+                    Nombre de la Brigada{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     name="nombre"
@@ -325,7 +395,10 @@ export default function BrigadaForm({
                 {/* Fecha y Hora del Evento */}
                 <label className="form-field">
                   <span className="form-label">
-                    Fecha y Hora de la Brigada <span className="form-required" aria-hidden="true">*</span>
+                    Fecha y Hora de la Brigada{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     name="fecha_brigada"
@@ -341,7 +414,10 @@ export default function BrigadaForm({
                 {/* Estado de la Brigada */}
                 <label className="form-field">
                   <span className="form-label">
-                    Estado de la Brigada <span className="form-required" aria-hidden="true">*</span>
+                    Estado de la Brigada{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <select
                     name="estado"
@@ -356,8 +432,16 @@ export default function BrigadaForm({
                     <option value="inscripciones_abiertas">
                       {ESTADO_LABELS.inscripciones_abiertas}
                     </option>
-                    <option value="finalizada">{ESTADO_LABELS.finalizada}</option>
+                    <option value="finalizada">
+                      {ESTADO_LABELS.finalizada}
+                    </option>
                     <option value="cancelada">{ESTADO_LABELS.cancelada}</option>
+                    {(formData.estado === "planificacion" ||
+                      formData.estado === "en_preparacion") && (
+                      <option value={formData.estado}>
+                        {ESTADO_LABELS[formData.estado]}
+                      </option>
+                    )}
                   </select>
                   {fieldError("estado")}
                 </label>
@@ -366,12 +450,17 @@ export default function BrigadaForm({
 
             {/* SECCIÓN 3: Ubicación Geográfica */}
             <div className={styles.formSection}>
-              <h3 className={styles.formSectionTitle}>2. Ubicación Geográfica en Honduras</h3>
+              <h3 className={styles.formSectionTitle}>
+                2. Ubicación Geográfica en Honduras
+              </h3>
               <div className="form-grid">
                 {/* Departamento */}
                 <label className="form-field">
                   <span className="form-label">
-                    Departamento <span className="form-required" aria-hidden="true">*</span>
+                    Departamento{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <select
                     name="departamento"
@@ -393,7 +482,10 @@ export default function BrigadaForm({
                 {/* Municipio */}
                 <label className="form-field">
                   <span className="form-label">
-                    Municipio <span className="form-required" aria-hidden="true">*</span>
+                    Municipio{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     name="municipio"
@@ -410,7 +502,10 @@ export default function BrigadaForm({
                 {/* Lugar / Comunidad */}
                 <label className="form-field form-field-full">
                   <span className="form-label">
-                    Comunidad o Centro de Atención <span className="form-required" aria-hidden="true">*</span>
+                    Comunidad o Centro de Atención{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     name="lugar"
@@ -428,12 +523,17 @@ export default function BrigadaForm({
 
             {/* SECCIÓN 4: Programación de Fechas */}
             <div className={styles.formSection}>
-              <h3 className={styles.formSectionTitle}>3. Programación de Fechas</h3>
+              <h3 className={styles.formSectionTitle}>
+                3. Programación de Fechas
+              </h3>
               <div className="form-grid">
                 {/* Fecha Inicio Inscripción */}
                 <label className="form-field">
                   <span className="form-label">
-                    Apertura de Inscripciones de Voluntarios <span className="form-required" aria-hidden="true">*</span>
+                    Apertura de Inscripciones de Voluntarios{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     name="fecha_inicio_inscripcion"
@@ -449,7 +549,10 @@ export default function BrigadaForm({
                 {/* Fecha Fin Inscripción */}
                 <label className="form-field">
                   <span className="form-label">
-                    Cierre de Inscripciones de Voluntarios <span className="form-required" aria-hidden="true">*</span>
+                    Cierre de Inscripciones de Voluntarios{" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     name="fecha_fin_inscripcion"
@@ -466,12 +569,17 @@ export default function BrigadaForm({
 
             {/* SECCIÓN 5: Presupuesto y Capacidad */}
             <div className={styles.formSection}>
-              <h3 className={styles.formSectionTitle}>4. Presupuesto y Logística</h3>
+              <h3 className={styles.formSectionTitle}>
+                4. Presupuesto y Logística
+              </h3>
               <div className="form-grid">
                 {/* Presupuesto Estimado */}
                 <label className="form-field">
                   <span className="form-label">
-                    Presupuesto Estimado (HNL) <span className="form-required" aria-hidden="true">*</span>
+                    Presupuesto Estimado (HNL){" "}
+                    <span className="form-required" aria-hidden="true">
+                      *
+                    </span>
                   </span>
                   <input
                     name="presupuesto_estimado"
@@ -490,7 +598,8 @@ export default function BrigadaForm({
                 {/* Capacidad de Voluntarios */}
                 <label className="form-field">
                   <span className="form-label">
-                    Cupo Máximo de Voluntarios <span className="form-optional">(Opcional)</span>
+                    Cupo Máximo de Voluntarios{" "}
+                    <span className="form-optional">(Opcional)</span>
                   </span>
                   <input
                     name="capacidad_voluntarios"
@@ -508,12 +617,15 @@ export default function BrigadaForm({
 
             {/* SECCIÓN 6: Opciones Adicionales */}
             <div className={styles.formSection}>
-              <h3 className={styles.formSectionTitle}>5. Multimedia y Geolocalización GPS</h3>
+              <h3 className={styles.formSectionTitle}>
+                5. Multimedia y Geolocalización GPS
+              </h3>
               <div className="form-grid">
                 {/* Imagen Banner */}
                 <label className="form-field form-field-full">
                   <span className="form-label">
-                    Enlace de Imagen Banner <span className="form-optional">(Opcional)</span>
+                    Enlace de Imagen Banner{" "}
+                    <span className="form-optional">(Opcional)</span>
                   </span>
                   <input
                     name="imagen_banner"
@@ -528,7 +640,10 @@ export default function BrigadaForm({
                 {/* Latitud */}
                 <label className="form-field">
                   <span className="form-label">
-                    Latitud GPS <span className="form-optional">(Opcional, rango -90 a 90)</span>
+                    Latitud GPS{" "}
+                    <span className="form-optional">
+                      (Opcional, rango -90 a 90)
+                    </span>
                   </span>
                   <input
                     name="latitud"
@@ -545,7 +660,10 @@ export default function BrigadaForm({
                 {/* Longitud */}
                 <label className="form-field">
                   <span className="form-label">
-                    Longitud GPS <span className="form-optional">(Opcional, rango -180 a 180)</span>
+                    Longitud GPS{" "}
+                    <span className="form-optional">
+                      (Opcional, rango -180 a 180)
+                    </span>
                   </span>
                   <input
                     name="longitud"
@@ -562,7 +680,10 @@ export default function BrigadaForm({
                 {/* Descripción */}
                 <label className="form-field form-field-full">
                   <span className="form-label">
-                    Descripción de la Brigada y Servicios <span className="form-optional">(Opcional, máx. 500 caracteres)</span>
+                    Descripción de la Brigada y Servicios{" "}
+                    <span className="form-optional">
+                      (Opcional, máx. 500 caracteres)
+                    </span>
                   </span>
                   <textarea
                     name="descripcion"
@@ -589,8 +710,14 @@ export default function BrigadaForm({
             >
               Cancelar
             </button>
-            <button type="submit" className="btn-primary btn-sm" disabled={isSubmitting}>
-              {isSubmitting && <LoaderCircle className="spin" aria-hidden="true" />}
+            <button
+              type="submit"
+              className="btn-primary btn-sm"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && (
+                <LoaderCircle className="spin" aria-hidden="true" />
+              )}
               {isSubmitting
                 ? "Guardando Registros..."
                 : mode === "create"
@@ -613,7 +740,8 @@ export default function BrigadaForm({
             onClose();
           }}
         >
-          Has introducido modificaciones en el formulario. Si cierras ahora, todos los cambios no guardados se perderán permanentemente.
+          Has introducido modificaciones en el formulario. Si cierras ahora,
+          todos los cambios no guardados se perderán permanentemente.
         </ConfirmDialog>
       )}
     </>
