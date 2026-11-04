@@ -217,6 +217,7 @@ A laptop at the brigade site runs the app (`npm run offline`) against a local Su
 
 - Synchronization is a row-level three-way merge. **The brigade wins conflicts** and the overwritten online value is stored in `registros_offline.conflicto`.
 - Uploads never block because the online data changed. Do not reintroduce "abort if online changed" checks.
+- Only `public` tables have a change log. A profile carries its `auth.users` and `auth.identities` rows, and the upload creates the account online first when it is missing there. Otherwise accounts created at the brigade would break `perfiles_id_fkey`. An e-mail already used online by another account stops the upload.
 - Client code is served over plain `http://<ip>` there, so avoid APIs that require a secure context (for example `crypto.randomUUID`).
 - Modules in scope should keep working without internet. Do not add a hard dependency on an online-only service to them.
 - Changing `registros_offline` needs a new migration.

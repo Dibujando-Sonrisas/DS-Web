@@ -129,7 +129,15 @@ BEGIN
         'n', k.n, 'tabla', t.tabla, 'nivel', t.n, 'clave', k.clave, 'mia', v_mia,
         'primera', k.primera, 'fecha', k.fecha, 'base', k.base,
         -- creado aquí: en línea no había nada. Sin "antes" (registro de una versión anterior): no se sabe
-        'base_conocida', k.primera = 'INSERT' OR k.base IS NOT NULL);
+        'base_conocida', k.primera = 'INSERT' OR k.base IS NOT NULL,
+        -- auth has no change log, so each profile carries its account in case it is missing online
+        'account', CASE WHEN t.tabla = 'perfiles' AND v_mia IS NOT NULL THEN (
+          SELECT jsonb_build_object(
+                   'user', to_jsonb(u),
+                   'identities', (SELECT coalesce(jsonb_agg(to_jsonb(i)), '[]')
+                                  FROM auth.identities i WHERE i.user_id = u.id))
+          FROM auth.users u
+          WHERE u.id = (k.clave ->> 'id')::uuid) END);
     END LOOP;
   END LOOP;
   RETURN v_datos;

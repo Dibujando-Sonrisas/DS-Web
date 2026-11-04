@@ -14,6 +14,8 @@
 --                                       en registros_offline.conflicto
 -- Los triggers se apagan (stock, lotes y movimientos ya vienen calculados);
 -- las llaves foráneas no, por eso se escribe de padres a hijos.
+-- Accounts missing online (created at the brigade, or deleted online) are
+-- created from the brigade's auth rows before their profile.
 -- =========================================================================
 
 -- llave primaria, columnas y condición por llave de una tabla de public
@@ -40,6 +42,22 @@ BEGIN
 END;
 $$;
 
+-- only the columns both versions share: the local auth schema may be a different GoTrue release
+CREATE FUNCTION pg_temp.insert_missing_row(p_table regclass, p_row jsonb) RETURNS void
+LANGUAGE plpgsql SET search_path = '' AS $$
+DECLARE
+  v_cols text;
+BEGIN
+  SELECT string_agg(quote_ident(a.attname), ', ' ORDER BY a.attnum) INTO v_cols
+  FROM pg_catalog.pg_attribute a
+  WHERE a.attrelid = p_table AND a.attnum > 0 AND NOT a.attisdropped
+    AND a.attgenerated = '' AND p_row ? a.attname;
+  EXECUTE format('INSERT INTO %s (%s) SELECT %s FROM jsonb_populate_record(NULL::%s, $1) ON CONFLICT DO NOTHING',
+                 p_table, v_cols, v_cols, p_table)
+    USING p_row;
+END;
+$$;
+
 -- en UTC, como offline.datos_subida(): las versiones se comparan como JSON
 CREATE FUNCTION pg_temp.subir_offline(p_datos jsonb, p_sesion uuid, p_preparada timestamptz) RETURNS jsonb
 LANGUAGE plpgsql SET search_path = '' SET timezone = 'UTC' AS $$
@@ -61,6 +79,8 @@ DECLARE
   t jsonb;
   b jsonb;
   v_resumen jsonb;
+  v_user_id uuid;
+  v_accounts int := 0;
 BEGIN
   CREATE TEMP TABLE plan (
     n bigint, tabla text, nivel int, clave jsonb, final jsonb,
@@ -141,6 +161,31 @@ BEGIN
     EXECUTE format('ALTER TABLE public.%I DISABLE TRIGGER USER', v_tabla);
   END LOOP;
 
+  -- Without its auth.users row a profile breaks perfiles_id_fkey. Creating the account fires
+  -- handle_new_user, whose default profile the profile upsert below overwrites.
+  FOR d IN
+    SELECT x.clave, x.account
+    FROM jsonb_to_recordset(p_datos) AS x(tabla text, clave jsonb, account jsonb)
+    JOIN pg_temp.plan p ON p.tabla = x.tabla AND p.clave = x.clave
+    WHERE x.tabla = 'perfiles' AND p.final IS NOT NULL
+  LOOP
+    v_user_id := (d.clave ->> 'id')::uuid;
+    CONTINUE WHEN EXISTS (SELECT 1 FROM auth.users u WHERE u.id = v_user_id);
+    IF d.account IS NULL THEN
+      RAISE EXCEPTION 'El perfil % no tiene cuenta de usuario en la brigada: no se puede subir.', v_user_id;
+    END IF;
+    -- SIMPLIFICATION: an e-mail already used online by another account stops the upload.
+    -- Ceiling: the operator resolves it by hand. Upgrade: remap the brigade id to the online one.
+    IF EXISTS (SELECT 1 FROM auth.users u
+               WHERE lower(u.email) = lower(d.account #>> '{user,email}')) THEN
+      RAISE EXCEPTION 'La cuenta % se creó en la brigada con un correo que en línea ya usa otra cuenta: no se puede subir.', v_user_id;
+    END IF;
+    PERFORM pg_temp.insert_missing_row('auth.users', d.account -> 'user');
+    PERFORM pg_temp.insert_missing_row('auth.identities', i.value)
+    FROM jsonb_array_elements(coalesce(d.account -> 'identities', '[]')) i;
+    v_accounts := v_accounts + 1;
+  END LOOP;
+
   FOR d IN SELECT * FROM pg_temp.plan p WHERE p.final IS NOT NULL ORDER BY p.nivel, p.n LOOP
     SELECT * INTO e FROM pg_temp.estructura_offline(d.tabla);
     EXECUTE format('INSERT INTO public.%I (%s) SELECT %s FROM jsonb_populate_record(NULL::public.%I, $1) ON CONFLICT (%s) DO %s',
@@ -171,7 +216,8 @@ BEGIN
            'subidos', count(*) FILTER (WHERE p.operacion IN ('INSERT', 'UPDATE')),
            'borrados', count(*) FILTER (WHERE p.operacion = 'DELETE'),
            'combinados', count(*) FILTER (WHERE p.combinado AND p.conflicto IS NULL),
-           'conflictos', count(*) FILTER (WHERE p.conflicto IS NOT NULL))
+           'conflictos', count(*) FILTER (WHERE p.conflicto IS NOT NULL),
+           'accounts', v_accounts)
     INTO v_resumen
   FROM pg_temp.plan p;
   RETURN v_resumen;
