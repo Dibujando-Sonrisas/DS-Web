@@ -439,12 +439,20 @@ async function subir(sesion) {
     deleted: resumen.borrados,
     merged: resumen.combinados,
     conflicts: resumen.conflictos,
+    accounts: resumen.accounts,
   });
   return describirSubida(resumen);
 }
 
-function describirSubida({ subidos, borrados, combinados, conflictos }) {
+function describirSubida({
+  subidos,
+  borrados,
+  combinados,
+  conflictos,
+  accounts,
+}) {
   const partes = [`${subidos} registros subidos`, `${borrados} borrados`];
+  if (accounts) partes.push(`${accounts} cuentas de usuario creadas en línea`);
   if (combinados) partes.push(`${combinados} combinados con cambios en línea`);
   if (conflictos)
     partes.push(
