@@ -1221,6 +1221,7 @@ Figures correspond to the repository state at migration `20261011235000`.
 | `is_panel_user()` was not updated by the patch migration `20260705000002_fix_role_functions.sql`. | Not applicable | That migration is not present in the repository and `is_panel_user()` no longer exists. |
 | Redundant identifier properties between views and tables (`med.medicamento_id \|\| med.id`). | Resolved | The clients read `stock_actual` rows typed from the generated schema and use only `medicamento_id`; the `id` fallback (always `undefined` on view rows) was removed. |
 | Generated types were out of date (`registros_offline` missing). | Resolved | `src/lib/database.types.ts` was regenerated from the linked project. |
+| An offline upload failed with `perfiles_id_fkey` when an account had been created at the brigade: the change log covers only `public`, so the profile was uploaded without its `auth.users` row. | Resolved | `offline.datos_subida()` attaches the account rows to each profile and `scripts/offline-subida.sql` creates the missing accounts before writing profiles. |
 | Inventory and Pharmacy RLS mismatch: staff could write lots and movements but not `medicamentos`. | Resolved | All policies are permission-based and the stock side effects run in `SECURITY DEFINER` triggers. A dispenser needs only `farmacia.process` to deliver a prescription. |
 
 ### 20.2 Open Issues
