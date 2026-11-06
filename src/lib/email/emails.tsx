@@ -21,7 +21,7 @@ export type { VolunteerRequest };
 const logger = getLogger("email");
 
 export const SITE_URL = (
-  process.env.SITE_URL || "https://production-dibujandosonrisas.netlify.app"
+  process.env.SITE_URL || "https://ds-web.workers.dev"
 ).replace(/\/+$/, "");
 
 export function getMissingEmailConfig(): string[] {

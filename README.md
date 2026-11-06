@@ -68,7 +68,7 @@ Quién recibe cada aviso por correo (mensajes de contacto, inscripciones de volu
 
 ### Migraciones de base de datos
 
-Los cambios a la base van en `supabase/migrations/`. El deploy de producción en Netlify los aplica solo (`supabase db push`, ver `netlify.toml`) antes de compilar; necesita la variable secreta `SUPABASE_DB_URL` en Netlify. Para aplicarlos a mano: `npx supabase db push`.
+Los cambios a la base van en `supabase/migrations/`. El deploy de producción (Cloudflare Workers Builds / Netlify) los aplica automáticamente (`supabase db push`, ver `wrangler.toml` y `netlify.toml`) antes de compilar; necesita la variable secreta `SUPABASE_DB_URL`. Para aplicarlos a mano: `npx supabase db push`.
 
 ### 4. Iniciar el Servidor de Desarrollo
 

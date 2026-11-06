@@ -1,0 +1,61 @@
+# =============================================================================
+# Cloudflare Worker (Workers Builds desde Git) para Next.js (App Router)
+# Utiliza @opennextjs/cloudflare para compilar la aplicación Next.js y desplegarla
+# en la red de Cloudflare Workers con compatibilidad Node.js.
+# `name` debe coincidir con el nombre del Worker en el dashboard de Cloudflare.
+# =============================================================================
+name = "ds-web"
+main = ".open-next/worker.js"
+compatibility_date = "2026-06-30"
+compatibility_flags = ["nodejs_compat"]
+
+# Sin esto, cada `wrangler deploy` borra las variables de texto definidas en el
+# dashboard (los secrets sí sobreviven) y la app se queda sin variables de entorno.
+keep_vars = true
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true
+
+[observability.issues]
+enabled = true
+
+# =============================================================================
+# GUÍA DE DESPLIEGUE EN CLOUDFLARE (Workers Builds)
+# =============================================================================
+# Deploy (Settings → Build del Worker):
+#   Build command:  npx supabase db push --db-url "$SUPABASE_DB_URL" --yes && npm run build:worker
+#   Deploy command: npx wrangler deploy
+#
+# En Workers Builds el build migra la base de datos Supabase antes de compilar
+# (como hacía netlify.toml con supabase db push).
+#
+# Variables de build (Settings → Build → Variables):
+#   SUPABASE_DB_URL             - conexión directa a PostgreSQL (obligatoria para supabase db push)
+#   NEXT_PUBLIC_SUPABASE_URL    - URL del proyecto Supabase (https://<id>.supabase.co)
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY - clave pública anon de Supabase
+#   NODE_VERSION                - versión de Node (ej. 20 o 22)
+#
+# Variables de runtime (Settings → Variables and Secrets del Worker):
+#   NEXT_PUBLIC_SUPABASE_URL    - URL del proyecto Supabase (pública)
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY - clave pública anon de Supabase
+#   SUPABASE_SECRET_KEY         - clave de servicio / service_role (secret)
+#   RESEND_API_KEY              - token para envío de correos vía Resend (secret)
+#   EMAIL_FROM                  - remitente visible de los correos
+#   SITE_URL                    - URL base del sitio web público (ej. https://tudominio.org)
+#   NEXT_PUBLIC_MODO_OFFLINE    - "0" en producción en la nube
+# =============================================================================
