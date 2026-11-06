@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, TriangleAlert, X } from "lucide-react";
+import { Check, Trash2, TriangleAlert, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import ConfirmDialog from "@/app/administracion/components/ConfirmDialog";
 import styles from "@/styles/pages/admin.module.css";
@@ -30,6 +30,8 @@ type InscripcionesTableProps = {
   assignments?: Record<string, string>; // perfil_id -> area_asignada
   onAccept: (id: string) => Promise<void>;
   onReject: (id: string) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
+  canDelete?: boolean;
   /** sin él no hay columna de asignación (solicitudes generales, sin brigada) */
   onAssign?: (perfilId: string, area: string | null) => Promise<void>;
   isReadOnly?: boolean;
@@ -67,12 +69,15 @@ export default function InscripcionesTable({
   assignments = {},
   onAccept,
   onReject,
+  onDelete,
+  canDelete = true,
   onAssign,
   isReadOnly = false,
   vacio = "No hay solicitudes registradas para esta brigada.",
 }: InscripcionesTableProps) {
   const [isPending, startTransition] = useTransition();
   const [rejectTarget, setRejectTarget] = useState<InscripcionRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<InscripcionRow | null>(null);
 
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleDateString("es-HN", {
@@ -93,6 +98,14 @@ export default function InscripcionesTable({
     startTransition(async () => {
       await onReject(rejectTarget.id);
       setRejectTarget(null);
+    });
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    startTransition(async () => {
+      await onDelete?.(deleteTarget.id);
+      setDeleteTarget(null);
     });
   };
 
@@ -224,6 +237,18 @@ export default function InscripcionesTable({
                                 Rechazar
                               </button>
                             </>
+                          ) : ins.estado === "rechazado" &&
+                            onDelete &&
+                            canDelete ? (
+                            <button
+                              type="button"
+                              className="btn-ghost btn-xs"
+                              onClick={() => setDeleteTarget(ins)}
+                              disabled={isPending}
+                            >
+                              <Trash2 aria-hidden="true" />
+                              Eliminar
+                            </button>
                           ) : (
                             <span className={styles.muted}>—</span>
                           )}
@@ -249,6 +274,22 @@ export default function InscripcionesTable({
         >
           ¿Estás seguro de que deseas rechazar la solicitud de{" "}
           <strong>{rejectTarget.nombre_completo}</strong>?
+        </ConfirmDialog>
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="¿Eliminar solicitud rechazada?"
+          confirmLabel="Sí, eliminar"
+          busyLabel="Eliminando..."
+          busy={isPending}
+          tone="danger"
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        >
+          ¿Estás seguro de que deseas eliminar permanentemente la solicitud de{" "}
+          <strong>{deleteTarget.nombre_completo}</strong>? Esta acción no se
+          puede deshacer.
         </ConfirmDialog>
       )}
     </section>

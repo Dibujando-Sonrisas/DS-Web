@@ -7,7 +7,10 @@ import { useToast } from "@/app/administracion/components/AdminToast";
 import { usePermissions } from "@/app/administracion/components/PermissionsProvider";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import styles from "@/styles/pages/admin.module.css";
-import { cambiarEstadoSolicitudGeneral } from "../actions";
+import {
+  cambiarEstadoSolicitudGeneral,
+  eliminarSolicitudGeneral,
+} from "../actions";
 
 /** Solicitudes del formulario de /voluntariado: quieren ser voluntarios, sin brigada. */
 export default function SolicitudesGenerales({
@@ -30,6 +33,12 @@ export default function SolicitudesGenerales({
       );
   };
 
+  const eliminar = async (id: string) => {
+    const res = await eliminarSolicitudGeneral(id);
+    if (res.error) showToast(res.error, "error");
+    else showToast(res.message ?? "Solicitud eliminada con éxito.", "success");
+  };
+
   return (
     <section className={styles.panel}>
       <div className={styles.panelBody}>
@@ -37,7 +46,12 @@ export default function SolicitudesGenerales({
           inscripciones={solicitudes}
           onAccept={cambiar("aceptado")}
           onReject={cambiar("rechazado")}
-          isReadOnly={!can(PERMISSIONS.VOLUNTARIADO_UPDATE)}
+          onDelete={eliminar}
+          canDelete={can(PERMISSIONS.VOLUNTARIADO_DELETE)}
+          isReadOnly={
+            !can(PERMISSIONS.VOLUNTARIADO_UPDATE) &&
+            !can(PERMISSIONS.VOLUNTARIADO_DELETE)
+          }
           vacio="No hay solicitudes de voluntariado general."
         />
       </div>
