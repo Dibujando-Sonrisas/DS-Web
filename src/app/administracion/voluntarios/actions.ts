@@ -418,3 +418,46 @@ export async function cambiarEstadoSolicitudGeneral(
     };
   }
 }
+
+export async function eliminarSolicitudGeneral(
+  id: string
+): Promise<ActionResponse> {
+  try {
+    await assertPermission(PERMISSIONS.VOLUNTARIADO_DELETE);
+    const supabase = await createSupabaseServerClient();
+
+    const { data, error } = await supabase
+      .from("inscripciones_voluntarios")
+      .delete()
+      .eq("id", id)
+      .eq("estado", "rechazado")
+      .is("brigada_id", null)
+      .select("id");
+
+    if (error)
+      return falloBD(
+        "Volunteer request deletion failed",
+        error,
+        { inscripcionId: id },
+        "No se pudo eliminar la solicitud."
+      );
+
+    if (!data || data.length === 0) {
+      return {
+        error: "Solo se pueden eliminar solicitudes que hayan sido rechazadas.",
+      };
+    }
+
+    logger.info("Volunteer request deleted", { inscripcionId: id });
+    revalidatePath("/administracion/voluntarios");
+    return { success: true, message: "Solicitud eliminada con éxito." };
+  } catch (e) {
+    logger.error("Volunteer request deletion failed", {
+      ...errorInfo(e),
+      inscripcionId: id,
+    });
+    return {
+      error: e instanceof Error ? e.message : "Error al eliminar la solicitud.",
+    };
+  }
+}
