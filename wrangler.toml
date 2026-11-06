@@ -38,7 +38,8 @@ enabled = true
 # GUÍA DE DESPLIEGUE EN CLOUDFLARE (Workers Builds)
 # =============================================================================
 # Deploy (Settings → Build del Worker):
-#   Build command:  npx supabase db push --db-url "$SUPABASE_DB_URL" --yes && npm run build:worker
+#   Build command:  npm run build
+#                   (con migraciones: npx supabase db push --db-url "$SUPABASE_DB_URL" --yes && npm run build)
 #   Deploy command: npx wrangler deploy
 #
 # En Workers Builds el build migra la base de datos Supabase antes de compilar
