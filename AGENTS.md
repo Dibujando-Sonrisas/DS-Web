@@ -15,7 +15,7 @@ Instructions for any AI coding agent working in this repository. Read this file 
 ## 1. Project at a Glance
 
 - **What it is:** the web platform of the Dibujando Sonrisas Foundation (Honduras), which runs medical and dental brigades. One Next.js app contains the **public website** (`/`, `/brigadas`, `/voluntariado`, `/donar`, ...) and a **private administration panel** (`/administracion/*`) for inventory, patients, pharmacy, brigades, volunteers, donations, sales, reports and user and role management.
-- **Stack:** Next.js 16 (App Router), React 19, TypeScript (strict), Supabase (PostgreSQL, Auth, Storage, Realtime), plain CSS (global tokens plus CSS Modules), Zod, Resend and React Email (e-mail), LogTape (logging) and `lucide-react`. Deployed on Netlify.
+- **Stack:** Next.js 16 (App Router), React 19, TypeScript (strict), Supabase (PostgreSQL, Auth, Storage, Realtime), plain CSS (global tokens plus CSS Modules), Zod, Resend and React Email (e-mail), LogTape (logging) and `lucide-react`. Deployed on Cloudflare Workers (via OpenNext).
 - **Language:** the interface is in Spanish (`<html lang="es">`). See [Section 5.1](#51-language).
 - **There is no automated test suite.** See [Section 2](#2-commands) and [Section 10](#10-pitfalls-and-known-baseline) for how to verify a change.
 
@@ -45,7 +45,9 @@ Biome is the only formatter and linter (ESLint and Prettier are not used). Never
 ├── AGENTS.md, CLAUDE.md         Agent instructions (this file and its Claude Code companion)
 ├── SYSTEM_ARCHITECTURE.md       Deep technical reference: database, authorization, modules
 ├── README.md                    Public project README (Spanish, partly outdated)
-├── netlify.toml                 Build and deploy; production runs `supabase db push` before `npm run build`
+├── wrangler.toml                Cloudflare Worker configuration and deployment guide
+├── open-next.config.ts          OpenNext adapter configuration for Cloudflare
+├── netlify.toml                 Legacy Netlify build and deploy configuration
 ├── .env.example                 Environment variable template (real values go in the git-ignored `.env`)
 ├── public/                      Static assets served at `/` (logos, hero images, photos, video)
 ├── img/                         Legacy copy of images from the old static site; not referenced by the app
@@ -207,7 +209,7 @@ Names only; values are in the git-ignored `.env`. Never print, log or commit the
 | `RESEND_API_KEY`, `EMAIL_FROM` | Server only | E-mail delivery. Without them e-mail is skipped; the rest keeps working. |
 | `SITE_URL` | Server only | Base URL for links in e-mails (used outside development). |
 | `NEXT_PUBLIC_MODO_OFFLINE` | Browser and server | `1` on the brigade offline server. |
-| `SUPABASE_DB_URL` | Netlify and offline scripts | Direct database URL for `supabase db push` and the offline sync. |
+| `SUPABASE_DB_URL` | Cloudflare, Netlify and offline scripts | Direct database URL for `supabase db push` and the offline sync. |
 
 Only variables prefixed `NEXT_PUBLIC_` reach the browser. `.env.example` is the template.
 
@@ -234,7 +236,7 @@ A laptop at the brigade site runs the app (`npm run offline`) against a local Su
 ## 6. Database and Migrations
 
 - **Migrations are the source of truth** (`supabase/migrations/YYYYMMDDHHMMSS_description.sql`, created with `npx supabase migration new`). Never edit a migration that already exists on `development` or `main`; add a new one.
-- **Production applies migrations automatically**: the Netlify production build runs `supabase db push` before `npm run build`. A faulty migration breaks the deploy, so keep each one small, idempotent where practical and reviewed.
+- **Production applies migrations automatically**: the production build (Cloudflare Workers Builds / Netlify) runs `supabase db push` before compiling. A faulty migration breaks the deploy, so keep each one small, idempotent where practical and reviewed.
 - Start each migration with a header comment explaining its intent.
 - **New table checklist:**
   - `ENABLE ROW LEVEL SECURITY` and `REVOKE ALL ... FROM anon` unless the table is public.
