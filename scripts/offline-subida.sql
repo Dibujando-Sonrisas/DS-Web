@@ -156,9 +156,17 @@ BEGIN
       v_conflicto, v_combinado, d.fecha);
   END LOOP;
 
-  -- 2. escribir: triggers apagados, de padres a hijos; se borra de hijos a padres
+  -- 2. escribir: triggers apagados; se borra de hijos a padres, luego se escribe de padres a hijos
   FOR v_tabla IN SELECT DISTINCT p.tabla FROM pg_temp.plan p WHERE p.operacion <> 'NADA' LOOP
     EXECUTE format('ALTER TABLE public.%I DISABLE TRIGGER USER', v_tabla);
+  END LOOP;
+
+  -- primero borrar (de hijos a padres) para liberar llaves únicas y referencias
+  FOR d IN SELECT * FROM pg_temp.plan p WHERE p.operacion = 'DELETE' ORDER BY p.nivel DESC, p.n DESC LOOP
+    SELECT * INTO e FROM pg_temp.estructura_offline(d.tabla);
+    EXECUTE format('DELETE FROM public.%I x USING jsonb_populate_record(NULL::public.%I, $1) r WHERE %s',
+                   d.tabla, d.tabla, e.cond)
+      USING d.clave;
   END LOOP;
 
   -- Without its auth.users row a profile breaks perfiles_id_fkey. Creating the account fires
@@ -186,6 +194,7 @@ BEGIN
     v_accounts := v_accounts + 1;
   END LOOP;
 
+  -- después insertar y actualizar (de padres a hijos)
   FOR d IN SELECT * FROM pg_temp.plan p WHERE p.final IS NOT NULL ORDER BY p.nivel, p.n LOOP
     SELECT * INTO e FROM pg_temp.estructura_offline(d.tabla);
     EXECUTE format('INSERT INTO public.%I (%s) SELECT %s FROM jsonb_populate_record(NULL::public.%I, $1) ON CONFLICT (%s) DO %s',
@@ -193,13 +202,6 @@ BEGIN
                    (SELECT string_agg(quote_ident(p), ', ') FROM unnest(e.pk) p),
                    coalesce('UPDATE SET ' || e.sets, 'NOTHING'))
       USING d.final;
-  END LOOP;
-
-  FOR d IN SELECT * FROM pg_temp.plan p WHERE p.operacion = 'DELETE' ORDER BY p.nivel DESC, p.n DESC LOOP
-    SELECT * INTO e FROM pg_temp.estructura_offline(d.tabla);
-    EXECUTE format('DELETE FROM public.%I x USING jsonb_populate_record(NULL::public.%I, $1) r WHERE %s',
-                   d.tabla, d.tabla, e.cond)
-      USING d.clave;
   END LOOP;
 
   FOR v_tabla IN SELECT DISTINCT p.tabla FROM pg_temp.plan p WHERE p.operacion <> 'NADA' LOOP
